@@ -51,6 +51,19 @@ export default function DashboardPage() {
       const authData: AuthUserResponse = await userRes.json()
       let app = pickApplication(authData)
 
+      // GET /api/auth/user solo retorna { user, customer } (no incluye la
+      // application embebida) — la fuente real de verdad es
+      // GET /api/applications?customer_id=... construido por el agente
+      // Leads+Applications. Se toma la más reciente (el endpoint ya ordena
+      // por created_at desc).
+      if (!app && authData.customer?.id) {
+        const appsRes = await fetch(`/api/applications?customer_id=${authData.customer.id}&limit=1`)
+        if (appsRes.ok) {
+          const { applications } = await appsRes.json()
+          app = applications?.[0] ?? null
+        }
+      }
+
       if (app?.id) {
         // Refrescar el detalle completo (documentos, scoring) por si el
         // endpoint de auth solo trae un resumen.

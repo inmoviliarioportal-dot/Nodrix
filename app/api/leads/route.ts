@@ -8,6 +8,7 @@ import {
   findLatestApplicationForCustomer,
   hashRutOrEmail,
   normalizeEmail,
+  type ApplicationRow,
   type CustomerRow,
   type AnySupabaseClient,
 } from "@/lib/leads";
@@ -72,7 +73,34 @@ export const POST = withErrorHandling(async (request: Request) => {
   const existing = await findCustomerByEmail(supabase, MVP_ORG_ID, normalizedEmail);
 
   if (existing) {
-    const latestApplication = await findLatestApplicationForCustomer(supabase, existing.id);
+    let latestApplication = await findLatestApplicationForCustomer(supabase, existing.id);
+
+    // El customer puede existir sin ninguna application todavía (ej. se
+    // registró vía POST /api/auth/register, que solo crea el customer). El
+    // contrato de este endpoint es "crea o reutiliza el customer y siempre
+    // deja al menos una application creada" — nunca `application: null`.
+    if (!latestApplication) {
+      const { data: newApplication, error: newApplicationError } = await supabase
+        .from("applications")
+        .insert({ org_id: MVP_ORG_ID, customer_id: existing.id })
+        .select("*")
+        .single();
+
+      if (newApplicationError || !newApplication) {
+        return apiError(
+          `Failed to create application for existing customer: ${newApplicationError?.message ?? "unknown error"}`,
+          HTTP_STATUS.INTERNAL_SERVER_ERROR
+        );
+      }
+
+      const scored = await maybeApplyScoring(
+        supabase,
+        newApplication as { id: string; stage: string },
+        financial
+      );
+      latestApplication = (scored ?? newApplication) as ApplicationRow;
+    }
+
     return NextResponse.json(
       { duplicate: true, customer: existing, application: latestApplication },
       { status: HTTP_STATUS.CONFLICT }

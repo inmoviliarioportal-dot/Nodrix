@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
 /**
  * Suite E2E — Release 1 (Portal Cliente + pseudo-admin manual)
@@ -37,6 +37,23 @@ function uniqueEmail(prefix: string) {
 test.describe("Release 1 — Flujo completo", () => {
   test.describe.configure({ mode: "serial" });
 
+  // IMPORTANTE: `test.describe.configure({ mode: "serial" })` solo controla el
+  // ORDEN de ejecución (y que se detenga ante el primer fallo) — NO comparte
+  // contexto/cookies entre tests. Cada `test(async ({ page }) => ...)` recibiría
+  // por defecto una `page`/contexto de browser NUEVO (sesión perdida), rompiendo
+  // un flujo que depende de permanecer logueado del test 1 en adelante. Por eso
+  // se crea una única `page` compartida en `beforeAll` y se reusa explícitamente
+  // en cada test en vez de tomar el fixture `page` de Playwright.
+  let sharedPage: Page;
+
+  test.beforeAll(async ({ browser }) => {
+    sharedPage = await browser.newPage();
+  });
+
+  test.afterAll(async () => {
+    await sharedPage.close();
+  });
+
   const user = {
     email: uniqueEmail("cliente"),
     password: "Passw0rd!2026",
@@ -47,7 +64,8 @@ test.describe("Release 1 — Flujo completo", () => {
   let applicationId: string | undefined;
   let documentId: string | undefined;
 
-  test("1. Registro -> Login -> Dashboard", async ({ page }) => {
+  test("1. Registro -> Login -> Dashboard", async () => {
+    const page = sharedPage;
     // 1a. Registro vía UI (contrato de ui-auth.md: /auth/register)
     const regPageRes = await page.goto("/auth/register");
     test.skip(
@@ -86,17 +104,34 @@ test.describe("Release 1 — Flujo completo", () => {
     await expect(page.getByText(/RECEPCIONADA|Recepcionada/i)).toBeVisible({ timeout: 10_000 });
   });
 
-  test("2. Lead -> Auto-scoring visible en dashboard", async ({ page }) => {
+  test("2. Lead -> Auto-scoring visible en dashboard", async () => {
+    const page = sharedPage;
     // Vía API directa (leads-applications.md sugiere este camino si no hay formulario de
     // perfil financiero completo en la UI de Release 1).
+    //
+    // Reusa el email del test 1 a propósito: el customer ya existe (se creó en el
+    // registro), pero SIN application (POST /api/auth/register no crea una). El
+    // contrato real de POST /api/leads (ver app/api/leads/route.ts) es: si el email
+    // ya existe, responde 409 con `duplicate: true` — pero SIEMPRE debe dejar al
+    // menos una application creada para ese customer (antes había un bug real donde
+    // devolvía `application: null` en este caso exacto; ya corregido). Por eso 409
+    // es un resultado tan válido como 201 aquí — lo que valida el test es que
+    // `application` nunca sea null y que, con perfil financiero completo, dispare
+    // el auto-scoring.
     const leadRes = await page.request.post("/api/leads", {
       data: {
         name: user.name,
-        email: user.email, // mismo email -> debe deduplicar contra el customer ya creado
+        email: user.email,
         phone: user.phone,
+        // Nombres EXACTOS de CustomerFinancialProfile (lib/scoring.ts) — deben
+        // venir TODOS para que se dispare el scoring (ver extractFinancialProfile
+        // en app/api/leads/route.ts).
         monthlySalary: 1_800_000,
-        monthlyDebts: 200_000,
-        requestedAmountUf: 3000,
+        savingsAmount: 12_000_000,
+        employmentType: "indefinido",
+        employmentYears: 4,
+        hasExistingDebt: false,
+        monthlyDebtPayments: 0,
       },
     });
 
@@ -105,12 +140,21 @@ test.describe("Release 1 — Flujo completo", () => {
       "POST /api/leads no existe todavía — agente leads-applications aún no ha publicado el endpoint."
     );
 
+    // 200/201 (creación nueva) o 409 (dedup contra el customer del test 1) son
+    // AMBOS resultados válidos por diseño — lo que no es válido es cualquier
+    // otro status (400/500) o que `application` venga null.
     expect(
-      leadRes.ok(),
-      `POST /api/leads debería responder 200/201 (recibido ${leadRes.status()}: ${await leadRes.text()})`
+      leadRes.ok() || leadRes.status() === 409,
+      `POST /api/leads debería responder 2xx o 409 (recibido ${leadRes.status()}: ${await leadRes.text()})`
     ).toBeTruthy();
 
     const leadBody = await leadRes.json().catch(() => ({}));
+
+    expect(
+      leadBody?.application,
+      `La application no debería ser null/undefined en la respuesta: ${JSON.stringify(leadBody)}`
+    ).toBeTruthy();
+
     applicationId =
       leadBody?.application?.id ?? leadBody?.applicationId ?? leadBody?.id ?? undefined;
 
@@ -118,18 +162,17 @@ test.describe("Release 1 — Flujo completo", () => {
     await page.goto("/dashboard");
     await page.reload();
 
-    const scoringBadge = page.locator(
-      '[data-testid="scoring-badge"], [class*="scoring"], [class*="Scoring"]'
-    );
+    // components/ui/scoring-badge.tsx expone `data-slot="scoring-badge"`
+    // (convención shadcn), no `data-testid` — selector alineado al real.
+    const scoringBadge = page.locator('[data-slot="scoring-badge"]');
     await expect(
       scoringBadge.first(),
       "Se esperaba encontrar el componente ScoringBadge visible en /dashboard tras crear un lead con datos financieros completos."
     ).toBeVisible({ timeout: 10_000 });
   });
 
-  test("3. Upload de documento -> cambia estado vía pseudo-admin", async ({
-    page,
-  }) => {
+  test("3. Upload de documento -> cambia estado vía pseudo-admin", async () => {
+    const page = sharedPage;
     test.skip(
       !applicationId,
       "No se obtuvo applicationId del test anterior (lead no creado) — no se puede continuar el flujo de documentos."
@@ -207,7 +250,8 @@ test.describe("Release 1 — Flujo completo", () => {
     await expect(page.getByText(/aprobado/i).first()).toBeVisible({ timeout: 10_000 });
   });
 
-  test("4. Responsive — mobile (375px) y desktop (1280px) en /dashboard", async ({ page }) => {
+  test("4. Responsive — mobile (375px) y desktop (1280px) en /dashboard", async () => {
+    const page = sharedPage;
     const res = await page.goto("/dashboard");
     test.skip(!res || res.status() >= 400, "/dashboard no disponible para verificar responsive.");
 
@@ -229,7 +273,8 @@ test.describe("Release 1 — Flujo completo", () => {
     }
   });
 
-  test("5. Dark mode — fondo oscuro esperado en /dashboard", async ({ page }) => {
+  test("5. Dark mode — fondo oscuro esperado en /dashboard", async () => {
+    const page = sharedPage;
     const res = await page.goto("/dashboard");
     test.skip(!res || res.status() >= 400, "/dashboard no disponible para verificar dark mode.");
 
@@ -258,7 +303,8 @@ test.describe("Release 1 — Flujo completo", () => {
     }
   });
 
-  test("6. Performance básica — carga de /dashboard bajo ~4s (dev local)", async ({ page }) => {
+  test("6. Performance básica — carga de /dashboard bajo ~4s (dev local)", async () => {
+    const page = sharedPage;
     const start = Date.now();
     const res = await page.goto("/dashboard", { waitUntil: "load" });
     const elapsedMs = Date.now() - start;
