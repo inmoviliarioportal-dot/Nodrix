@@ -7,6 +7,17 @@
  *
  * Espejo SQL: database/functions/scoring_fn.sql implementa la MISMA lógica
  * para poder ejecutar el cálculo directamente en Postgres (trigger/RPC).
+ *
+ * CONFIGURABILIDAD (pesos/umbrales editables desde Admin, Release 3):
+ * `calculateScoring` acepta un segundo argumento opcional `config` con pesos
+ * y/o umbrales alternativos. Si se omite, se usan los defaults exportados
+ * (`FACTOR_WEIGHTS` / `SCORING_THRESHOLDS`) — comportamiento 100% compatible
+ * con versiones anteriores. La fuente de verdad de "cuál config está activa
+ * para una organización" vive en la tabla `scoring_rule_sets`
+ * (database/migrations/003_scoring_rule_sets.sql); usa `loadActiveScoringConfig`
+ * para leerla (con fallback automático a los defaults si no hay fila activa
+ * o si falla la consulta — el scoring NUNCA debe romperse por un problema de
+ * configuración).
  */
 
 export const RULES_VERSION = "v1.0.0";
@@ -72,20 +83,33 @@ export const FACTOR_WEIGHTS = {
   CARGA_FINANCIERA: 20,
 } as const;
 
-// Sanity check en tiempo de carga del módulo: los pesos nunca deben exceder 100.
-const TOTAL_WEIGHT = Object.values(FACTOR_WEIGHTS).reduce((a, b) => a + b, 0);
-if (TOTAL_WEIGHT > 100) {
-  throw new Error(
-    `Configuración inválida de scoring: la suma de pesos (${TOTAL_WEIGHT}) excede 100`
-  );
+export type FactorWeights = Record<keyof typeof FACTOR_WEIGHTS, number>;
+export type ScoringThresholdsConfig = typeof SCORING_THRESHOLDS;
+
+/** Config completa opcional para `calculateScoring` (pesos y/o umbrales). */
+export interface ScoringConfig {
+  weights?: FactorWeights;
+  thresholds?: ScoringThresholdsConfig;
 }
+
+/** Valida que los pesos sumen exactamente 100. Lanza si la config es inválida. */
+export function assertValidWeights(weights: FactorWeights): void {
+  const total = Object.values(weights).reduce((a, b) => a + b, 0);
+  if (total > 100) {
+    throw new Error(
+      `Configuración inválida de scoring: la suma de pesos (${total}) excede 100`
+    );
+  }
+}
+
+// Sanity check en tiempo de carga del módulo para los pesos DEFAULT.
+assertValidWeights(FACTOR_WEIGHTS);
 
 /**
  * SALARIO (peso 35): tramos de renta mensual (CLP) → fracción del peso máximo.
  * Tramos alineados a rangos típicos de renta líquida en Chile para vivienda.
  */
-function scoreSalario(monthlySalary: number): number {
-  const weight = FACTOR_WEIGHTS.SALARIO;
+function scoreSalario(monthlySalary: number, weight: number): number {
   if (!Number.isFinite(monthlySalary) || monthlySalary <= 0) return 0;
 
   if (monthlySalary < 500_000) return weight * 0.15;
@@ -104,8 +128,7 @@ function scoreSalario(monthlySalary: number): number {
 const REFERENCE_PROPERTY_VALUE = 60_000_000; // CLP, valor de referencia MVP
 const IDEAL_DOWN_PAYMENT_RATIO = 0.2; // 20% de pie es el "ideal" bancario
 
-function scoreAhorro(savingsAmount: number): number {
-  const weight = FACTOR_WEIGHTS.AHORRO;
+function scoreAhorro(savingsAmount: number, weight: number): number {
   if (!Number.isFinite(savingsAmount) || savingsAmount <= 0) return 0;
 
   const idealSavings = REFERENCE_PROPERTY_VALUE * IDEAL_DOWN_PAYMENT_RATIO;
@@ -134,9 +157,9 @@ const EMPLOYMENT_TYPE_SCORE: Record<
 
 function scoreEstabilidadLaboral(
   employmentType: CustomerFinancialProfile["employmentType"],
-  employmentYears: number
+  employmentYears: number,
+  weight: number
 ): number {
-  const weight = FACTOR_WEIGHTS.ESTABILIDAD_LABORAL;
   const years = Number.isFinite(employmentYears) && employmentYears > 0 ? employmentYears : 0;
 
   const typeScore = EMPLOYMENT_TYPE_SCORE[employmentType] ?? 0;
@@ -159,10 +182,9 @@ function scoreEstabilidadLaboral(
 function scoreCargaFinanciera(
   hasExistingDebt: boolean,
   monthlyDebtPayments: number,
-  monthlySalary: number
+  monthlySalary: number,
+  weight: number
 ): number {
-  const weight = FACTOR_WEIGHTS.CARGA_FINANCIERA;
-
   if (!hasExistingDebt || monthlyDebtPayments <= 0) return weight * 1.0;
 
   // Si no hay salario válido para calcular el ratio pero sí hay deuda, es el
@@ -178,10 +200,13 @@ function scoreCargaFinanciera(
   return 0; // sobreendeudado
 }
 
-function categoryFor(score: number): ScoringCategory {
-  if (score >= SCORING_THRESHOLDS.PLATINO.min) return "PLATINO";
-  if (score >= SCORING_THRESHOLDS.ORO.min) return "ORO";
-  if (score >= SCORING_THRESHOLDS.PLATA.min) return "PLATA";
+function categoryFor(
+  score: number,
+  thresholds: ScoringThresholdsConfig
+): ScoringCategory {
+  if (score >= thresholds.PLATINO.min) return "PLATINO";
+  if (score >= thresholds.ORO.min) return "ORO";
+  if (score >= thresholds.PLATA.min) return "PLATA";
   return "BRONCE";
 }
 
@@ -209,35 +234,47 @@ function buildExplanation(
 
 /**
  * Calcula el scoring determinístico de un cliente en base a su perfil
- * financiero. Mismo input siempre produce el mismo output.
+ * financiero. Mismo input + misma config siempre produce el mismo output.
+ *
+ * @param profile Perfil financiero del cliente.
+ * @param config  Pesos/umbrales opcionales (ej. cargados desde
+ *                `scoring_rule_sets` vía `loadActiveScoringConfig`). Si se
+ *                omite, usa los defaults `FACTOR_WEIGHTS`/`SCORING_THRESHOLDS`.
  */
 export function calculateScoring(
-  profile: CustomerFinancialProfile
+  profile: CustomerFinancialProfile,
+  config?: ScoringConfig
 ): ScoringResult {
-  const salarioPoints = scoreSalario(profile.monthlySalary);
-  const ahorroPoints = scoreAhorro(profile.savingsAmount);
+  const weights = config?.weights ?? FACTOR_WEIGHTS;
+  const thresholds = config?.thresholds ?? SCORING_THRESHOLDS;
+  assertValidWeights(weights);
+
+  const salarioPoints = scoreSalario(profile.monthlySalary, weights.SALARIO);
+  const ahorroPoints = scoreAhorro(profile.savingsAmount, weights.AHORRO);
   const estabilidadPoints = scoreEstabilidadLaboral(
     profile.employmentType,
-    profile.employmentYears
+    profile.employmentYears,
+    weights.ESTABILIDAD_LABORAL
   );
   const cargaPoints = scoreCargaFinanciera(
     profile.hasExistingDebt,
     profile.monthlyDebtPayments,
-    profile.monthlySalary
+    profile.monthlySalary,
+    weights.CARGA_FINANCIERA
   );
 
   const factorsApplied: ScoringFactor[] = [
-    { factor: "Salario", points: salarioPoints, weight: FACTOR_WEIGHTS.SALARIO },
-    { factor: "Ahorro/Pie disponible", points: ahorroPoints, weight: FACTOR_WEIGHTS.AHORRO },
+    { factor: "Salario", points: salarioPoints, weight: weights.SALARIO },
+    { factor: "Ahorro/Pie disponible", points: ahorroPoints, weight: weights.AHORRO },
     {
       factor: "Estabilidad laboral",
       points: estabilidadPoints,
-      weight: FACTOR_WEIGHTS.ESTABILIDAD_LABORAL,
+      weight: weights.ESTABILIDAD_LABORAL,
     },
     {
       factor: "Carga financiera",
       points: cargaPoints,
-      weight: FACTOR_WEIGHTS.CARGA_FINANCIERA,
+      weight: weights.CARGA_FINANCIERA,
     },
   ];
 
@@ -246,7 +283,7 @@ export function calculateScoring(
   // sub-scores, pero protegemos contra errores de configuración futuros.
   const score = Math.min(100, Math.max(0, Math.round(rawScore * 10) / 10));
 
-  const category = categoryFor(score);
+  const category = categoryFor(score, thresholds);
   const explanation = buildExplanation(category, score, factorsApplied);
 
   return {
@@ -256,4 +293,64 @@ export function calculateScoring(
     factorsApplied,
     rulesVersion: RULES_VERSION,
   };
+}
+
+/**
+ * Fila de `scoring_rule_sets` tal como viene de Supabase (shape crudo).
+ */
+interface ScoringRuleSetRow {
+  version: number;
+  weights: FactorWeights;
+  thresholds: ScoringThresholdsConfig;
+}
+
+/**
+ * Carga la configuración de scoring ACTIVA de una organización desde
+ * `scoring_rule_sets` (tabla editable desde Admin en Release 3). Si no hay
+ * fila activa, la consulta falla, o Supabase no está disponible, retorna los
+ * defaults hardcodeados — el scoring NUNCA debe romperse por un problema de
+ * configuración de infraestructura.
+ *
+ * Uso típico (server-side, ej. en un Route Handler):
+ * ```ts
+ * const config = await loadActiveScoringConfig(orgId, supabaseServiceClient);
+ * const result = calculateScoring(profile, config);
+ * ```
+ */
+export async function loadActiveScoringConfig(
+  orgId: string,
+  // Tipado laxo a propósito: evita acoplar lib/scoring.ts al tipo concreto
+  // del cliente Supabase (lib/supabase/server.ts, dominio del Tech Lead).
+  supabaseClient: {
+    from: (table: string) => {
+      select: (columns: string) => {
+        eq: (col: string, val: string) => {
+          eq: (
+            col: string,
+            val: boolean
+          ) => {
+            maybeSingle: () => Promise<{ data: ScoringRuleSetRow | null; error: unknown }>;
+          };
+        };
+      };
+    };
+  }
+): Promise<ScoringConfig> {
+  try {
+    const { data, error } = await supabaseClient
+      .from("scoring_rule_sets")
+      .select("version, weights, thresholds")
+      .eq("org_id", orgId)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (error || !data) {
+      return { weights: FACTOR_WEIGHTS, thresholds: SCORING_THRESHOLDS };
+    }
+
+    return { weights: data.weights, thresholds: data.thresholds };
+  } catch {
+    // Cualquier fallo de red/infra: fallback silencioso a defaults.
+    return { weights: FACTOR_WEIGHTS, thresholds: SCORING_THRESHOLDS };
+  }
 }
