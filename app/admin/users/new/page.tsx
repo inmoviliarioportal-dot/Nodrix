@@ -15,8 +15,14 @@ const ROLE_OPTIONS_BY_CREATOR: Record<CreatorRole, { value: string; label: strin
   admin: [
     { value: "asesor", label: "Asesor" },
     { value: "gerencia", label: "Gerencia" },
+    { value: "custom", label: "Rol personalizado..." },
   ],
   gerencia: [{ value: "asesor", label: "Asesor" }],
+}
+
+interface CustomRoleOption {
+  id: string
+  name: string
 }
 
 const selectClassName =
@@ -34,6 +40,8 @@ export default function CreateUserPage() {
   const [email, setEmail] = React.useState("")
   const [password, setPassword] = React.useState("")
   const [role, setRole] = React.useState("")
+  const [customRoleId, setCustomRoleId] = React.useState("")
+  const [customRoles, setCustomRoles] = React.useState<CustomRoleOption[]>([])
   const [error, setError] = React.useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
 
@@ -44,6 +52,11 @@ export default function CreateUserPage() {
         const r = data?.role
         if (r === "admin" || r === "gerencia") setCreatorRole(r)
       })
+      .catch(() => {})
+
+    fetch("/api/admin/custom-roles")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setCustomRoles(data?.roles ?? []))
       .catch(() => {})
   }, [])
 
@@ -57,6 +70,10 @@ export default function CreateUserPage() {
       setError("Completa todos los campos.")
       return
     }
+    if (role === "custom" && !customRoleId) {
+      setError("Selecciona un rol personalizado.")
+      return
+    }
     if (password.length < 8) {
       setError("La contraseña debe tener al menos 8 caracteres.")
       return
@@ -67,7 +84,13 @@ export default function CreateUserPage() {
       const response = await fetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, fullName, role }),
+        body: JSON.stringify({
+          email,
+          password,
+          fullName,
+          role,
+          ...(role === "custom" ? { customRoleId } : {}),
+        }),
       })
       const data = await response.json().catch(() => null)
       if (!response.ok) {
@@ -79,6 +102,7 @@ export default function CreateUserPage() {
       setEmail("")
       setPassword("")
       setRole("")
+      setCustomRoleId("")
     } catch {
       setError("Error de conexión. Intenta nuevamente.")
     } finally {
@@ -141,6 +165,27 @@ export default function CreateUserPage() {
               ))}
             </select>
           </Field>
+
+          {role === "custom" && (
+            <Field>
+              <FieldLabel htmlFor="customRoleId">Rol personalizado</FieldLabel>
+              <select
+                id="customRoleId"
+                className={selectClassName}
+                value={customRoleId}
+                onChange={(e) => setCustomRoleId(e.target.value)}
+              >
+                <option value="" disabled>
+                  {customRoles.length === 0 ? "No hay roles creados aún" : "Selecciona un rol"}
+                </option>
+                {customRoles.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
 
           <Field data-invalid={!!error}>
             <FieldLabel htmlFor="password">Contraseña temporal</FieldLabel>

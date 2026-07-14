@@ -21,8 +21,10 @@ export default async function AdminLayout({
     { href: "/admin/dashboard", label: "KPIs" },
     { href: "/admin/reports", label: "Reportes" },
     { href: "/backoffice/queue", label: "Backoffice" },
+    { href: "/backoffice/visits", label: "Visitas" },
     { href: "/admin/assignments", label: "Asignar asesor" },
     { href: "/admin/users/new", label: "Crear usuario" },
+    { href: "/admin/roles", label: "Roles" },
   ]
 
   return <Layout navLinks={navLinks}>{children}</Layout>

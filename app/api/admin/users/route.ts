@@ -8,12 +8,14 @@ type CreateUserBody = {
   password?: string;
   fullName?: string;
   role?: string;
+  customRoleId?: string;
 };
 
 /** Qué roles puede crear cada rol creador. Cliente y asesor no pueden crear
- * usuarios en absoluto (bloqueados por `requireRole` más abajo). */
+ * usuarios en absoluto (bloqueados por `requireRole` más abajo). Solo admin
+ * puede asignar roles personalizados ("custom"). */
 const CREATABLE_ROLES_BY_CREATOR: Record<string, UserRole[]> = {
-  admin: ["asesor", "gerencia"],
+  admin: ["asesor", "gerencia", "custom"],
   gerencia: ["asesor"],
 };
 
@@ -81,6 +83,21 @@ export const POST = withErrorHandling(async (request: Request) => {
 
   const supabase = createSupabaseServiceRoleClient() as any;
 
+  if (body.role === "custom") {
+    if (!body.customRoleId) {
+      return apiError("customRoleId es requerido para role='custom'", HTTP_STATUS.BAD_REQUEST, "MISSING_CUSTOM_ROLE");
+    }
+    const { data: customRole } = await supabase
+      .from("custom_roles")
+      .select("id")
+      .eq("id", body.customRoleId)
+      .eq("org_id", MVP_ORG_ID)
+      .maybeSingle();
+    if (!customRole) {
+      return apiError("customRoleId no corresponde a un rol válido", HTTP_STATUS.BAD_REQUEST, "INVALID_CUSTOM_ROLE");
+    }
+  }
+
   const { data: created, error: createError } = await supabase.auth.admin.createUser({
     email: body.email,
     password: body.password,
@@ -104,6 +121,7 @@ export const POST = withErrorHandling(async (request: Request) => {
       email: body.email,
       full_name: body.fullName,
       role: body.role,
+      custom_role_id: body.role === "custom" ? body.customRoleId : null,
     })
     .select()
     .single();

@@ -3,7 +3,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase";
 import { apiError, HTTP_STATUS } from "./errors";
 import { requireAuth } from "./auth";
 
-export type UserRole = "cliente" | "asesor" | "admin" | "gerencia";
+export type UserRole = "cliente" | "asesor" | "admin" | "gerencia" | "custom";
 
 /**
  * Looks up `public.users.role` for an authenticated Supabase Auth user.
@@ -21,6 +21,25 @@ export async function getUserRole(userId: string): Promise<UserRole> {
     .maybeSingle();
 
   return (data?.role as UserRole | undefined) ?? "cliente";
+}
+
+/** Igual que `getUserRole` pero además retorna `custom_role_id`, necesario
+ * para resolver los permisos reales de un usuario con `role = 'custom'`
+ * (ver `lib/permissions.ts`). */
+export async function getUserRoleAndCustomRoleId(
+  userId: string
+): Promise<{ role: UserRole; customRoleId: string | null }> {
+  const serviceRoleClient = createSupabaseServiceRoleClient() as any;
+  const { data } = await serviceRoleClient
+    .from("users")
+    .select("role, custom_role_id")
+    .eq("id", userId)
+    .maybeSingle();
+
+  return {
+    role: (data?.role as UserRole | undefined) ?? "cliente",
+    customRoleId: data?.custom_role_id ?? null,
+  };
 }
 
 export type RoleAuthResult =

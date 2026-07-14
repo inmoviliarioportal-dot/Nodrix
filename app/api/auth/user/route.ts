@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase";
-import { requireAuth, withErrorHandling, apiError, HTTP_STATUS, getUserRole } from "@/app/api/_shared";
+import {
+  requireAuth,
+  withErrorHandling,
+  apiError,
+  HTTP_STATUS,
+  getUserRoleAndCustomRoleId,
+} from "@/app/api/_shared";
+import { getEffectivePermissions } from "@/lib/permissions";
 import { MVP_ORG_ID } from "../_constants";
 
 /**
@@ -16,7 +23,8 @@ export const GET = withErrorHandling(async () => {
   if (!auth.authorized) return auth.response;
 
   const { user } = auth;
-  const role = await getUserRole(user.id);
+  const { role, customRoleId } = await getUserRoleAndCustomRoleId(user.id);
+  const permissions = await getEffectivePermissions(role, customRoleId);
 
   const serviceRoleClient = createSupabaseServiceRoleClient() as any;
   const { data: customer, error: customerError } = await serviceRoleClient
@@ -34,5 +42,5 @@ export const GET = withErrorHandling(async () => {
     );
   }
 
-  return NextResponse.json({ user, customer: customer ?? null, role });
+  return NextResponse.json({ user, customer: customer ?? null, role, permissions });
 });

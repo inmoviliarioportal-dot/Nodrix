@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase";
-import { getUserRole, type UserRole } from "@/app/api/_shared";
+import { getUserRoleAndCustomRoleId, type UserRole } from "@/app/api/_shared";
+import { getEffectivePermissions, hasPermission, type PermissionLevel, type PermissionModule } from "@/lib/permissions";
 
 /**
  * Server Component guard for staff-only route groups (backoffice, admin).
@@ -21,12 +22,44 @@ export async function requireRolePage(allowedRoles: UserRole[]) {
     redirect("/auth/login");
   }
 
-  const role = await getUserRole(user.id);
+  const { role, customRoleId } = await getUserRoleAndCustomRoleId(user.id);
   if (!allowedRoles.includes(role)) {
     redirect("/dashboard");
   }
 
-  return { user, role };
+  const permissions = await getEffectivePermissions(role, customRoleId);
+  return { user, role, permissions };
+}
+
+/**
+ * Como `requireRolePage`, pero autoriza por permiso de módulo -- así un
+ * usuario con `role = 'custom'` puede entrar a una página de Backoffice si
+ * su rol personalizado le da `view`/`edit` sobre ese módulo, sin necesidad
+ * de listar 'custom' explícitamente en cada `allowedRoles`. Los roles fijos
+ * (asesor/admin/gerencia) siguen funcionando igual porque sus permisos
+ * default cubren todo lo que ya podían ver.
+ */
+export async function requirePermissionPage(module: PermissionModule, level: PermissionLevel) {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/auth/login");
+  }
+
+  const { role, customRoleId } = await getUserRoleAndCustomRoleId(user.id);
+  if (role === "cliente") {
+    redirect("/dashboard");
+  }
+
+  const permissions = await getEffectivePermissions(role, customRoleId);
+  if (!hasPermission(permissions, module, level)) {
+    redirect("/dashboard");
+  }
+
+  return { user, role, permissions };
 }
 
 /**
