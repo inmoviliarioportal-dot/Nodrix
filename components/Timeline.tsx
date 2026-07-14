@@ -1,3 +1,5 @@
+import { CheckCircle2 } from "lucide-react"
+
 import { cn } from "@/lib/utils"
 
 /**
@@ -35,12 +37,14 @@ function formatStageLabel(stage: string) {
 }
 
 /**
- * Timeline horizontal/vertical reutilizable para visualizar el avance de una
- * solicitud a través de los 9 estados del flujo.
+ * Timeline VERTICAL — "Command Center" (rediseño Fase 6).
  *
- * - Estado actual: resaltado en gold (accent premium).
- * - Estados pasados: verde tenue (completados).
- * - Estados futuros: gris (pendientes).
+ * - Pasos completados: check verde (`--neon-green`).
+ * - Etapa actual: resaltada en cian (`--neon-cyan`) con glow sutil + punto
+ *   pulsante (respeta `prefers-reduced-motion` vía la utilidad `animate-pulse`
+ *   de Tailwind, que ya honra la media query por defecto en navegadores
+ *   modernos combinada con `motion-reduce:animate-none`).
+ * - Pasos futuros: atenuados (`text-text-tertiary`).
  */
 function Timeline({
   currentStage,
@@ -54,10 +58,7 @@ function Timeline({
   return (
     <ol
       data-slot="timeline"
-      className={cn(
-        "flex w-full flex-col gap-0 sm:flex-row sm:items-start",
-        className
-      )}
+      className={cn("flex w-full flex-col gap-0", className)}
       {...props}
     >
       {stages.map((stage, index) => {
@@ -65,6 +66,7 @@ function Timeline({
         const isCurrent = index === currentIndex
         const isFuture = currentIndex >= 0 ? index > currentIndex : true
         const label = labels?.[stage] ?? formatStageLabel(stage)
+        const isLast = index === stages.length - 1
 
         return (
           <li
@@ -73,51 +75,53 @@ function Timeline({
             data-state={
               isCurrent ? "current" : isCompleted ? "completed" : "future"
             }
-            className="flex flex-1 flex-col items-start gap-2 sm:items-center sm:text-center"
+            className="relative flex items-start gap-4 pb-8 last:pb-0"
           >
-            <div className="flex w-full items-center sm:flex-col">
-              {/* Línea previa (oculta en el primer item) */}
+            {/* Línea vertical conectora */}
+            {!isLast && (
               <div
                 className={cn(
-                  "hidden h-px flex-1 sm:block",
-                  index === 0 && "sm:invisible",
-                  isCompleted || isCurrent ? "bg-success/50" : "bg-border"
+                  "absolute left-[15px] top-8 h-[calc(100%-1rem)] w-px",
+                  isCompleted ? "bg-neon-green/50" : "bg-border"
                 )}
+                aria-hidden
               />
+            )}
 
-              <div
-                className={cn(
-                  "flex size-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold transition-colors duration-200 sm:mx-2",
-                  isCurrent &&
-                    "border-gold bg-gold/15 text-gold shadow-[0_0_0_3px] shadow-gold/15",
-                  isCompleted &&
-                    "border-success/40 bg-success/10 text-success",
-                  isFuture &&
-                    "border-border bg-dark-tertiary text-text-tertiary"
-                )}
-              >
-                {index + 1}
-              </div>
-
-              <div
-                className={cn(
-                  "hidden h-px flex-1 sm:block",
-                  index === stages.length - 1 && "sm:invisible",
-                  isCompleted ? "bg-success/50" : "bg-border"
-                )}
-              />
+            <div className="relative z-10 flex shrink-0 items-center justify-center">
+              {isCompleted ? (
+                <span className="flex size-8 items-center justify-center rounded-full border border-neon-green/40 bg-neon-green/10 text-neon-green">
+                  <CheckCircle2 className="size-5" aria-hidden />
+                </span>
+              ) : isCurrent ? (
+                <span className="glow-cyan flex size-8 items-center justify-center rounded-full border border-neon-cyan bg-neon-cyan/10 text-neon-cyan">
+                  <span className="relative flex size-2.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-neon-cyan opacity-75 motion-reduce:hidden" />
+                    <span className="relative inline-flex size-2.5 rounded-full bg-neon-cyan" />
+                  </span>
+                </span>
+              ) : (
+                <span className="flex size-8 items-center justify-center rounded-full border border-border bg-dark-tertiary text-xs font-semibold text-text-tertiary">
+                  {index + 1}
+                </span>
+              )}
             </div>
 
-            <span
-              className={cn(
-                "text-xs leading-tight font-medium",
-                isCurrent && "text-gold",
-                isCompleted && "text-success",
-                isFuture && "text-text-tertiary"
+            <div className="flex min-w-0 flex-col justify-center pt-1.5">
+              <span
+                className={cn(
+                  "text-sm font-medium leading-tight",
+                  isCurrent && "text-neon-cyan",
+                  isCompleted && "text-text-primary",
+                  isFuture && "text-text-tertiary"
+                )}
+              >
+                {label}
+              </span>
+              {isCurrent && (
+                <span className="text-xs text-text-tertiary">En progreso</span>
               )}
-            >
-              {label}
-            </span>
+            </div>
           </li>
         )
       })}

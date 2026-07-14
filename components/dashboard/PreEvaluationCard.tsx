@@ -14,7 +14,7 @@ function PreEvaluationCard({ minUf, maxUf }: PreEvaluationCardProps) {
   const hasRange = typeof minUf === "number" && typeof maxUf === "number"
 
   return (
-    <Card>
+    <Card className="glass-surface border-glass-border">
       <CardHeader>
         <CardTitle>Pre-evaluación</CardTitle>
       </CardHeader>

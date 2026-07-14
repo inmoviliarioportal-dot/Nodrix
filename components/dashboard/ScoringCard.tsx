@@ -15,7 +15,7 @@ function ScoringCard({ scoring }: ScoringCardProps) {
   const hasScoring = !!scoring && isScoringCategory(scoring.category)
 
   return (
-    <Card>
+    <Card className="glass-surface border-glass-border">
       <CardHeader>
         <CardTitle className="flex items-center justify-between gap-2">
           Scoring

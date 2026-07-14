@@ -5,17 +5,19 @@ import { toast } from "sonner"
 
 import { Layout } from "@/components/Layout"
 import { Timeline } from "@/components/Timeline"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScoringBadge, type ScoringCategory } from "@/components/ui/scoring-badge"
 import { Toaster } from "@/components/ui/sonner"
 
+import { AdvisorCard } from "@/components/dashboard/AdvisorCard"
 import { DocumentsCard } from "@/components/dashboard/DocumentsCard"
 import { DocumentUploadModal } from "@/components/dashboard/DocumentUploadModal"
 import { NextStepCard } from "@/components/dashboard/NextStepCard"
 import { PreEvaluationCard } from "@/components/dashboard/PreEvaluationCard"
 import { ScoringCard } from "@/components/dashboard/ScoringCard"
 import {
+  APPLICATION_STAGES,
   STAGE_LABELS,
+  STAGE_MARKETING_LABELS,
   type ApplicationRecord,
   type AuthUserResponse,
 } from "@/components/dashboard/types"
@@ -103,43 +105,58 @@ export default function DashboardPage() {
     <Layout>
       <Toaster />
       <div className="flex flex-col gap-6">
-        <Card className="border-gold/50">
-          <CardHeader>
-            <CardTitle className="flex flex-wrap items-center justify-between gap-2">
-              <span>Tu solicitud: {stageLabel}</span>
-              {scoring && isScoringCategory(scoring.category) && (
-                <ScoringBadge category={scoring.category} />
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading && <p className="text-sm text-text-tertiary">Cargando tu solicitud...</p>}
-            {error && <p className="text-sm text-status-error">{error}</p>}
-            {!loading && !error && !application && (
-              <p className="text-sm text-text-tertiary">
-                Aún no tienes una solicitud registrada.
-              </p>
+        <div className="glass-card rounded-2xl p-6">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium uppercase tracking-wide text-text-tertiary">
+                Estado de mi proceso
+              </span>
+              <span className="text-2xl font-semibold text-text-primary">
+                {stageLabel}
+              </span>
+            </div>
+            {scoring && isScoringCategory(scoring.category) && (
+              <ScoringBadge category={scoring.category} />
             )}
-          </CardContent>
-        </Card>
+          </div>
+          {loading && (
+            <p className="mt-4 text-sm text-text-tertiary">Cargando tu solicitud...</p>
+          )}
+          {error && <p className="mt-4 text-sm text-status-error">{error}</p>}
+          {!loading && !error && !application && (
+            <p className="mt-4 text-sm text-text-tertiary">
+              Aún no tienes una solicitud registrada.
+            </p>
+          )}
+        </div>
 
         {!loading && application && (
-          <Card>
-            <CardContent>
-              <Timeline currentStage={stage} />
-            </CardContent>
-          </Card>
-        )}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,360px)_1fr]">
+            <div className="glass-card rounded-2xl p-6">
+              <h2 className="mb-6 text-sm font-semibold uppercase tracking-wide text-text-tertiary">
+                Timeline de tu solicitud
+              </h2>
+              <Timeline
+                currentStage={stage}
+                stages={[...APPLICATION_STAGES]}
+                labels={STAGE_MARKETING_LABELS}
+              />
+            </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <ScoringCard scoring={scoring} />
-          <DocumentsCard documents={documents} onUploadClick={() => setUploadOpen(true)} />
-          <PreEvaluationCard
-            minUf={application?.pre_evaluation_min_uf}
-            maxUf={application?.pre_evaluation_max_uf}
-          />
-          <NextStepCard stage={stage} />
-        </div>
+            <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <ScoringCard scoring={scoring} />
+                <DocumentsCard documents={documents} onUploadClick={() => setUploadOpen(true)} />
+                <PreEvaluationCard
+                  minUf={application?.pre_evaluation_min_uf}
+                  maxUf={application?.pre_evaluation_max_uf}
+                />
+                <NextStepCard stage={stage} />
+              </div>
+              <AdvisorCard />
+            </div>
+          </div>
+        )}
       </div>
 
       {application && (

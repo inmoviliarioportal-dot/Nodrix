@@ -34,6 +34,24 @@ export const STAGE_LABELS: Record<string, string> = {
   CIERRE: "Cierre",
 };
 
+/**
+ * Labels de MARKETING (más cercanos/cálidos que STAGE_LABELS) para uso en la
+ * timeline del Command Center. NO reemplazan STAGE_LABELS — otros
+ * componentes/agentes pueden depender de ese mapa técnico. Este mapa es
+ * exclusivo de la capa de presentación del dashboard.
+ */
+export const STAGE_MARKETING_LABELS: Record<string, string> = {
+  RECEPCIONADA: "Revisión inicial",
+  SCORING_COMPLETADO: "Análisis de perfil",
+  DOCUMENTOS_PENDIENTES: "Documentación",
+  DOCUMENTOS_APROBADOS: "Documentos aprobados",
+  PRE_EVALUACION_COMPLETADA: "Aprobado previo",
+  VISITA_COMPLETADA: "Visita a propiedad",
+  ENVIADO_A_BANCO: "Financiamiento",
+  ESCRITURACION_AGENDADA: "Escrituración",
+  CIERRE: "Cierre",
+};
+
 export const DOCUMENT_STATUSES = [
   "pendiente",
   "en_revision",
