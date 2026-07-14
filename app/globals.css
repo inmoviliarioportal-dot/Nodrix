@@ -65,6 +65,27 @@
   --color-plata: var(--plata);
   --color-oro: var(--oro);
   --color-platino: var(--platino);
+
+  /*
+   * Sistema Neón / Glassmorphism (rediseño v2 — ver .claude/design-system/tokens.md)
+   * Fintech / real-estate algorithmic-trust: fondo casi negro (nunca #000 puro,
+   * evita OLED smear), superficies de vidrio translúcido, acentos neón
+   * cian/púrpura/verde reservados a CTAs, datos clave y estados de proceso.
+   * Calibrados para pasar contraste WCAG AA sobre el fondo profundo (no son
+   * los neón saturados #00FFFF/#FF00FF — esos fallan accesibilidad y leen
+   * "gamer", no "profesional").
+   */
+  --color-deep: var(--deep);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-glass: var(--glass);
+  --color-glass-border: var(--glass-border);
+  --color-neon-cyan: var(--neon-cyan);
+  --color-neon-purple: var(--neon-purple);
+  --color-neon-green: var(--neon-green);
+  --color-neon-cyan-glow: var(--neon-cyan-glow);
+  --color-neon-purple-glow: var(--neon-purple-glow);
+  --color-neon-green-glow: var(--neon-green-glow);
 }
 
 /*
@@ -93,6 +114,19 @@
   --plata: #c0c0c0;
   --oro: #d4af37;
   --platino: #e5e4e2;
+
+  /* Sistema Neón / Glassmorphism */
+  --deep: #05060a;
+  --surface: #0b0e16;
+  --surface-elevated: #10141f;
+  --glass: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --neon-cyan: #22d3ee;
+  --neon-purple: #a78bfa;
+  --neon-green: #34d399;
+  --neon-cyan-glow: rgba(34, 211, 238, 0.35);
+  --neon-purple-glow: rgba(167, 139, 250, 0.35);
+  --neon-green-glow: rgba(52, 211, 153, 0.35);
 
   --background: var(--dark-primary);
   --foreground: var(--text-primary);
@@ -171,5 +205,56 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+/*
+ * Utilidades Glassmorphism / Neón — rediseño v2.
+ * Referencia de uso en .claude/design-system/tokens.md. Reutilizar estas
+ * clases en vez de reinventar blur/glow por componente, para mantener
+ * consistencia visual entre Landing, Wizard, Proposal, Vault y Dashboard.
+ */
+@layer utilities {
+  .glass-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .glass-surface {
+    background: var(--surface);
+    border: 1px solid var(--glass-border);
+  }
+
+  /* Fondo base con leve gradiente radial ambiental (nunca #000 puro). */
+  .bg-deep-ambient {
+    background: radial-gradient(
+        ellipse 80% 50% at 50% -20%,
+        rgba(167, 139, 250, 0.08),
+        transparent
+      ),
+      radial-gradient(ellipse 60% 40% at 90% 100%, rgba(34, 211, 238, 0.06), transparent),
+      var(--deep);
+  }
+
+  .glow-cyan {
+    box-shadow: 0 0 24px 0 var(--neon-cyan-glow);
+  }
+  .glow-purple {
+    box-shadow: 0 0 24px 0 var(--neon-purple-glow);
+  }
+  .glow-green {
+    box-shadow: 0 0 24px 0 var(--neon-green-glow);
+  }
+
+  .text-glow-cyan {
+    text-shadow: 0 0 16px var(--neon-cyan-glow);
+  }
+  .text-glow-purple {
+    text-shadow: 0 0 16px var(--neon-purple-glow);
+  }
+  .text-glow-green {
+    text-shadow: 0 0 16px var(--neon-green-glow);
   }
 }
