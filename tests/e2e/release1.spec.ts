@@ -58,7 +58,16 @@ test.describe("Release 1 — Flujo completo", () => {
     email: uniqueEmail("cliente"),
     password: "Passw0rd!2026",
     name: "Cliente E2E Test",
+    firstName: "Cliente",
+    lastName: "E2E Test",
+    rut: `${String(Date.now()).slice(-8)}-${Math.floor(Math.random() * 10)}`,
+    gender: "otro",
+    birthDate: "1990-01-15",
+    age: "36",
     phone: "+56911112222",
+    monthlyIncome: "1200000",
+    investmentType: "inversion",
+    propertyStatus: "sin_definir",
   };
 
   let applicationId: string | undefined;
@@ -78,15 +87,27 @@ test.describe("Release 1 — Flujo completo", () => {
     });
 
     // Llenar formulario (selectores por label/placeholder, tolerante a variaciones)
-    const nameInput = page.locator('input[name="name"], input[id="name"]').first();
-    const emailInput = page.locator('input[name="email"], input[type="email"]').first();
-    const phoneInput = page.locator('input[name="phone"], input[type="tel"]').first();
-    const passwordInput = page.locator('input[name="password"], input[type="password"]').first();
-
-    await nameInput.fill(user.name);
-    await emailInput.fill(user.email);
-    await phoneInput.fill(user.phone);
-    await passwordInput.fill(user.password);
+    await page.locator('input[name="firstName"], input[id="firstName"]').first().fill(user.firstName);
+    await page.locator('input[name="lastName"], input[id="lastName"]').first().fill(user.lastName);
+    await page.locator('input[name="rut"], input[id="rut"]').first().fill(user.rut);
+    await page.locator('select[name="gender"], select[id="gender"]').first().selectOption(user.gender);
+    await page.locator('input[name="birthDate"], input[id="birthDate"]').first().fill(user.birthDate);
+    await page.locator('input[name="age"], input[id="age"]').first().fill(user.age);
+    await page.locator('input[name="phone"], input[type="tel"]').first().fill(user.phone);
+    await page.locator('input[name="email"], input[type="email"]').first().fill(user.email);
+    await page
+      .locator('input[name="monthlyIncome"], input[id="monthlyIncome"]')
+      .first()
+      .fill(user.monthlyIncome);
+    await page
+      .locator('select[name="investmentType"], select[id="investmentType"]')
+      .first()
+      .selectOption(user.investmentType);
+    await page
+      .locator('select[name="propertyStatus"], select[id="propertyStatus"]')
+      .first()
+      .selectOption(user.propertyStatus);
+    await page.locator('input[name="password"], input[type="password"]').first().fill(user.password);
 
     await page.getByRole("button", { name: "Registrarse" }).click();
 

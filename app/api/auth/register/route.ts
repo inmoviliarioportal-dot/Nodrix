@@ -1,46 +1,125 @@
-import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import {
   createSupabaseServerClient,
   createSupabaseServiceRoleClient,
 } from "@/lib/supabase";
 import { apiError, withErrorHandling, HTTP_STATUS } from "@/app/api/_shared";
+import { hashRutOrEmail } from "@/lib/leads";
 import { MVP_ORG_ID } from "../_constants";
 
 type RegisterBody = {
   email?: string;
   password?: string;
-  name?: string;
+  firstName?: string;
+  lastName?: string;
+  rut?: string;
+  gender?: string;
+  birthDate?: string;
+  age?: number;
   phone?: string;
+  monthlyIncome?: number;
+  investmentType?: string;
+  propertyStatus?: string;
 };
+
+const VALID_GENDERS = ["femenino", "masculino", "otro", "prefiero_no_decir"];
+const VALID_INVESTMENT_TYPES = ["inversion", "vivienda_propia"];
+const VALID_PROPERTY_STATUSES = ["en_verde", "en_blanco", "usado", "sin_definir"];
+
+const REQUIRED_FIELDS: (keyof RegisterBody)[] = [
+  "email",
+  "password",
+  "firstName",
+  "lastName",
+  "rut",
+  "gender",
+  "birthDate",
+  "age",
+  "phone",
+  "monthlyIncome",
+  "investmentType",
+  "propertyStatus",
+];
 
 /**
  * POST /api/auth/register
- * Body: { email, password, name, phone }
+ *
+ * Perfil completo del cliente recolectado al registrarse (antes solo se
+ * pedía nombre/email/teléfono) — ver `database/migrations/004_customer_profile_fields.sql`.
+ *
+ * Body: { email, password, firstName, lastName, rut, gender, birthDate, age,
+ *         phone, monthlyIncome, investmentType, propertyStatus }
  *
  * Creates the Supabase Auth user, then creates the matching `customers` row
  * (org_id fixed for the MVP) using the service role client — writes from a
  * Route Handler should bypass RLS explicitly rather than rely on it being
  * disabled.
  *
- * `customers.rut_hash` is NOT NULL in the schema, but RUT is not collected
- * at registration time (out of scope for this endpoint). We store a
- * deterministic placeholder (`pending:sha256(email)`) so the row satisfies
- * the constraint and stays unique per email; the leads/applications flow
- * is expected to overwrite it once the real RUT is captured.
+ * `customers.rut_hash`/`rut_ciphertext`: el RUT se hashea (sha256, ver
+ * `hashRutOrEmail`) para la columna de unicidad; `rut_ciphertext` guarda el
+ * valor tal cual (sin cifrado real todavía — misma simplificación de MVP ya
+ * documentada en `lib/leads.ts`, cifrado real es un futuro trabajo de
+ * Identity, no de este endpoint).
  */
 export const POST = withErrorHandling(async (request: Request) => {
   const body = (await request.json().catch(() => null)) as RegisterBody | null;
 
-  if (!body?.email || !body?.password || !body?.name) {
+  if (!body) {
+    return apiError("Invalid JSON body", HTTP_STATUS.BAD_REQUEST, "INVALID_BODY");
+  }
+
+  const missing = REQUIRED_FIELDS.filter((field) => {
+    const value = body[field];
+    return value === undefined || value === null || value === "";
+  });
+  if (missing.length > 0) {
     return apiError(
-      "email, password y name son requeridos",
+      `Campos requeridos faltantes: ${missing.join(", ")}`,
       HTTP_STATUS.BAD_REQUEST,
       "INVALID_BODY"
     );
   }
 
-  const { email, password, name, phone } = body;
+  const {
+    email,
+    password,
+    firstName,
+    lastName,
+    rut,
+    gender,
+    birthDate,
+    age,
+    phone,
+    monthlyIncome,
+    investmentType,
+    propertyStatus,
+  } = body as Required<RegisterBody>;
+
+  if (!VALID_GENDERS.includes(gender)) {
+    return apiError(`gender inválido. Valores permitidos: ${VALID_GENDERS.join(", ")}`, HTTP_STATUS.BAD_REQUEST, "INVALID_GENDER");
+  }
+  if (!VALID_INVESTMENT_TYPES.includes(investmentType)) {
+    return apiError(
+      `investmentType inválido. Valores permitidos: ${VALID_INVESTMENT_TYPES.join(", ")}`,
+      HTTP_STATUS.BAD_REQUEST,
+      "INVALID_INVESTMENT_TYPE"
+    );
+  }
+  if (!VALID_PROPERTY_STATUSES.includes(propertyStatus)) {
+    return apiError(
+      `propertyStatus inválido. Valores permitidos: ${VALID_PROPERTY_STATUSES.join(", ")}`,
+      HTTP_STATUS.BAD_REQUEST,
+      "INVALID_PROPERTY_STATUS"
+    );
+  }
+  if (typeof age !== "number" || age < 18 || age > 120) {
+    return apiError("age debe ser un número entre 18 y 120", HTTP_STATUS.BAD_REQUEST, "INVALID_AGE");
+  }
+  if (typeof monthlyIncome !== "number" || monthlyIncome < 0) {
+    return apiError("monthlyIncome debe ser un número >= 0", HTTP_STATUS.BAD_REQUEST, "INVALID_MONTHLY_INCOME");
+  }
+
+  const name = `${firstName} ${lastName}`.trim();
 
   const supabase = await createSupabaseServerClient();
   const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
@@ -63,7 +142,7 @@ export const POST = withErrorHandling(async (request: Request) => {
     );
   }
 
-  const placeholderRutHash = `pending:${createHash("sha256").update(email).digest("hex")}`;
+  const rutHash = hashRutOrEmail(rut);
 
   const serviceRoleClient = createSupabaseServiceRoleClient() as any;
 
@@ -90,10 +169,19 @@ export const POST = withErrorHandling(async (request: Request) => {
     .from("customers")
     .insert({
       org_id: MVP_ORG_ID,
-      rut_hash: placeholderRutHash,
+      rut_hash: rutHash,
+      rut_ciphertext: rut,
       name,
+      first_name: firstName,
+      last_name: lastName,
       email,
-      phone: phone ?? null,
+      phone,
+      gender,
+      birth_date: birthDate,
+      age,
+      monthly_income: monthlyIncome,
+      investment_type: investmentType,
+      property_status: propertyStatus,
     })
     .select()
     .single();
