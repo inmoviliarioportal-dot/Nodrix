@@ -37,17 +37,22 @@ export const GET = withErrorHandling(async (_request: Request, context: { params
 
   const applicationRow = application as { customer_id: string };
 
-  const [{ data: customer }, { data: history }] = await Promise.all([
+  const [{ data: customer }, { data: history }, { data: documents }] = await Promise.all([
     supabase.from("customers").select("*").eq("id", applicationRow.customer_id).maybeSingle(),
     supabase
       .from("application_stage_history")
       .select("*")
       .eq("application_id", id)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("documents")
+      .select("*")
+      .eq("application_id", id)
+      .order("created_at", { ascending: false }),
   ]);
 
   return NextResponse.json({
-    application,
+    application: { ...application, documents: documents ?? [] },
     customer: customer ?? null,
     stageHistory: history ?? [],
   });

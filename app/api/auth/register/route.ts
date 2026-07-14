@@ -66,6 +66,26 @@ export const POST = withErrorHandling(async (request: Request) => {
   const placeholderRutHash = `pending:${createHash("sha256").update(email).digest("hex")}`;
 
   const serviceRoleClient = createSupabaseServiceRoleClient() as any;
+
+  // `application_stage_history.actor_user_id` and other audit trails FK to
+  // `public.users(id)`, which must mirror `auth.users.id` 1:1 (see schema.sql).
+  // Without this insert, any later action attributed to this user (e.g. a
+  // stage transition) fails with a foreign key violation.
+  const { error: userError } = await serviceRoleClient.from("users").insert({
+    id: signUpData.user.id,
+    org_id: MVP_ORG_ID,
+    email,
+    full_name: name,
+  });
+
+  if (userError) {
+    return apiError(
+      userError.message,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      "USER_CREATE_FAILED"
+    );
+  }
+
   const { data: customer, error: customerError } = await serviceRoleClient
     .from("customers")
     .insert({
