@@ -1,7 +1,9 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { toast } from "sonner"
+import { ArrowRight } from "lucide-react"
 
 import { Layout } from "@/components/Layout"
 import { Timeline } from "@/components/Timeline"
@@ -130,13 +132,49 @@ export default function DashboardPage() {
           {loading && (
             <p className="mt-4 text-sm text-text-tertiary">Cargando tu solicitud...</p>
           )}
-          {error && <p className="mt-4 text-sm text-status-error">{error}</p>}
-          {!loading && !error && !application && (
-            <p className="mt-4 text-sm text-text-tertiary">
-              Aún no tienes una solicitud registrada.
-            </p>
-          )}
+          {error && <p className="mt-4 text-sm text-error">{error}</p>}
         </div>
+
+        {!loading && !application && (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,360px)_1fr]">
+            <div className="glass-card rounded-2xl p-6">
+              <h2 className="mb-6 text-sm font-semibold uppercase tracking-wide text-text-tertiary">
+                Tu recorrido
+              </h2>
+              <Timeline
+                orientation="vertical"
+                currentStage=""
+                stages={[...APPLICATION_STAGES]}
+                labels={STAGE_MARKETING_LABELS}
+              />
+            </div>
+
+            <div className="flex flex-col gap-4">
+              <StageAlert
+                tone="info"
+                message="Aún no has comenzado tu evaluación. Completa el formulario de perfilamiento para ver tu solicitud avanzar por estas etapas."
+              />
+
+              <div className="glass-card glow-cyan flex flex-col items-start gap-3 rounded-2xl border border-neon-cyan/40 p-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-1">
+                  <p className="text-sm font-semibold text-text-primary">Comienza tu evaluación</p>
+                  <p className="text-xs text-text-secondary">
+                    Responde algunas preguntas y descubre tu categoría de inversión al instante.
+                  </p>
+                </div>
+                <Button
+                  className="glow-cyan gap-2 bg-neon-cyan text-deep hover:bg-neon-cyan/90"
+                  render={<Link href="/onboarding/wizard" />}
+                >
+                  Empezar ahora
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </Button>
+              </div>
+
+              <HookVideo title={STAGE_CLIENT_CONTENT.RECEPCIONADA.videoTitle} />
+            </div>
+          </div>
+        )}
 
         {!loading && application && (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,360px)_1fr]">

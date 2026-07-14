@@ -1,7 +1,7 @@
 import Link from "next/link"
 
 import { cn } from "@/lib/utils"
-import { LogoutButton } from "@/components/LogoutButton"
+import { AccountMenu } from "@/components/AccountMenu"
 
 export interface LayoutNavLink {
   href: string
@@ -51,7 +51,7 @@ function Layout({
                 {link.label}
               </Link>
             ))}
-            <LogoutButton />
+            <AccountMenu />
           </nav>
         </div>
       </header>
