@@ -1,12 +1,12 @@
 import Link from "next/link"
 import { FileBarChart2Icon } from "lucide-react"
 
-import { Layout } from "@/components/Layout"
 import { KpiCards } from "@/components/admin/KpiCards"
 import { ConversionFunnel } from "@/components/admin/ConversionFunnel"
 import { ScoringDistribution } from "@/components/admin/ScoringDistribution"
 import { ConversionTimeline } from "@/components/admin/ConversionTimeline"
 import { TopLeadsTable } from "@/components/admin/TopLeadsTable"
+import { ApplicationsSummary } from "@/components/admin/ApplicationsSummary"
 
 export const metadata = {
   title: "Dashboard Ejecutivo — Nodrix",
@@ -19,7 +19,7 @@ export const metadata = {
  */
 export default function AdminDashboardPage() {
   return (
-    <Layout navLinks={[{ href: "/admin/dashboard", label: "KPIs" }, { href: "/admin/reports", label: "Reportes" }]}>
+    <>
       <div className="bg-deep-ambient -mx-6 -my-8 min-h-[calc(100vh-4rem)] px-6 py-8">
         <div className="mx-auto flex max-w-6xl flex-col gap-6">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
@@ -40,6 +40,8 @@ export default function AdminDashboardPage() {
             </Link>
           </div>
 
+          <ApplicationsSummary />
+
           <KpiCards />
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -54,6 +56,6 @@ export default function AdminDashboardPage() {
           <TopLeadsTable />
         </div>
       </div>
-    </Layout>
+    </>
   )
 }

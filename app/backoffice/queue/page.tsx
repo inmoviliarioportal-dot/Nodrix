@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
+import { useSearchParams } from "next/navigation"
 
 import { FilterBar } from "@/components/backoffice/FilterBar"
 import { LeadCard } from "@/components/backoffice/LeadCard"
@@ -36,6 +37,7 @@ function loadStoredFilters(): QueueFilters {
 
 /** Bandeja del asesor: cola de leads con filtros persistentes, búsqueda y paginación. */
 export default function BackofficeQueuePage() {
+  const searchParams = useSearchParams()
   const [filters, setFilters] = useState<QueueFilters>(EMPTY_FILTERS)
   const [hydrated, setHydrated] = useState(false)
   const [applications, setApplications] = useState<ApplicationRow[]>([])
@@ -44,10 +46,24 @@ export default function BackofficeQueuePage() {
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
 
-  // Hidrata filtros desde localStorage una sola vez en el cliente.
+  // Hidrata filtros: si llegan por query string (drilldown desde el panel
+  // admin, ej. /backoffice/queue?stage=X o ?category=Y), esos tienen
+  // prioridad sobre lo guardado en localStorage.
   useEffect(() => {
-    setFilters(loadStoredFilters())
+    const stageParam = searchParams.get("stage")
+    const categoryParam = searchParams.get("category")
+
+    if (stageParam || categoryParam) {
+      setFilters({
+        ...EMPTY_FILTERS,
+        stages: stageParam ? [stageParam as never] : [],
+        categories: categoryParam ? [categoryParam as never] : [],
+      })
+    } else {
+      setFilters(loadStoredFilters())
+    }
     setHydrated(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Persiste filtros en localStorage en cada cambio (post-hidratación).
