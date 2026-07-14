@@ -131,30 +131,29 @@ export default function DashboardPage() {
         </div>
 
         {!loading && application && (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,360px)_1fr]">
+          <div className="flex flex-col gap-4">
             <div className="glass-card rounded-2xl p-6">
               <h2 className="mb-6 text-sm font-semibold uppercase tracking-wide text-text-tertiary">
                 Timeline de tu solicitud
               </h2>
               <Timeline
+                orientation="horizontal"
                 currentStage={stage}
                 stages={[...APPLICATION_STAGES]}
                 labels={STAGE_MARKETING_LABELS}
               />
             </div>
 
-            <div className="flex flex-col gap-4">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <ScoringCard scoring={scoring} />
-                <DocumentsCard documents={documents} onUploadClick={() => setUploadOpen(true)} />
-                <PreEvaluationCard
-                  minUf={application?.pre_evaluation_min_uf}
-                  maxUf={application?.pre_evaluation_max_uf}
-                />
-                <NextStepCard stage={stage} />
-              </div>
-              <AdvisorCard />
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <ScoringCard scoring={scoring} />
+              <DocumentsCard documents={documents} onUploadClick={() => setUploadOpen(true)} />
+              <PreEvaluationCard
+                minUf={application?.pre_evaluation_min_uf}
+                maxUf={application?.pre_evaluation_max_uf}
+              />
+              <NextStepCard stage={stage} />
             </div>
+            <AdvisorCard />
           </div>
         )}
       </div>
