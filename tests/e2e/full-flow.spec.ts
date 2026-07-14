@@ -35,13 +35,28 @@ function uniqueEmail(prefix: string) {
   return `${prefix}.${Date.now()}.${Math.floor(Math.random() * 10000)}@e2e-test.local`;
 }
 
-/** RUT con formato válido (regex `^\d{7,8}-[0-9kK]$`) pero único por corrida,
- * para no chocar con la restricción UNIQUE (org_id, rut_hash) de `customers`
- * entre ejecuciones repetidas de la suite. No valida dígito verificador real
- * (la validación de la API tampoco lo hace, solo formato). */
+/** Calcula el dígito verificador real (módulo 11) — mismo algoritmo que
+ * lib/rut.ts, duplicado aquí porque los tests no importan código de la app. */
+function computeRutCheckDigit(body: string): string {
+  let sum = 0;
+  let multiplier = 2;
+  for (let i = body.length - 1; i >= 0; i--) {
+    sum += Number(body[i]) * multiplier;
+    multiplier = multiplier === 7 ? 2 : multiplier + 1;
+  }
+  const remainder = 11 - (sum % 11);
+  if (remainder === 11) return "0";
+  if (remainder === 10) return "K";
+  return String(remainder);
+}
+
+/** RUT con dígito verificador real y único por corrida, para no chocar con
+ * la restricción UNIQUE (org_id, rut_hash) de `customers` entre ejecuciones
+ * repetidas de la suite (POST /api/auth/register ahora valida el dígito
+ * verificador real — ver lib/rut.ts). */
 function uniqueRut() {
   const digits = String(Date.now()).slice(-8);
-  return `${digits}-${Math.floor(Math.random() * 10)}`;
+  return `${digits}-${computeRutCheckDigit(digits)}`;
 }
 
 test.describe("Release 3 — Full flow: lead -> cierre", () => {

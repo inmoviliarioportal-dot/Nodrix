@@ -5,6 +5,7 @@ import {
 } from "@/lib/supabase";
 import { apiError, withErrorHandling, HTTP_STATUS } from "@/app/api/_shared";
 import { hashRutOrEmail } from "@/lib/leads";
+import { isValidRut } from "@/lib/rut";
 import { MVP_ORG_ID } from "../_constants";
 
 type RegisterBody = {
@@ -117,6 +118,9 @@ export const POST = withErrorHandling(async (request: Request) => {
   }
   if (typeof monthlyIncome !== "number" || monthlyIncome < 0) {
     return apiError("monthlyIncome debe ser un número >= 0", HTTP_STATUS.BAD_REQUEST, "INVALID_MONTHLY_INCOME");
+  }
+  if (!isValidRut(rut)) {
+    return apiError("RUT inválido (verifica el dígito verificador)", HTTP_STATUS.BAD_REQUEST, "INVALID_RUT");
   }
 
   const name = `${firstName} ${lastName}`.trim();

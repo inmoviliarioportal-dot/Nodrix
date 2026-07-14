@@ -34,6 +34,27 @@ function uniqueEmail(prefix: string) {
   return `${prefix}.${Date.now()}.${Math.floor(Math.random() * 10000)}@e2e-test.local`;
 }
 
+/** Dígito verificador real (módulo 11) — POST /api/auth/register ahora lo
+ * valida de verdad (ver lib/rut.ts), duplicado aquí porque los tests no
+ * importan código de la app. */
+function computeRutCheckDigit(body: string): string {
+  let sum = 0;
+  let multiplier = 2;
+  for (let i = body.length - 1; i >= 0; i--) {
+    sum += Number(body[i]) * multiplier;
+    multiplier = multiplier === 7 ? 2 : multiplier + 1;
+  }
+  const remainder = 11 - (sum % 11);
+  if (remainder === 11) return "0";
+  if (remainder === 10) return "K";
+  return String(remainder);
+}
+
+function uniqueRut() {
+  const digits = String(Date.now()).slice(-8);
+  return `${digits}-${computeRutCheckDigit(digits)}`;
+}
+
 test.describe("Release 1 — Flujo completo", () => {
   test.describe.configure({ mode: "serial" });
 
@@ -60,7 +81,7 @@ test.describe("Release 1 — Flujo completo", () => {
     name: "Cliente E2E Test",
     firstName: "Cliente",
     lastName: "E2E Test",
-    rut: `${String(Date.now()).slice(-8)}-${Math.floor(Math.random() * 10)}`,
+    rut: uniqueRut(),
     gender: "otro",
     birthDate: "1990-01-15",
     age: "36",
@@ -111,8 +132,9 @@ test.describe("Release 1 — Flujo completo", () => {
 
     await page.getByRole("button", { name: "Registrarse" }).click();
 
-    // Esperado: redirige a /dashboard
-    await expect(page).toHaveURL(/\/dashboard/, { timeout: 15_000 });
+    // Esperado: onboarding forzado -> redirige a /onboarding/wizard (no a
+    // /dashboard, que quedaría vacío hasta tener una application).
+    await expect(page).toHaveURL(/\/onboarding\/wizard/, { timeout: 15_000 });
 
     // 1b. Verificar sesión activa vía GET /api/auth/user (contrato identity.md)
     const meRes = await page.request.get("/api/auth/user");
@@ -121,7 +143,9 @@ test.describe("Release 1 — Flujo completo", () => {
       `GET /api/auth/user debería responder 200 tras registro/login exitoso (recibido ${meRes.status()})`
     ).toBeTruthy();
 
-    // 1c. Dashboard debe mostrar la solicitud en estado inicial (RECEPCIONADA, ver schema.sql)
+    // 1c. Dashboard debe mostrar el estado inicial (RECEPCIONADA, ver schema.sql)
+    // incluso sin application todavía (estado vacío con preview del recorrido).
+    await page.goto("/dashboard");
     await expect(page.getByText(/RECEPCIONADA|Recepcionada/i)).toBeVisible({ timeout: 10_000 });
   });
 

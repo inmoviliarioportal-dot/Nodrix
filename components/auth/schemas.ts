@@ -1,12 +1,11 @@
 import { z } from "zod"
 
+import { isValidRut } from "@/lib/rut"
+
 /**
  * Esquemas de validación compartidos por register/login.
  * Mensajes en español (Chile) para mostrar directamente en la UI.
  */
-
-/** Validación básica de formato de RUT chileno (sin puntos, con guión: 12345678-9). */
-const RUT_REGEX = /^\d{7,8}-[0-9kK]$/
 
 export const GENDER_OPTIONS = [
   { value: "femenino", label: "Femenino" },
@@ -34,7 +33,7 @@ export const registerSchema = z.object({
     .string()
     .trim()
     .toUpperCase()
-    .regex(RUT_REGEX, "Ingresa un RUT válido (ej. 12345678-9, sin puntos)"),
+    .refine((value) => isValidRut(value), "RUT inválido (verifica el dígito verificador)"),
   gender: z.enum(["femenino", "masculino", "otro", "prefiero_no_decir"], {
     message: "Selecciona una opción",
   }),
