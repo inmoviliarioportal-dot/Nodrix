@@ -74,13 +74,14 @@ export default function LoginPage() {
   }
 
   return (
-    <Layout>
+    <Layout className="bg-deep-ambient">
       <Toaster />
       <AuthCard title="Iniciar sesión" description="Ingresa tus credenciales para continuar">
         <form className="flex flex-col gap-5" onSubmit={handleSubmit} noValidate>
           <Field data-invalid={!!errors.email}>
             <FieldLabel htmlFor="email">Correo electrónico</FieldLabel>
             <Input
+              className="bg-surface-elevated border-glass-border focus-visible:border-neon-cyan focus-visible:ring-neon-cyan/30"
               id="email"
               name="email"
               type="email"
@@ -98,12 +99,13 @@ export default function LoginPage() {
               <FieldLabel htmlFor="password">Contraseña</FieldLabel>
               <Link
                 href="#"
-                className="text-xs text-text-tertiary transition-colors duration-200 hover:text-gold"
+                className="text-xs text-text-tertiary transition-colors duration-200 hover:text-neon-cyan"
               >
                 ¿Olvidaste tu contraseña?
               </Link>
             </div>
             <Input
+              className="bg-surface-elevated border-glass-border focus-visible:border-neon-cyan focus-visible:ring-neon-cyan/30"
               id="password"
               name="password"
               type="password"
@@ -119,7 +121,7 @@ export default function LoginPage() {
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-gold text-dark-primary hover:bg-gold/90"
+            className="glow-cyan w-full bg-neon-cyan text-deep hover:bg-neon-cyan/90"
           >
             {isSubmitting ? "Ingresando..." : "Entrar"}
           </Button>
@@ -129,7 +131,7 @@ export default function LoginPage() {
           ¿No tienes cuenta?{" "}
           <Link
             href="/auth/register"
-            className="font-medium text-gold transition-colors duration-200 hover:underline"
+            className="font-medium text-neon-cyan transition-colors duration-200 hover:underline"
           >
             Regístrate
           </Link>

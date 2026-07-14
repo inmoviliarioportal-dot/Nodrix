@@ -1,13 +1,5 @@
 import type { ReactNode } from "react"
 
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card"
-
 interface AuthCardProps {
   title: string
   description?: string
@@ -16,18 +8,21 @@ interface AuthCardProps {
 
 /**
  * Card contenedora compartida por las páginas de registro y login.
- * Centra el formulario en la pantalla con el tema dark premium.
+ * Glassmorphism sobre fondo ambiental (rediseño v2 — ver
+ * .claude/design-system/tokens.md). Centra el formulario en la pantalla.
  */
 function AuthCard({ title, description, children }: AuthCardProps) {
   return (
     <div className="flex min-h-[calc(100vh-8rem)] w-full items-center justify-center py-8">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-xl">{title}</CardTitle>
-          {description && <CardDescription>{description}</CardDescription>}
-        </CardHeader>
-        <CardContent className="flex flex-col gap-5">{children}</CardContent>
-      </Card>
+      <div className="glass-card w-full max-w-md rounded-2xl p-6 sm:p-8">
+        <div className="flex flex-col gap-1 pb-5">
+          <h2 className="text-xl font-semibold text-text-primary">{title}</h2>
+          {description && (
+            <p className="text-sm text-text-secondary">{description}</p>
+          )}
+        </div>
+        <div className="flex flex-col gap-5">{children}</div>
+      </div>
     </div>
   )
 }

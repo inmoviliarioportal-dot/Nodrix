@@ -76,7 +76,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <Layout>
+    <Layout className="bg-deep-ambient">
       <Toaster />
       <div className="flex flex-col gap-2 pt-4 text-center">
         <h1 className="text-2xl font-semibold text-text-primary sm:text-3xl">
@@ -96,6 +96,7 @@ export default function RegisterPage() {
           <Field data-invalid={!!errors.name}>
             <FieldLabel htmlFor="name">Nombre completo</FieldLabel>
             <Input
+              className="bg-surface-elevated border-glass-border focus-visible:border-neon-cyan focus-visible:ring-neon-cyan/30"
               id="name"
               name="name"
               placeholder="Juan Pérez"
@@ -110,6 +111,7 @@ export default function RegisterPage() {
           <Field data-invalid={!!errors.email}>
             <FieldLabel htmlFor="email">Correo electrónico</FieldLabel>
             <Input
+              className="bg-surface-elevated border-glass-border focus-visible:border-neon-cyan focus-visible:ring-neon-cyan/30"
               id="email"
               name="email"
               type="email"
@@ -125,6 +127,7 @@ export default function RegisterPage() {
           <Field data-invalid={!!errors.phone}>
             <FieldLabel htmlFor="phone">Teléfono</FieldLabel>
             <Input
+              className="bg-surface-elevated border-glass-border focus-visible:border-neon-cyan focus-visible:ring-neon-cyan/30"
               id="phone"
               name="phone"
               type="tel"
@@ -140,6 +143,7 @@ export default function RegisterPage() {
           <Field data-invalid={!!errors.password}>
             <FieldLabel htmlFor="password">Contraseña</FieldLabel>
             <Input
+              className="bg-surface-elevated border-glass-border focus-visible:border-neon-cyan focus-visible:ring-neon-cyan/30"
               id="password"
               name="password"
               type="password"
@@ -155,7 +159,7 @@ export default function RegisterPage() {
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-gold text-dark-primary hover:bg-gold/90"
+            className="glow-cyan w-full bg-neon-cyan text-deep hover:bg-neon-cyan/90"
           >
             {isSubmitting ? "Creando cuenta..." : "Registrarse"}
           </Button>
@@ -165,7 +169,7 @@ export default function RegisterPage() {
           ¿Ya tienes cuenta?{" "}
           <Link
             href="/auth/login"
-            className="font-medium text-gold transition-colors duration-200 hover:underline"
+            className="font-medium text-neon-cyan transition-colors duration-200 hover:underline"
           >
             Inicia sesión
           </Link>
