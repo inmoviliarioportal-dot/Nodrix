@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldLabel, FieldError } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Toaster } from "@/components/ui/sonner"
+import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter"
 
 type FormState = Record<keyof RegisterFormData, string>
 type FormErrors = Partial<Record<keyof RegisterFormData, string>>
@@ -84,7 +85,12 @@ export default function RegisterPage() {
       }
 
       toast.success("Cuenta creada correctamente")
-      router.push("/dashboard")
+      // Onboarding forzado: llevamos directo al wizard de perfilamiento en
+      // vez de /dashboard (que quedaría vacío hasta que exista una
+      // application) — reduce fricción/abandono justo después de
+      // registrarse. El wizard precarga nombre/email/teléfono desde la
+      // cuenta recién creada (ver app/onboarding/wizard/page.tsx).
+      router.push("/onboarding/wizard")
     } catch {
       toast.error("Error de conexión. Intenta nuevamente.")
     } finally {
@@ -324,6 +330,7 @@ export default function RegisterPage() {
               aria-invalid={!!errors.password}
               onChange={(e) => handleChange("password", e.target.value)}
             />
+            <PasswordStrengthMeter password={form.password} />
             <FieldError>{errors.password}</FieldError>
           </Field>
 
