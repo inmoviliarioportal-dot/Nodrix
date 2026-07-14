@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { TrendingUp, Home, Briefcase, PiggyBank, Check, X } from "lucide-react";
+import { Briefcase, PiggyBank, Check, X } from "lucide-react";
 import { SelectableCard } from "@/components/wizard/SelectableCard";
 import { WizardProgress } from "@/components/wizard/WizardProgress";
 import {
@@ -12,7 +12,6 @@ import {
   saveWizardProgress,
   type WizardData,
   type WizardEmploymentType,
-  type WizardPurpose,
 } from "@/lib/wizard-storage";
 
 /** Clave sessionStorage usada para pasar el payload completo del lead a
@@ -20,15 +19,7 @@ import {
  * IMPORTANTE: Coincide con INPUT_KEY esperada por processing/page.tsx. */
 export const WIZARD_PAYLOAD_STORAGE_KEY = "wizard-progress";
 
-const TOTAL_STEPS = 4;
-
-const SALARY_TRAMOS: { label: string; description: string; value: number }[] = [
-  { label: "Menos de $500.000", description: "CLP mensuales", value: 400_000 },
-  { label: "$500.000 - $900.000", description: "CLP mensuales", value: 700_000 },
-  { label: "$900.000 - $1.500.000", description: "CLP mensuales", value: 1_200_000 },
-  { label: "$1.500.000 - $2.500.000", description: "CLP mensuales", value: 2_000_000 },
-  { label: "Más de $2.500.000", description: "CLP mensuales", value: 3_000_000 },
-];
+const TOTAL_STEPS = 2;
 
 const EMPLOYMENT_OPTIONS: { label: string; description: string; value: WizardEmploymentType }[] = [
   { label: "Indefinido", description: "Contrato indefinido", value: "indefinido" },
@@ -44,8 +35,15 @@ const YEARS_OPTIONS: { label: string; value: number }[] = [
   { label: "5 años o más", value: 6 },
 ];
 
-function isValidEmail(email: string): boolean {
-  return /\S+@\S+\.\S+/.test(email);
+/** Datos del cliente ya recolectados en el registro extendido -- el wizard
+ * NO vuelve a pedirlos, solo los reutiliza para armar el payload final de
+ * POST /api/leads. Ver app/auth/register/page.tsx / migración 004. */
+interface RegisteredProfile {
+  name: string;
+  email: string;
+  phone: string;
+  rut: string | null;
+  monthlySalary: number | null;
 }
 
 export default function WizardPage() {
@@ -53,7 +51,8 @@ export default function WizardPage() {
   const [step, setStep] = useState(1);
   const [data, setData] = useState<WizardData>(WIZARD_INITIAL_DATA);
   const [transitioning, setTransitioning] = useState(false);
-  const [contactErrors, setContactErrors] = useState<Record<string, string>>({});
+  const [profile, setProfile] = useState<RegisteredProfile | null>(null);
+  const [profileError, setProfileError] = useState(false);
   const hasRestored = useRef(false);
 
   // Restaurar progreso guardado en localStorage al montar.
@@ -63,29 +62,29 @@ export default function WizardPage() {
       setStep(saved.step);
       setData(saved.data);
     }
-    // Best-effort: si el usuario ya está logueado, precargar name/email desde
-    // GET /api/auth/user para no volver a pedirlos. Si falla o no hay sesión,
-    // el paso de contacto simplemente se muestra vacío (flujo sin login).
+    hasRestored.current = true;
+
+    // El wizard ya no pide nombre/email/teléfono/renta -- vienen del
+    // registro extendido. Si por alguna razón no hay sesión (o falta el
+    // registro extendido), avisamos en vez de enviar un lead incompleto.
     fetch("/api/auth/user")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
-        if (!json?.customer && !json?.user) return;
-        setData((prev) => {
-          if (prev.name || prev.email) return prev; // no pisar progreso ya guardado
-          return {
-            ...prev,
-            name: json.customer?.name ?? prev.name,
-            email: json.user?.email ?? json.customer?.email ?? prev.email,
-            phone: json.customer?.phone ?? prev.phone,
-          };
+        const customer = json?.customer;
+        const user = json?.user;
+        if (!customer && !user) {
+          setProfileError(true);
+          return;
+        }
+        setProfile({
+          name: customer?.name ?? "",
+          email: user?.email ?? customer?.email ?? "",
+          phone: customer?.phone ?? "",
+          rut: customer?.rut_ciphertext ?? null,
+          monthlySalary: customer?.monthly_income ?? null,
         });
       })
-      .catch(() => {
-        // Sin sesión o API no disponible: seguir con el flujo manual.
-      })
-      .finally(() => {
-        hasRestored.current = true;
-      });
+      .catch(() => setProfileError(true));
   }, []);
 
   // Autosave cada vez que cambian los datos o el paso (tras la restauración inicial).
@@ -106,27 +105,14 @@ export default function WizardPage() {
     }, 150);
   }
 
-  function validateContact(): boolean {
-    const errors: Record<string, string> = {};
-    if (!data.name.trim()) errors.name = "Ingresa tu nombre completo";
-    if (!isValidEmail(data.email)) errors.email = "Ingresa un correo válido";
-    if (!data.phone.trim()) errors.phone = "Ingresa tu teléfono";
-    setContactErrors(errors);
-    return Object.keys(errors).length === 0;
-  }
-
   function canAdvance(): boolean {
     switch (step) {
       case 1:
-        return data.purpose !== null;
-      case 2:
-        return data.monthlySalary !== null;
-      case 3:
         return data.employmentType !== null && data.employmentYears !== null;
-      case 4:
+      case 2:
         if (data.savingsAmount === null || data.hasExistingDebt === null) return false;
         if (data.hasExistingDebt && !data.monthlyDebtPayments) return false;
-        return validateContact();
+        return true;
       default:
         return false;
     }
@@ -140,20 +126,28 @@ export default function WizardPage() {
       return;
     }
 
+    if (!profile || !profile.name || !profile.email) {
+      setProfileError(true);
+      return;
+    }
+
     // Paso final: arma el payload EXACTO del contrato de POST /api/leads y lo
     // pasa a la pantalla de AI Processing vía sessionStorage. Este componente
     // NO llama a /api/leads directamente — eso lo hace /onboarding/processing.
+    // name/email/phone/rut/monthlySalary vienen del registro (no se piden de
+    // nuevo acá); solo employmentType/employmentYears/savings/deuda son datos
+    // nuevos recolectados en este wizard.
     const payload = {
-      name: data.name.trim(),
-      email: data.email.trim(),
-      phone: data.phone.trim(),
-      monthlySalary: data.monthlySalary,
+      name: profile.name,
+      email: profile.email,
+      phone: profile.phone,
+      rut: profile.rut,
+      monthlySalary: profile.monthlySalary,
       savingsAmount: data.savingsAmount,
       employmentType: data.employmentType,
       employmentYears: data.employmentYears,
       hasExistingDebt: data.hasExistingDebt,
       monthlyDebtPayments: data.hasExistingDebt ? data.monthlyDebtPayments ?? 0 : 0,
-      purpose: data.purpose,
     };
 
     try {
@@ -177,23 +171,20 @@ export default function WizardPage() {
       <div className="w-full max-w-2xl">
         <WizardProgress step={step} totalSteps={TOTAL_STEPS} />
 
+        {profileError && (
+          <div
+            className="mb-6 rounded-xl border p-4 text-center text-sm"
+            style={{ borderColor: "#EF4444", color: "#EF4444" }}
+          >
+            No pudimos cargar tus datos de registro. Inicia sesión nuevamente para continuar.
+          </div>
+        )}
+
         <div
           className="transition-opacity duration-150 ease-out"
           style={{ opacity: transitioning ? 0 : 1 }}
         >
           {step === 1 && (
-            <StepPurpose
-              value={data.purpose}
-              onChange={(v) => update("purpose", v)}
-            />
-          )}
-          {step === 2 && (
-            <StepSalary
-              value={data.monthlySalary}
-              onChange={(v) => update("monthlySalary", v)}
-            />
-          )}
-          {step === 3 && (
             <StepEmployment
               employmentType={data.employmentType}
               employmentYears={data.employmentYears}
@@ -201,13 +192,7 @@ export default function WizardPage() {
               onChangeYears={(v) => update("employmentYears", v)}
             />
           )}
-          {step === 4 && (
-            <StepSavingsAndContact
-              data={data}
-              errors={contactErrors}
-              onChange={update}
-            />
-          )}
+          {step === 2 && <StepSavings data={data} onChange={update} />}
         </div>
 
         <div className="mt-10 flex items-center justify-between gap-4">
@@ -235,75 +220,6 @@ export default function WizardPage() {
         </div>
       </div>
     </main>
-  );
-}
-
-function StepPurpose({
-  value,
-  onChange,
-}: {
-  value: WizardPurpose | null;
-  onChange: (v: WizardPurpose) => void;
-}) {
-  return (
-    <section className="flex flex-col gap-6">
-      <header className="text-center">
-        <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
-          ¿Cuál es tu propósito?
-        </h1>
-        <p className="mt-2 text-sm" style={{ color: "var(--text-tertiary)" }}>
-          Esto nos ayuda a personalizar tu perfil de inversión.
-        </p>
-      </header>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <SelectableCard
-          label="Inversión"
-          description="Busco rentabilidad y plusvalía"
-          icon={TrendingUp}
-          selected={value === "INVERSION"}
-          onClick={() => onChange("INVERSION")}
-        />
-        <SelectableCard
-          label="Vivir"
-          description="Busco mi próximo hogar"
-          icon={Home}
-          selected={value === "VIVIR"}
-          onClick={() => onChange("VIVIR")}
-        />
-      </div>
-    </section>
-  );
-}
-
-function StepSalary({
-  value,
-  onChange,
-}: {
-  value: number | null;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <section className="flex flex-col gap-6">
-      <header className="text-center">
-        <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
-          ¿Cuál es tu renta mensual líquida?
-        </h1>
-        <p className="mt-2 text-sm" style={{ color: "var(--text-tertiary)" }}>
-          Selecciona el tramo que más se acerque a tu ingreso.
-        </p>
-      </header>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {SALARY_TRAMOS.map((tramo) => (
-          <SelectableCard
-            key={tramo.value}
-            label={tramo.label}
-            description={tramo.description}
-            selected={value === tramo.value}
-            onClick={() => onChange(tramo.value)}
-          />
-        ))}
-      </div>
-    </section>
   );
 }
 
@@ -371,13 +287,11 @@ function StepEmployment({
   );
 }
 
-function StepSavingsAndContact({
+function StepSavings({
   data,
-  errors,
   onChange,
 }: {
   data: WizardData;
-  errors: Record<string, string>;
   onChange: <K extends keyof WizardData>(key: K, value: WizardData[K]) => void;
 }) {
   return (
@@ -387,7 +301,7 @@ function StepSavingsAndContact({
           Último paso
         </h1>
         <p className="mt-2 text-sm" style={{ color: "var(--text-tertiary)" }}>
-          Ahorro disponible, deudas y tus datos de contacto.
+          Ahorro disponible y deudas vigentes.
         </p>
       </header>
 
@@ -462,73 +376,6 @@ function StepSavingsAndContact({
           />
         )}
       </div>
-
-      <div className="glass-card flex flex-col gap-4 rounded-2xl p-5">
-        <h2
-          className="text-sm font-semibold uppercase tracking-wide"
-          style={{ color: "var(--text-secondary)" }}
-        >
-          Tus datos de contacto
-        </h2>
-        <ContactField
-          label="Nombre completo"
-          value={data.name}
-          error={errors.name}
-          onChange={(v) => onChange("name", v)}
-        />
-        <ContactField
-          label="Correo electrónico"
-          type="email"
-          value={data.email}
-          error={errors.email}
-          onChange={(v) => onChange("email", v)}
-        />
-        <ContactField
-          label="Teléfono"
-          type="tel"
-          value={data.phone}
-          error={errors.phone}
-          onChange={(v) => onChange("phone", v)}
-        />
-      </div>
     </section>
-  );
-}
-
-function ContactField({
-  label,
-  value,
-  onChange,
-  error,
-  type = "text",
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  error?: string;
-  type?: string;
-}) {
-  return (
-    <label className="flex flex-col gap-1.5">
-      <span className="text-xs font-medium" style={{ color: "var(--text-tertiary)" }}>
-        {label}
-      </span>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border bg-transparent px-4 py-2.5 outline-none transition-colors duration-200"
-        style={{
-          borderColor: error ? "var(--status-error, #EF4444)" : "var(--glass-border)",
-          color: "var(--text-primary)",
-          backgroundColor: "var(--surface-elevated)",
-        }}
-      />
-      {error ? (
-        <span className="text-xs" style={{ color: "#EF4444" }}>
-          {error}
-        </span>
-      ) : null}
-    </label>
   );
 }

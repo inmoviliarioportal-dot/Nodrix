@@ -6,9 +6,11 @@
  */
 
 export const WIZARD_STORAGE_KEY = "wizard-progress";
-const WIZARD_STORAGE_VERSION = 1;
-
-export type WizardPurpose = "INVERSION" | "VIVIR";
+// v2: el wizard dejó de pedir propósito/renta/contacto -- esos datos ya se
+// capturan en el registro extendido (nombre, email, teléfono, renta, tipo de
+// inversión). Progreso guardado con el shape viejo se descarta (ver
+// `loadWizardProgress`) en vez de migrarse.
+const WIZARD_STORAGE_VERSION = 2;
 
 /** Mismos 4 valores EXACTOS que `CustomerFinancialProfile.employmentType` en lib/scoring.ts */
 export type WizardEmploymentType =
@@ -18,18 +20,10 @@ export type WizardEmploymentType =
   | "independiente";
 
 export interface WizardData {
-  // Paso 0 (contacto)
-  name: string;
-  email: string;
-  phone: string;
   // Paso 1
-  purpose: WizardPurpose | null;
-  // Paso 2
-  monthlySalary: number | null;
-  // Paso 3
   employmentType: WizardEmploymentType | null;
   employmentYears: number | null;
-  // Paso 4
+  // Paso 2
   savingsAmount: number | null;
   hasExistingDebt: boolean | null;
   monthlyDebtPayments: number | null;
@@ -42,11 +36,6 @@ export interface WizardProgress {
 }
 
 export const WIZARD_INITIAL_DATA: WizardData = {
-  name: "",
-  email: "",
-  phone: "",
-  purpose: null,
-  monthlySalary: null,
   employmentType: null,
   employmentYears: null,
   savingsAmount: null,
