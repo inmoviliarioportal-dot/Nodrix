@@ -18,6 +18,8 @@ import { PreEvaluationCard } from "@/components/dashboard/PreEvaluationCard"
 import { ScoringCard } from "@/components/dashboard/ScoringCard"
 import { StageAlert } from "@/components/dashboard/StageAlert"
 import { HookVideo } from "@/components/dashboard/HookVideo"
+import { StageProgressBar } from "@/components/dashboard/StageProgressBar"
+import { Clock } from "lucide-react"
 import { STAGE_CLIENT_CONTENT } from "@/components/dashboard/stageContent"
 import {
   APPLICATION_STAGES,
@@ -100,6 +102,8 @@ export default function DashboardPage() {
   const stageLabel = STAGE_LABELS[stage] ?? stage
   const stageContent =
     STAGE_CLIENT_CONTENT[stage as ApplicationStage] ?? STAGE_CLIENT_CONTENT.RECEPCIONADA
+  const currentStageIndex = application ? APPLICATION_STAGES.indexOf(stage as ApplicationStage) : -1
+  const completedSteps = currentStageIndex >= 0 ? currentStageIndex : 0
   const documents = application?.documents ?? []
   const scoring =
     application?.scoring ??
@@ -129,6 +133,13 @@ export default function DashboardPage() {
               <ScoringBadge category={scoring.category} />
             )}
           </div>
+
+          {!loading && (
+            <div className="mt-4">
+              <StageProgressBar completedSteps={completedSteps} totalSteps={APPLICATION_STAGES.length} />
+            </div>
+          )}
+
           {loading && (
             <p className="mt-4 text-sm text-text-tertiary">Cargando tu solicitud...</p>
           )}
@@ -171,7 +182,10 @@ export default function DashboardPage() {
                 </Button>
               </div>
 
-              <HookVideo title={STAGE_CLIENT_CONTENT.RECEPCIONADA.videoTitle} />
+              <HookVideo
+                title={STAGE_CLIENT_CONTENT.RECEPCIONADA.videoTitle}
+                videoUrl={STAGE_CLIENT_CONTENT.RECEPCIONADA.videoUrl}
+              />
             </div>
           </div>
         )}
@@ -193,6 +207,11 @@ export default function DashboardPage() {
             <div className="flex flex-col gap-4">
               <StageAlert tone={stageContent.alert.tone} message={stageContent.alert.message} />
 
+              <div className="flex items-center gap-2 text-xs text-text-tertiary">
+                <Clock className="size-3.5 shrink-0" aria-hidden="true" />
+                <span>Duración estimada de esta etapa: {stageContent.estimatedDuration}</span>
+              </div>
+
               {stageContent.showUploadCta && (
                 <div className="glass-card glow-cyan flex flex-col items-start gap-3 rounded-2xl border border-neon-cyan/40 p-5 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex flex-col gap-1">
@@ -213,7 +232,7 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              <HookVideo title={stageContent.videoTitle} />
+              <HookVideo title={stageContent.videoTitle} videoUrl={stageContent.videoUrl} />
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <ScoringCard scoring={scoring} />

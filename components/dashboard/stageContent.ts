@@ -5,19 +5,27 @@ export type AlertTone = "info" | "success" | "warning"
 export interface StageClientContent {
   /** Mensaje contextual mostrado en el banner de alerta del dashboard. */
   alert: { tone: AlertTone; message: string }
-  /** Título del video de gancho asociado a la etapa (contenido mock por ahora
-   * — reemplazar por URLs reales cuando estén disponibles). */
+  /** Título del video de gancho asociado a la etapa. */
   videoTitle: string
+  /**
+   * URL real de YouTube/Vimeo para el video de la etapa. Si no está
+   * definida, HookVideo.tsx muestra el placeholder mock — reemplazar acá
+   * cuando exista contenido real, no hace falta tocar ningún componente.
+   */
+  videoUrl?: string
   /** Si es `true`, el dashboard muestra un CTA prominente para subir
    * documentos (además de la card de documentos habitual). */
   showUploadCta: boolean
+  /** Duración típica de la etapa, para manejar expectativas del cliente
+   * (ej. "2-3 días hábiles"). Mock/estimado -- no medido contra datos reales
+   * todavía. */
+  estimatedDuration: string
 }
 
 /**
  * Contenido por etapa para el dashboard del cliente: alertas, video de
- * "gancho" y si corresponde habilitar la subida de documentos en este punto
- * del proceso. Contenido de video es mock/placeholder (ver HookVideo.tsx) —
- * pendiente de URLs reales por etapa.
+ * "gancho", estimador de tiempo, y si corresponde habilitar la subida de
+ * documentos en este punto del proceso.
  */
 export const STAGE_CLIENT_CONTENT: Record<ApplicationStage, StageClientContent> = {
   RECEPCIONADA: {
@@ -27,6 +35,7 @@ export const STAGE_CLIENT_CONTENT: Record<ApplicationStage, StageClientContent> 
     },
     videoTitle: "Bienvenido a Nodrix: así funciona tu proceso de inversión",
     showUploadCta: false,
+    estimatedDuration: "Menos de 1 día",
   },
   SCORING_COMPLETADO: {
     alert: {
@@ -35,6 +44,7 @@ export const STAGE_CLIENT_CONTENT: Record<ApplicationStage, StageClientContent> 
     },
     videoTitle: "Cómo interpretar tu categoría de scoring",
     showUploadCta: false,
+    estimatedDuration: "Inmediato",
   },
   DOCUMENTOS_PENDIENTES: {
     alert: {
@@ -43,6 +53,7 @@ export const STAGE_CLIENT_CONTENT: Record<ApplicationStage, StageClientContent> 
     },
     videoTitle: "Qué documentos necesitas y por qué",
     showUploadCta: true,
+    estimatedDuration: "Depende de ti — mientras antes subas, antes avanzamos",
   },
   DOCUMENTOS_APROBADOS: {
     alert: {
@@ -51,6 +62,7 @@ export const STAGE_CLIENT_CONTENT: Record<ApplicationStage, StageClientContent> 
     },
     videoTitle: "Qué sigue después de aprobar tus documentos",
     showUploadCta: false,
+    estimatedDuration: "1-2 días hábiles",
   },
   PRE_EVALUACION_COMPLETADA: {
     alert: {
@@ -59,6 +71,7 @@ export const STAGE_CLIENT_CONTENT: Record<ApplicationStage, StageClientContent> 
     },
     videoTitle: "Tu rango de inversión pre-aprobado, explicado",
     showUploadCta: false,
+    estimatedDuration: "2-3 días hábiles",
   },
   VISITA_COMPLETADA: {
     alert: {
@@ -67,6 +80,7 @@ export const STAGE_CLIENT_CONTENT: Record<ApplicationStage, StageClientContent> 
     },
     videoTitle: "Qué revisamos durante la visita a la propiedad",
     showUploadCta: false,
+    estimatedDuration: "3-5 días hábiles",
   },
   ENVIADO_A_BANCO: {
     alert: {
@@ -75,6 +89,7 @@ export const STAGE_CLIENT_CONTENT: Record<ApplicationStage, StageClientContent> 
     },
     videoTitle: "Cómo es el proceso de evaluación bancaria",
     showUploadCta: false,
+    estimatedDuration: "5-10 días hábiles",
   },
   ESCRITURACION_AGENDADA: {
     alert: {
@@ -83,6 +98,7 @@ export const STAGE_CLIENT_CONTENT: Record<ApplicationStage, StageClientContent> 
     },
     videoTitle: "Qué esperar el día de la firma de escritura",
     showUploadCta: false,
+    estimatedDuration: "Según la fecha agendada con la notaría",
   },
   CIERRE: {
     alert: {
@@ -91,5 +107,6 @@ export const STAGE_CLIENT_CONTENT: Record<ApplicationStage, StageClientContent> 
     },
     videoTitle: "Bienvenido como inversionista Nodrix",
     showUploadCta: false,
+    estimatedDuration: "Completado",
   },
 }
