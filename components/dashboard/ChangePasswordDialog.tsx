@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel, FieldError } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter"
 
 interface ChangePasswordDialogProps {
   open: boolean
@@ -107,6 +108,7 @@ function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialogProps)
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
             />
+            <PasswordStrengthMeter password={newPassword} />
           </Field>
 
           <Field>
