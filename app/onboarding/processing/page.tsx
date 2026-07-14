@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -72,14 +72,18 @@ export default function ProcessingPage() {
   const [status, setStatus] = useState<Status>("processing");
   const [showSlowNotice, setShowSlowNotice] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const startedRef = useRef(false);
 
   useEffect(() => {
-    // Guard against React 19 StrictMode / effect re-invocation firing the
-    // real POST /api/leads call twice in dev.
-    if (startedRef.current) return;
-    startedRef.current = true;
-
+    // NOTE: React Strict Mode (dev only) mounts this effect, cleans it up,
+    // then mounts it again -- the first mount's fetch gets cancelled before
+    // it resolves, so only the second (surviving) mount's fetch actually
+    // completes and navigates. A previous version tried to guard against
+    // this with a `startedRef` that returned early on the second mount,
+    // which backfired: it blocked the ONE invocation that would have
+    // survived to finish, leaving the screen stuck forever. Don't add that
+    // guard back -- POST /api/leads is idempotent (dedup by email returns
+    // 409 with the same application), so letting both mounts fire in dev is
+    // harmless, and production only ever mounts once.
     let cancelled = false;
     const startedAt = Date.now();
 
@@ -181,7 +185,6 @@ export default function ProcessingPage() {
   }, [router]);
 
   function handleRetry() {
-    startedRef.current = false;
     setStatus("processing");
     setErrorMessage(null);
     setShowSlowNotice(false);
