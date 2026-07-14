@@ -4,6 +4,7 @@ import { apiError, withErrorHandling, HTTP_STATUS } from "@/app/api/_shared";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase";
 import { extractText } from "@/lib/ocr/extractText";
 import { validateDocument } from "@/lib/ocr/validateDocument";
+import { maybeAdvanceAfterDocumentApproval } from "@/lib/stage-machine";
 
 /**
  * Fixed org_id used across the MVP (single-tenant operation, multi-tenant
@@ -174,7 +175,10 @@ export const POST = withErrorHandling(async (request: Request) => {
  * actualiza `documents.status`/`extracted_data` según el resultado:
  * - texto no extraíble -> se deja en 'pendiente' (revisión manual normal).
  * - validación falla -> 'rechazado' con las razones en extracted_data.
- * - validación pasa -> 'en_revision' (pre-validado, a la espera del asesor).
+ * - validación pasa -> 'aprobado' directamente (el OCR reemplaza la
+ *   revisión manual para los 4 tipos de documento requeridos). Si con este
+ *   documento la application ya tiene los 4 tipos aprobados, dispara el
+ *   avance automático a DOCUMENTOS_APROBADOS (ver lib/stage-machine.ts).
  *
  * Nunca lanza: cualquier error se traga y el documento queda en su estado
  * por defecto ('pendiente'), igual que si esta función no existiera.
@@ -215,7 +219,7 @@ async function runOcrPreValidation(
       rut: customer.rut_ciphertext,
     });
 
-    const newStatus = validation.valid ? "en_revision" : "rechazado";
+    const newStatus = validation.valid ? "aprobado" : "rechazado";
 
     const { data: updated } = await (supabase.from("documents") as any)
       .update({
@@ -231,6 +235,10 @@ async function runOcrPreValidation(
       .eq("id", documentRow.id)
       .select()
       .single();
+
+    if (newStatus === "aprobado") {
+      await maybeAdvanceAfterDocumentApproval(supabase as any, applicationId);
+    }
 
     return updated ?? null;
   } catch (err) {

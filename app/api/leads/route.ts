@@ -214,6 +214,10 @@ export async function maybeApplyScoring(
     .update({
       scoring_category: result.category,
       scoring_score: result.score,
+      // Persiste el ahorro real declarado -- antes se descartaba tras
+      // calcular el score, lo que dejaba la pre-evaluación automática
+      // (DOCUMENTOS_APROBADOS -> PRE_EVALUACION_COMPLETADA) sin datos reales.
+      savings_amount: profile.savingsAmount,
       stage: "SCORING_COMPLETADO",
     })
     .eq("id", application.id)
