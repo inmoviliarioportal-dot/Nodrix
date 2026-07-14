@@ -35,6 +35,15 @@ function uniqueEmail(prefix: string) {
   return `${prefix}.${Date.now()}.${Math.floor(Math.random() * 10000)}@e2e-test.local`;
 }
 
+/** RUT con formato válido (regex `^\d{7,8}-[0-9kK]$`) pero único por corrida,
+ * para no chocar con la restricción UNIQUE (org_id, rut_hash) de `customers`
+ * entre ejecuciones repetidas de la suite. No valida dígito verificador real
+ * (la validación de la API tampoco lo hace, solo formato). */
+function uniqueRut() {
+  const digits = String(Date.now()).slice(-8);
+  return `${digits}-${Math.floor(Math.random() * 10)}`;
+}
+
 test.describe("Release 3 — Full flow: lead -> cierre", () => {
   test.describe.configure({ mode: "serial" });
 
@@ -97,7 +106,16 @@ test.describe("Release 3 — Full flow: lead -> cierre", () => {
     email: uniqueEmail("fullflow"),
     password: "Passw0rd!2026",
     name: "Full Flow E2E",
+    firstName: "Full",
+    lastName: "Flow E2E",
+    rut: uniqueRut(),
+    gender: "otro",
+    birthDate: "1990-01-15",
+    age: 36,
     phone: "+56933334444",
+    monthlyIncome: 1_200_000,
+    investmentType: "inversion",
+    propertyStatus: "sin_definir",
   };
 
   let applicationId: string | undefined;
@@ -130,17 +148,28 @@ test.describe("Release 3 — Full flow: lead -> cierre", () => {
   }
 
   /** Avanza la application paso a paso (vía PATCH .../stage) desde su stage
-   * ACTUAL hasta `targetStage` inclusive, sin saltarse pasos intermedios. */
+   * ACTUAL hasta `targetStage` inclusive, sin saltarse pasos intermedios.
+   *
+   * Relee el stage real antes de CADA PATCH (en vez de asumir un índice fijo)
+   * porque `lib/stage-machine.ts` encadena transiciones "automatic" dentro de
+   * la misma llamada (ej. un PATCH que deja la application en ENVIADO_A_BANCO
+   * puede dejarla realmente en ESCRITURACION_AGENDADA tras el auto-avance) —
+   * sin esto, el siguiente PATCH de este helper pediría una transición que
+   * ya no es válida desde el stage real. */
   async function advanceStageTo(page: Page, appId: string, targetStage: string) {
-    const current = await getCurrentStage(page, appId);
-    test.skip(!current, "No se pudo determinar el stage actual de la application.");
-
-    const currentIdx = STAGE_ORDER.indexOf(current as (typeof STAGE_ORDER)[number]);
     const targetIdx = STAGE_ORDER.indexOf(targetStage as (typeof STAGE_ORDER)[number]);
-    test.skip(currentIdx === -1 || targetIdx === -1, `Stage desconocido (current=${current}, target=${targetStage}).`);
+    test.skip(targetIdx === -1, `Stage desconocido (target=${targetStage}).`);
 
-    for (let i = currentIdx + 1; i <= targetIdx; i++) {
-      const stage = STAGE_ORDER[i];
+    for (let guard = 0; guard < STAGE_ORDER.length; guard++) {
+      const current = await getCurrentStage(page, appId);
+      test.skip(!current, "No se pudo determinar el stage actual de la application.");
+
+      const currentIdx = STAGE_ORDER.indexOf(current as (typeof STAGE_ORDER)[number]);
+      test.skip(currentIdx === -1, `Stage desconocido (current=${current}).`);
+
+      if (currentIdx >= targetIdx) return; // ya llegamos (o el auto-avance nos pasó de largo)
+
+      const stage = STAGE_ORDER[currentIdx + 1];
       const res = await page.request.patch(`/api/applications/${appId}/stage`, { data: { stage } });
       test.skip(res.status() === 404, "PATCH /api/applications/[id]/stage no existe todavía.");
       expect(
@@ -157,8 +186,16 @@ test.describe("Release 3 — Full flow: lead -> cierre", () => {
       data: {
         email: user.email,
         password: user.password,
-        name: user.name,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        rut: user.rut,
+        gender: user.gender,
+        birthDate: user.birthDate,
+        age: user.age,
         phone: user.phone,
+        monthlyIncome: user.monthlyIncome,
+        investmentType: user.investmentType,
+        propertyStatus: user.propertyStatus,
       },
     });
 
@@ -352,46 +389,53 @@ test.describe("Release 3 — Full flow: lead -> cierre", () => {
     await expect(page.getByText(/Cambiar estado/i)).toBeVisible({ timeout: 10_000 });
   });
 
-  test("5. Transiciones de estado (asesor) + error en transición inválida", async () => {
+  test("5. Transiciones de estado (asesor) + auto-avance + error en transición inválida", async () => {
     const page = sharedPage;
     test.skip(!applicationId, "No hay applicationId de los tests anteriores.");
 
     // Avanza desde el stage ACTUAL (puede que RECEPCIONADA -> SCORING_COMPLETADO
     // ya haya ocurrido automáticamente al completar el scoring en el test 2)
-    // hasta DOCUMENTOS_APROBADOS, paso a paso.
+    // hasta DOCUMENTOS_APROBADOS, paso a paso. lib/stage-machine.ts marca
+    // DOCUMENTOS_APROBADOS -> PRE_EVALUACION_COMPLETADA como "automatic": el
+    // PATCH que deja la application en DOCUMENTOS_APROBADOS encadena esa
+    // transición en la MISMA llamada, así que el stage real tras esto ya es
+    // PRE_EVALUACION_COMPLETADA (con pre_evaluation_min_uf/max_uf calculados
+    // con valores default, ver lib/pre-evaluation.ts).
     await advanceStageTo(page, applicationId!, "DOCUMENTOS_APROBADOS");
 
-    // Verificar reflejo en el timeline del detalle.
+    const currentRes = await page.request.get(`/api/applications/${applicationId}`);
+    const currentBody = await currentRes.json().catch(() => ({}));
+    expect(
+      currentBody?.application?.stage,
+      `Se esperaba auto-avance a PRE_EVALUACION_COMPLETADA tras DOCUMENTOS_APROBADOS: ${JSON.stringify(currentBody?.application)}`
+    ).toBe("PRE_EVALUACION_COMPLETADA");
+    expect(
+      currentBody?.application?.pre_evaluation_min_uf,
+      "Se esperaba pre_evaluation_min_uf calculado automáticamente."
+    ).toBeTruthy();
+
+    // Verificar reflejo en el timeline del detalle (el paso queda marcado
+    // como completado en la lista, aunque ya no sea el estado actual).
     await timedGoto(page, `/backoffice/${applicationId}`);
     await expect(page.getByText(/Documentos Aprobados|DOCUMENTOS_APROBADOS/i).first()).toBeVisible({
       timeout: 10_000,
     });
 
-    // Transición inválida: DOCUMENTOS_APROBADOS es actualmente el estado, el
-    // único siguiente legal es PRE_EVALUACION_COMPLETADA (automatic) — intentar
-    // saltar directo a CIERRE debe fallar con 400 INVALID_TRANSITION.
+    // Transición inválida: el estado actual real es PRE_EVALUACION_COMPLETADA
+    // (tras el auto-avance), cuyo único siguiente legal es VISITA_COMPLETADA
+    // — intentar saltar directo a CIERRE debe fallar con 400 INVALID_TRANSITION.
     const invalidRes = await page.request.patch(`/api/applications/${applicationId}/stage`, {
       data: { stage: "CIERRE" },
     });
     expect(
       invalidRes.status(),
-      `Se esperaba 400 al intentar saltar etapas (DOCUMENTOS_APROBADOS -> CIERRE directo), recibido ${invalidRes.status()}`
+      `Se esperaba 400 al intentar saltar etapas (PRE_EVALUACION_COMPLETADA -> CIERRE directo), recibido ${invalidRes.status()}`
     ).toBe(400);
     const invalidBody = await invalidRes.json().catch(() => ({}));
     expect(
       invalidBody?.error?.code ?? invalidBody?.code,
       `Se esperaba código INVALID_TRANSITION: ${JSON.stringify(invalidBody)}`
     ).toBe("INVALID_TRANSITION");
-
-    // Continuar el pipeline legítimo hasta PRE_EVALUACION_COMPLETADA para el
-    // siguiente test.
-    const toPreEval = await page.request.patch(`/api/applications/${applicationId}/stage`, {
-      data: { stage: "PRE_EVALUACION_COMPLETADA" },
-    });
-    expect(
-      toPreEval.ok(),
-      `Transición DOCUMENTOS_APROBADOS -> PRE_EVALUACION_COMPLETADA debería ser 2xx (recibido ${toPreEval.status()})`
-    ).toBeTruthy();
   });
 
   test("6. Pre-evaluación -> minUF/maxUF calculados y visibles", async () => {

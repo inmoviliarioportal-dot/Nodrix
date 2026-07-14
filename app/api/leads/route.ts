@@ -13,6 +13,7 @@ import {
   type AnySupabaseClient,
 } from "@/lib/leads";
 import { MVP_ORG_ID } from "@/app/api/auth/_constants";
+import { applyAutomaticTransitions } from "@/lib/stage-machine";
 
 /**
  * POST /api/leads
@@ -227,6 +228,14 @@ export async function maybeApplyScoring(
     actor_user_id: null,
     note: `Auto-scoring: ${result.category} (${result.score}/100)`,
   });
+
+  // SCORING_COMPLETADO -> DOCUMENTOS_PENDIENTES está marcada "automatic" en
+  // la máquina de estados (lib/stage-machine.ts) — encadenarla aquí mismo en
+  // vez de esperar a que alguien la dispare manualmente vía PATCH .../stage.
+  const { finalStage } = await applyAutomaticTransitions(supabase, application.id, "SCORING_COMPLETADO");
+  if (finalStage !== "SCORING_COMPLETADO") {
+    return { ...updated, stage: finalStage };
+  }
 
   return updated;
 }

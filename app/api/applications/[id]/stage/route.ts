@@ -2,34 +2,7 @@ import { NextResponse } from "next/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { apiError, requireAuth, withErrorHandling, HTTP_STATUS } from "@/app/api/_shared";
 import { APPLICATION_STAGES, isValidStage, type ApplicationStage, type AnySupabaseClient } from "@/lib/leads";
-
-/**
- * State machine (Release 2 — Backoffice Asesor automation).
- *
- * Maps each stage to the single legal next stage, mirroring the linear
- * 9-step flow encoded in the `applications.stage` CHECK constraint
- * (`database/schema.sql`): RECEPCIONADA, SCORING_COMPLETADO,
- * DOCUMENTOS_PENDIENTES, DOCUMENTOS_APROBADOS, PRE_EVALUACION_COMPLETADA,
- * VISITA_COMPLETADA, ENVIADO_A_BANCO, ESCRITURACION_AGENDADA, CIERRE.
- *
- * `automatic: true` marks transitions that, from Release 2 onward, are meant
- * to fire on their own via a trigger/RPC (e.g. once scoring finishes, or once
- * all documents are approved) instead of the asesor clicking a button. For
- * now (Release 1 -> 2 bridge) they remain reachable through this endpoint too,
- * so the backoffice UI can still drive them manually until the automatic
- * triggers are wired up.
- */
-const STAGE_TRANSITIONS: Record<ApplicationStage, { next: ApplicationStage; automatic: boolean } | null> = {
-  RECEPCIONADA: { next: "SCORING_COMPLETADO", automatic: false },
-  SCORING_COMPLETADO: { next: "DOCUMENTOS_PENDIENTES", automatic: true },
-  DOCUMENTOS_PENDIENTES: { next: "DOCUMENTOS_APROBADOS", automatic: false },
-  DOCUMENTOS_APROBADOS: { next: "PRE_EVALUACION_COMPLETADA", automatic: true },
-  PRE_EVALUACION_COMPLETADA: { next: "VISITA_COMPLETADA", automatic: false },
-  VISITA_COMPLETADA: { next: "ENVIADO_A_BANCO", automatic: false },
-  ENVIADO_A_BANCO: { next: "ESCRITURACION_AGENDADA", automatic: true },
-  ESCRITURACION_AGENDADA: { next: "CIERRE", automatic: false },
-  CIERRE: null,
-};
+import { STAGE_TRANSITIONS, applyAutomaticTransitions } from "@/lib/stage-machine";
 
 /**
  * PATCH /api/applications/[id]/stage
@@ -142,6 +115,14 @@ export const PATCH = withErrorHandling(async (request: Request, context: { param
     );
   }
 
+  // Encadenar cualquier transición automática alcanzable desde el nuevo
+  // estado (ej. DOCUMENTOS_APROBADOS -> PRE_EVALUACION_COMPLETADA) — ver
+  // lib/stage-machine.ts. Best-effort: si falla, la transición manual ya
+  // aplicada sigue siendo válida.
+  const { finalStage } = await applyAutomaticTransitions(supabase, id, stage);
+
+  const { data: finalApplication } = await supabase.from("applications").select("*").eq("id", id).maybeSingle();
+
   const { data: stageHistory } = await supabase
     .from("application_stage_history")
     .select("*")
@@ -149,7 +130,7 @@ export const PATCH = withErrorHandling(async (request: Request, context: { param
     .order("created_at", { ascending: false });
 
   return NextResponse.json({
-    application: updated,
+    application: finalApplication ?? { ...updated, stage: finalStage },
     stageHistory: stageHistory ?? [historyEntry],
   });
 });
