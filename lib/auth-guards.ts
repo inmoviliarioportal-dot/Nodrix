@@ -28,3 +28,27 @@ export async function requireRolePage(allowedRoles: UserRole[]) {
 
   return { user, role };
 }
+
+/**
+ * Server Component guard for any authenticated area (Portal Cliente).
+ * Redirects to `/auth/login` when there is no session. Unlike
+ * `requireRolePage`, it does not restrict by role — any signed-in user
+ * (cliente, asesor, admin, gerencia) may view `/dashboard`.
+ *
+ * Without this, `/dashboard` rendered its shell for anonymous visitors too
+ * (the client component's `fetch("/api/auth/user")` just failed silently
+ * with a 401 and showed a generic error instead of redirecting) — clicking
+ * "Dashboard" while logged out looked like a broken logged-in state.
+ */
+export async function requireAuthPage() {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/auth/login");
+  }
+
+  return { user };
+}

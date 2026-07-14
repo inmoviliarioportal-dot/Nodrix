@@ -44,12 +44,21 @@ function Button({
   className,
   variant = "default",
   size = "default",
+  nativeButton,
+  render,
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
   return (
     <ButtonPrimitive
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
+      // `render` is normally used to swap in a non-<button> element (e.g. a
+      // Next.js `<Link>`, which renders as `<a>`). Default `nativeButton` to
+      // `false` in that case so Base UI doesn't warn about missing native
+      // button semantics on an anchor — callers rendering an actual
+      // `<button>` via `render` can still opt back in explicitly.
+      nativeButton={nativeButton ?? !render}
+      render={render}
       {...props}
     />
   )
