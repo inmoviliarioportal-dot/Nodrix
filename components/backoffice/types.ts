@@ -128,6 +128,7 @@ export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   cedula: "Cédula de identidad",
   liquidacion_sueldo: "Liquidación de sueldo",
   certificado_afp: "Certificado AFP",
+  contrato_trabajo: "Contrato de trabajo",
 }
 
 /** Entrada de `application_stage_history`. Cuando `from_stage === to_stage`

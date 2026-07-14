@@ -150,9 +150,14 @@ function DocumentVaultItem({
       </div>
 
       {status === "rechazado" && (
-        <p className="text-xs text-status-error">
-          Este documento fue rechazado. Vuelve a subirlo con la información correcta.
-        </p>
+        <div className="flex flex-col gap-1 text-xs text-status-error">
+          <p>Este documento fue rechazado. Vuelve a subirlo con la información correcta.</p>
+          {document?.extracted_data?.validation?.reasons?.map((reason, index) => (
+            <p key={index} className="text-text-tertiary">
+              • {reason}
+            </p>
+          ))}
+        </div>
       )}
 
       {clientError && <p className="text-xs text-status-error">{clientError}</p>}

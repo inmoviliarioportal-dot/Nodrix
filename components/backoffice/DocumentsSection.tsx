@@ -116,6 +116,19 @@ function DocumentsSection({ documents, onDocumentsChange }: DocumentsSectionProp
                 <span className="text-xs text-text-tertiary">
                   {new Date(doc.created_at).toLocaleDateString("es-CL")}
                 </span>
+                {(() => {
+                  const validation = (doc.extracted_data as { validation?: { valid: boolean; reasons: string[] } } | null)
+                    ?.validation
+                  if (!validation) return null
+                  if (validation.valid) {
+                    return <span className="text-xs text-neon-green">✓ Pre-validado por OCR</span>
+                  }
+                  return (
+                    <span className="text-xs text-error" title={validation.reasons.join(" — ")}>
+                      ⚠ OCR: {validation.reasons[0]}
+                    </span>
+                  )
+                })()}
               </div>
             </div>
 

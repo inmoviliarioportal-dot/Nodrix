@@ -72,6 +72,7 @@ export const DOCUMENT_TYPES = [
   { value: "cedula", label: "Cédula de identidad" },
   { value: "liquidacion_sueldo", label: "Liquidación de sueldo" },
   { value: "certificado_afp", label: "Certificado AFP" },
+  { value: "contrato_trabajo", label: "Contrato de trabajo" },
 ] as const;
 
 export interface ScoringFactor {
@@ -95,6 +96,13 @@ export interface DocumentRecord {
   url?: string;
   status: DocumentStatus | string;
   created_at?: string;
+  /** Resultado de la pre-validación automática por OCR (ver lib/ocr/*). */
+  extracted_data?: {
+    engine?: string;
+    error?: string;
+    textPreview?: string;
+    validation?: { valid: boolean; reasons: string[]; checks: Record<string, boolean> };
+  } | null;
 }
 
 export interface ApplicationRecord {

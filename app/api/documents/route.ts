@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { requireAuth } from "@/app/api/_shared";
 import { apiError, withErrorHandling, HTTP_STATUS } from "@/app/api/_shared";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase";
+import { extractText } from "@/lib/ocr/extractText";
+import { validateDocument } from "@/lib/ocr/validateDocument";
 
 /**
  * Fixed org_id used across the MVP (single-tenant operation, multi-tenant
@@ -158,5 +160,83 @@ export const POST = withErrorHandling(async (request: Request) => {
     );
   }
 
-  return NextResponse.json(documentRow, { status: 201 });
+  // Pre-validación automática vía OCR (best-effort): nunca bloquea la
+  // subida si falla, y nunca aprueba por sí sola un documento — solo
+  // adelanta trabajo al asesor (auto-rechaza lo que claramente no
+  // corresponde, o marca "en_revision" con la validación ya hecha).
+  const finalDocument = await runOcrPreValidation(supabase, documentRow, file, applicationId);
+
+  return NextResponse.json(finalDocument ?? documentRow, { status: 201 });
 });
+
+/**
+ * Corre OCR + validación de contenido sobre el archivo recién subido y
+ * actualiza `documents.status`/`extracted_data` según el resultado:
+ * - texto no extraíble -> se deja en 'pendiente' (revisión manual normal).
+ * - validación falla -> 'rechazado' con las razones en extracted_data.
+ * - validación pasa -> 'en_revision' (pre-validado, a la espera del asesor).
+ *
+ * Nunca lanza: cualquier error se traga y el documento queda en su estado
+ * por defecto ('pendiente'), igual que si esta función no existiera.
+ */
+async function runOcrPreValidation(
+  supabase: ReturnType<typeof createSupabaseServiceRoleClient>,
+  documentRow: any,
+  file: File,
+  applicationId: string
+): Promise<any | null> {
+  try {
+    const { data: application } = await (supabase.from("applications") as any)
+      .select("customer_id")
+      .eq("id", applicationId)
+      .maybeSingle();
+    if (!application?.customer_id) return null;
+
+    const { data: customer } = await (supabase.from("customers") as any)
+      .select("name, rut_ciphertext")
+      .eq("id", application.customer_id)
+      .maybeSingle();
+    if (!customer) return null;
+
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const { text, engine, error: ocrError } = await extractText(buffer, file.type);
+
+    if (!text) {
+      // No se pudo extraer texto (PDF escaneado, imagen ilegible, etc.) —
+      // se deja en 'pendiente' para revisión manual normal, sin bloquear.
+      await (supabase.from("documents") as any)
+        .update({ extracted_data: { engine, error: ocrError ?? "No text extracted" } })
+        .eq("id", documentRow.id);
+      return null;
+    }
+
+    const validation = validateDocument(documentRow.type, text, {
+      name: customer.name,
+      rut: customer.rut_ciphertext,
+    });
+
+    const newStatus = validation.valid ? "en_revision" : "rechazado";
+
+    const { data: updated } = await (supabase.from("documents") as any)
+      .update({
+        status: newStatus,
+        extracted_data: {
+          engine,
+          validation,
+          // Solo se guarda un extracto acotado del texto OCR (evidencia
+          // para el asesor), no el documento completo.
+          textPreview: text.slice(0, 1000),
+        },
+      })
+      .eq("id", documentRow.id)
+      .select()
+      .single();
+
+    return updated ?? null;
+  } catch (err) {
+    // OCR es una mejora, no un requisito — cualquier falla inesperada deja
+    // el documento tal como quedó tras el insert original.
+    console.error("[OCR pre-validation] failed:", err);
+    return null;
+  }
+}
