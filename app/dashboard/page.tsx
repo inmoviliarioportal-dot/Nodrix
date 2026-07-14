@@ -11,6 +11,7 @@ import { ScoringBadge, type ScoringCategory } from "@/components/ui/scoring-badg
 import { Toaster } from "@/components/ui/sonner"
 
 import { AdvisorCard } from "@/components/dashboard/AdvisorCard"
+import { ComunaOffersCard } from "@/components/dashboard/ComunaOffersCard"
 import { DocumentsCard } from "@/components/dashboard/DocumentsCard"
 import { DocumentUploadModal } from "@/components/dashboard/DocumentUploadModal"
 import { NextStepCard } from "@/components/dashboard/NextStepCard"
@@ -243,6 +244,9 @@ export default function DashboardPage() {
                 />
                 <NextStepCard stage={stage} />
               </div>
+              {stage === "PRE_EVALUACION_COMPLETADA" && application && (
+                <ComunaOffersCard applicationId={application.id} />
+              )}
               <AdvisorCard />
             </div>
           </div>
