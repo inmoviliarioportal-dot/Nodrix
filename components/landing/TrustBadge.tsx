@@ -3,13 +3,14 @@ import type { LucideIcon } from "lucide-react"
 interface TrustBadgeProps {
   icon: LucideIcon
   label: string
-  glow?: "cyan" | "purple" | "green"
+  glow?: "cyan" | "purple" | "green" | "gold"
 }
 
 const GLOW_CLASS: Record<NonNullable<TrustBadgeProps["glow"]>, string> = {
   cyan: "text-neon-cyan",
   purple: "text-neon-purple",
   green: "text-neon-green",
+  gold: "text-gold",
 }
 
 /**
