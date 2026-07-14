@@ -66,6 +66,45 @@ function readWizardPayload(): Record<string, unknown> | null {
   return null;
 }
 
+/**
+ * Cache a nivel de módulo (no de instancia de componente) de la petición
+ * `POST /api/leads` en curso, por email. Sobrevive al doble-montaje de
+ * React Strict Mode (dev): ambos montajes llaman a `submitLead` con el
+ * mismo email y reciben la MISMA promesa en vez de disparar 2 fetches
+ * reales -- eso es lo que causaba dos `applications` duplicadas para el
+ * mismo customer (race condition en la rama "existing customer, sin
+ * application todavía" de POST /api/leads). Un ref por instancia no sirve
+ * acá porque Strict Mode simula un unmount/remount real: cada instancia
+ * tiene su propio ref, y el que sobrevive necesita ver el resultado del
+ * fetch que ya disparó la instancia "fantasma".
+ *
+ * Importante: se cachea la promesa del JSON ya parseado (`status` +
+ * `data`), no el `Response` crudo -- el body de un `Response` solo se
+ * puede leer una vez (`.json()`), así que si ambos montajes compartieran
+ * el mismo `Response` y cada uno llamara `.json()`, el segundo fallaría
+ * con "body stream already read" (bug real que se dio en pruebas).
+ */
+let inflightLeadSubmission: {
+  email: string;
+  promise: Promise<{ status: number; data: unknown }>;
+} | null = null;
+
+function submitLead(
+  email: string,
+  requestBody: Record<string, unknown>
+): Promise<{ status: number; data: unknown }> {
+  if (inflightLeadSubmission && inflightLeadSubmission.email === email) {
+    return inflightLeadSubmission.promise;
+  }
+  const promise = fetch("/api/leads", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(requestBody),
+  }).then(async (response) => ({ status: response.status, data: await response.json() }));
+  inflightLeadSubmission = { email, promise };
+  return promise;
+}
+
 export default function ProcessingPage() {
   const router = useRouter();
   const [percent, setPercent] = useState(0);
@@ -78,12 +117,16 @@ export default function ProcessingPage() {
     // then mounts it again -- the first mount's fetch gets cancelled before
     // it resolves, so only the second (surviving) mount's fetch actually
     // completes and navigates. A previous version tried to guard against
-    // this with a `startedRef` that returned early on the second mount,
-    // which backfired: it blocked the ONE invocation that would have
-    // survived to finish, leaving the screen stuck forever. Don't add that
-    // guard back -- POST /api/leads is idempotent (dedup by email returns
-    // 409 with the same application), so letting both mounts fire in dev is
-    // harmless, and production only ever mounts once.
+    // this with a per-instance `startedRef` that returned early on the
+    // second mount, which backfired: it blocked the ONE invocation that
+    // would have survived to finish, leaving the screen stuck forever.
+    // Removing that guard fixed the hang but exposed a real race: both
+    // mounts now fired a genuine POST /api/leads concurrently, and for a
+    // brand-new customer this raced inside the endpoint's "existing
+    // customer, no application yet" branch, creating two `applications`
+    // rows for the same customer. `submitLead` (module-level, survives the
+    // remount) fixes this properly: both mounts await the SAME fetch
+    // instead of firing two.
     let cancelled = false;
     const startedAt = Date.now();
 
@@ -129,19 +172,18 @@ export default function ProcessingPage() {
       }
 
       try {
-        const response = await fetch("/api/leads", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(requestBody),
-        });
+        const { status, data } = await submitLead(requestBody.email, requestBody);
+        const result = data as {
+          customer?: unknown;
+          application?: unknown;
+          duplicate?: boolean;
+        } | null;
 
         // 409 = duplicate lead. The endpoint still returns a usable
         // `customer` + `application` in that case, so we treat it as success.
-        if (!response.ok && response.status !== 409) {
-          throw new Error(`API respondió ${response.status}`);
+        if (status < 200 || (status >= 300 && status !== 409)) {
+          throw new Error(`API respondió ${status}`);
         }
-
-        const result = await response.json();
 
         if (!result?.application) {
           throw new Error("La respuesta no incluyó una solicitud (application) válida");

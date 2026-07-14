@@ -89,6 +89,20 @@ export const POST = withErrorHandling(async (request: Request) => {
         .single();
 
       if (newApplicationError || !newApplication) {
+        // 23505 = unique_violation: otra request concurrente para el mismo
+        // customer ganó la carrera y ya creó su application (ver migración
+        // 010, idx_applications_one_open_per_customer) -- no es un error
+        // real, solo hay que devolver la que la otra request efectivamente
+        // creó en vez de fallar.
+        if ((newApplicationError as { code?: string } | null)?.code === "23505") {
+          const raced = await findLatestApplicationForCustomer(supabase, existing.id);
+          if (raced) {
+            return NextResponse.json(
+              { duplicate: true, customer: existing, application: raced },
+              { status: HTTP_STATUS.CONFLICT }
+            );
+          }
+        }
         return apiError(
           `Failed to create application for existing customer: ${newApplicationError?.message ?? "unknown error"}`,
           HTTP_STATUS.INTERNAL_SERVER_ERROR
