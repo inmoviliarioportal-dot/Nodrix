@@ -27,7 +27,7 @@ export interface ProposalProperty {
  * usan valores por defecto razonables si faltan (ver lib/proposal-data.ts).
  */
 export interface OnboardingScoringResult {
-  category?: "BRONCE" | "PLATA" | "ORO" | "PLATINO" | string
+  category?: "BRONCE" | "PLATA" | "ORO" | "PLATINO" | "BLACK" | string
   score?: number
   leadId?: string
   applicationId?: string

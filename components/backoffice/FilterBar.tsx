@@ -117,7 +117,7 @@ function FilterBar({ filters, onChange, onClear, resultCount }: FilterBarProps) 
         <CheckDropdown<ScoringCategory>
           label="Categoría"
           options={SCORING_CATEGORIES}
-          labels={{ BRONCE: "Bronce", PLATA: "Plata", ORO: "Oro", PLATINO: "Platino" }}
+          labels={{ BRONCE: "Bronce", PLATA: "Plata", ORO: "Oro", PLATINO: "Platino", BLACK: "Black" }}
           selected={filters.categories}
           onToggle={(value) =>
             onChange({ ...filters, categories: toggleValue(filters.categories, value) })

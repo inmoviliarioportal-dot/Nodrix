@@ -29,7 +29,7 @@ import {
 import { Field, FieldLabel, FieldDescription } from "@/components/ui/field"
 import { Toaster } from "@/components/ui/sonner"
 
-const SCORING_CATEGORIES: ScoringCategory[] = ["BRONCE", "PLATA", "ORO", "PLATINO"]
+const SCORING_CATEGORIES: ScoringCategory[] = ["BRONCE", "PLATA", "ORO", "PLATINO", "BLACK"]
 
 /**
  * Página temporal de preview visual del design system. NO es una página de

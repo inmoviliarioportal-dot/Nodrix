@@ -5,7 +5,7 @@ import type { ApplicationRow, CustomerRow } from "@/lib/leads"
 import { STAGE_LABELS, maskRut } from "./types"
 
 function isScoringCategory(value: unknown): value is ScoringCategory {
-  return value === "BRONCE" || value === "PLATA" || value === "ORO" || value === "PLATINO"
+  return value === "BRONCE" || value === "PLATA" || value === "ORO" || value === "PLATINO" || value === "BLACK"
 }
 
 interface DetailHeaderProps {

@@ -5,7 +5,7 @@ import * as React from "react"
 import { APPLICATION_STAGES, STAGE_LABELS } from "@/components/dashboard/types"
 import { MOCK_ADVISOR_PERFORMANCE } from "@/components/admin/types"
 
-const CATEGORIES = ["Todas", "BRONCE", "PLATA", "ORO", "PLATINO"] as const
+const CATEGORIES = ["Todas", "BRONCE", "PLATA", "ORO", "PLATINO", "BLACK"] as const
 
 function fieldClass() {
   return "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm text-text-primary outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"

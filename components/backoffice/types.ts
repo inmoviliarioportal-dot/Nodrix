@@ -22,7 +22,7 @@ export const STAGE_LABELS: Record<ApplicationStage, string> = {
   CIERRE: "Cierre",
 }
 
-export const SCORING_CATEGORIES: ScoringCategory[] = ["BRONCE", "PLATA", "ORO", "PLATINO"]
+export const SCORING_CATEGORIES: ScoringCategory[] = ["BRONCE", "PLATA", "ORO", "PLATINO", "BLACK"]
 
 /** Buckets de "días en stage" para el filtro. */
 export type DaysInStageBucket = "0-5" | "5-10" | "10+"

@@ -16,7 +16,7 @@ export interface FunnelStage {
 }
 
 export interface ScoringDistributionItem {
-  category: "BRONCE" | "PLATA" | "ORO" | "PLATINO"
+  category: "BRONCE" | "PLATA" | "ORO" | "PLATINO" | "BLACK"
   label: string
   percentage: number
   color: string
@@ -30,7 +30,7 @@ export interface TimelinePoint {
 export interface TopLead {
   id: string
   client: string
-  category: "BRONCE" | "PLATA" | "ORO" | "PLATINO"
+  category: "BRONCE" | "PLATA" | "ORO" | "PLATINO" | "BLACK"
   stage: string
   daysInStage: number
 }
@@ -63,10 +63,11 @@ export const MOCK_FUNNEL: FunnelStage[] = [
 ]
 
 export const MOCK_SCORING_DISTRIBUTION: ScoringDistributionItem[] = [
-  { category: "BRONCE", label: "Bronce", percentage: 30, color: "var(--bronce)" },
-  { category: "PLATA", label: "Plata", percentage: 40, color: "var(--plata)" },
-  { category: "ORO", label: "Oro", percentage: 25, color: "var(--oro)" },
-  { category: "PLATINO", label: "Platino", percentage: 5, color: "var(--platino)" },
+  { category: "BRONCE", label: "Bronce", percentage: 28, color: "var(--bronce)" },
+  { category: "PLATA", label: "Plata", percentage: 38, color: "var(--plata)" },
+  { category: "ORO", label: "Oro", percentage: 22, color: "var(--oro)" },
+  { category: "PLATINO", label: "Platino", percentage: 10, color: "var(--platino)" },
+  { category: "BLACK", label: "Black", percentage: 2, color: "var(--neon-purple)" },
 ]
 
 /** 30 días de mock, con tendencia ascendente hacia fin de mes. */

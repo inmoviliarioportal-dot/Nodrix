@@ -83,7 +83,7 @@ export interface ScoringFactor {
 
 export interface ScoringResult {
   score: number;
-  category: "BRONCE" | "PLATA" | "ORO" | "PLATINO";
+  category: "BRONCE" | "PLATA" | "ORO" | "PLATINO" | "BLACK";
   explanation: string;
   factorsApplied?: ScoringFactor[];
   rulesVersion?: string;

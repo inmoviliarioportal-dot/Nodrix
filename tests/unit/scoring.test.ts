@@ -31,7 +31,8 @@ describe("scoring engine — configuración de pesos y umbrales", () => {
     expect(SCORING_THRESHOLDS.BRONCE.max + 1).toBe(SCORING_THRESHOLDS.PLATA.min);
     expect(SCORING_THRESHOLDS.PLATA.max + 1).toBe(SCORING_THRESHOLDS.ORO.min);
     expect(SCORING_THRESHOLDS.ORO.max + 1).toBe(SCORING_THRESHOLDS.PLATINO.min);
-    expect(SCORING_THRESHOLDS.PLATINO.max).toBe(100);
+    expect(SCORING_THRESHOLDS.PLATINO.max + 1).toBe(SCORING_THRESHOLDS.BLACK.min);
+    expect(SCORING_THRESHOLDS.BLACK.max).toBe(100);
   });
 });
 
@@ -105,7 +106,22 @@ describe("scoring engine — un caso por categoría", () => {
     expect(result.score).toBeLessThanOrEqual(SCORING_THRESHOLDS.ORO.max);
   });
 
-  it("clasifica un perfil excelente como PLATINO", () => {
+  it("clasifica un perfil muy bueno como PLATINO", () => {
+    const result = calculateScoring({
+      monthlySalary: 1_800_000,
+      savingsAmount: 7_000_000,
+      employmentType: "indefinido",
+      employmentYears: 4,
+      hasExistingDebt: false,
+      monthlyDebtPayments: 0,
+    });
+
+    expect(result.category).toBe("PLATINO");
+    expect(result.score).toBeGreaterThanOrEqual(SCORING_THRESHOLDS.PLATINO.min);
+    expect(result.score).toBeLessThanOrEqual(SCORING_THRESHOLDS.PLATINO.max);
+  });
+
+  it("clasifica un perfil excepcional como BLACK", () => {
     const result = calculateScoring({
       monthlySalary: 3_000_000,
       savingsAmount: 12_000_000,
@@ -115,9 +131,9 @@ describe("scoring engine — un caso por categoría", () => {
       monthlyDebtPayments: 0,
     });
 
-    expect(result.category).toBe("PLATINO");
-    expect(result.score).toBeGreaterThanOrEqual(SCORING_THRESHOLDS.PLATINO.min);
-    expect(result.score).toBeLessThanOrEqual(SCORING_THRESHOLDS.PLATINO.max);
+    expect(result.category).toBe("BLACK");
+    expect(result.score).toBeGreaterThanOrEqual(SCORING_THRESHOLDS.BLACK.min);
+    expect(result.score).toBeLessThanOrEqual(SCORING_THRESHOLDS.BLACK.max);
   });
 });
 

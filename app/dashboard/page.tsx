@@ -33,7 +33,7 @@ import { Button } from "@/components/ui/button"
 import { UploadCloud } from "lucide-react"
 
 function isScoringCategory(value: unknown): value is ScoringCategory {
-  return value === "BRONCE" || value === "PLATA" || value === "ORO" || value === "PLATINO"
+  return value === "BRONCE" || value === "PLATA" || value === "ORO" || value === "PLATINO" || value === "BLACK"
 }
 
 /** Extrae la application "actual" del usuario desde las distintas formas posibles

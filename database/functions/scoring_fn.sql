@@ -172,7 +172,8 @@ CREATE OR REPLACE FUNCTION scoring_fn(
   weight_carga NUMERIC DEFAULT 20,
   threshold_plata NUMERIC DEFAULT 40,
   threshold_oro NUMERIC DEFAULT 60,
-  threshold_platino NUMERIC DEFAULT 80
+  threshold_platino NUMERIC DEFAULT 75,
+  threshold_black NUMERIC DEFAULT 90
 )
 RETURNS TABLE (
   score NUMERIC,
@@ -206,6 +207,7 @@ BEGIN
   v_score := ROUND(LEAST(100, GREATEST(0, v_raw_score))::NUMERIC, 1);
 
   v_category := CASE
+    WHEN v_score >= threshold_black THEN 'BLACK'
     WHEN v_score >= threshold_platino THEN 'PLATINO'
     WHEN v_score >= threshold_oro THEN 'ORO'
     WHEN v_score >= threshold_plata THEN 'PLATA'
@@ -271,7 +273,8 @@ BEGIN
       (v_config.weights->>'CARGA_FINANCIERA')::NUMERIC,
       (v_config.thresholds->'PLATA'->>'min')::NUMERIC,
       (v_config.thresholds->'ORO'->>'min')::NUMERIC,
-      (v_config.thresholds->'PLATINO'->>'min')::NUMERIC
+      (v_config.thresholds->'PLATINO'->>'min')::NUMERIC,
+      (v_config.thresholds->'BLACK'->>'min')::NUMERIC
     );
   END IF;
 END;

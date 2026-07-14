@@ -31,7 +31,7 @@ export interface CustomerFinancialProfile {
   monthlyDebtPayments: number; // CLP
 }
 
-export type ScoringCategory = "BRONCE" | "PLATA" | "ORO" | "PLATINO";
+export type ScoringCategory = "BRONCE" | "PLATA" | "ORO" | "PLATINO" | "BLACK";
 
 export interface ScoringFactor {
   factor: string;
@@ -54,8 +54,9 @@ export interface ScoringResult {
 export const SCORING_THRESHOLDS = {
   BRONCE: { min: 0, max: 39 },
   PLATA: { min: 40, max: 59 },
-  ORO: { min: 60, max: 79 },
-  PLATINO: { min: 80, max: 100 },
+  ORO: { min: 60, max: 74 },
+  PLATINO: { min: 75, max: 89 },
+  BLACK: { min: 90, max: 100 },
 } as const;
 
 /**
@@ -204,6 +205,7 @@ function categoryFor(
   score: number,
   thresholds: ScoringThresholdsConfig
 ): ScoringCategory {
+  if (score >= thresholds.BLACK.min) return "BLACK";
   if (score >= thresholds.PLATINO.min) return "PLATINO";
   if (score >= thresholds.ORO.min) return "ORO";
   if (score >= thresholds.PLATA.min) return "PLATA";
@@ -226,7 +228,9 @@ function buildExplanation(
       "Tu perfil califica en categoría PLATA. Tienes una base financiera aceptable, con espacio para mejorar en algunos factores.",
     ORO: "Tu perfil califica en categoría ORO. Tienes un perfil financiero sólido con buenas condiciones de acceso.",
     PLATINO:
-      "Tu perfil califica en categoría PLATINO. Tienes el mejor perfil financiero posible, con acceso a las condiciones más favorables.",
+      "Tu perfil califica en categoría PLATINO. Tienes un perfil financiero excelente, con acceso a condiciones muy favorables.",
+    BLACK:
+      "Tu perfil califica en categoría BLACK, la más alta. Tienes el mejor perfil financiero posible, con acceso a las condiciones más favorables y prioritarias.",
   };
 
   return `${categoryText[category]} Puntaje total: ${score.toFixed(1)}/100.\nDetalle por factor:\n${lines}`;

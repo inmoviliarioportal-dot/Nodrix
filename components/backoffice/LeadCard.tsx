@@ -13,10 +13,11 @@ const CATEGORY_GLOW: Record<ScoringCategory, string> = {
   PLATA: "",
   ORO: "glow-cyan",
   PLATINO: "glow-purple",
+  BLACK: "glow-purple",
 }
 
 function isScoringCategory(value: unknown): value is ScoringCategory {
-  return value === "BRONCE" || value === "PLATA" || value === "ORO" || value === "PLATINO"
+  return value === "BRONCE" || value === "PLATA" || value === "ORO" || value === "PLATINO" || value === "BLACK"
 }
 
 interface LeadCardProps {
