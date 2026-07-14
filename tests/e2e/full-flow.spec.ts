@@ -16,18 +16,19 @@ import { test, expect, type Page } from "@playwright/test";
  *     Todas las transiciones son alcanzables vía PATCH /api/applications/[id]/stage
  *     (incluso las marcadas `automatic: true`), así que este test las dispara
  *     manualmente para no depender de triggers automáticos aún no implementados.
- *   - No existen (al momento de escribir esta suite) endpoints `/api/deeds` ni
- *     `/api/closures`, ni páginas `/admin/dashboard` / `/admin/reports`, ni un
- *     sistema de roles asesor/admin separado (login único). Cada test que
- *     depende de estas piezas usa `test.skip(...)` con un mensaje claro, igual
- *     que el patrón de tolerancia usado en release1.spec.ts, para que la suite
- *     seiga siendo re-ejecutable a medida que estas piezas se publiquen.
+ *   - Cada test que depende de piezas opcionales usa `test.skip(...)` con un
+ *     mensaje claro, igual que el patrón de tolerancia usado en release1.spec.ts,
+ *     para que la suite siga siendo re-ejecutable a medida que estas piezas
+ *     evolucionen.
  *   - `documents.status` real usa minúsculas: 'pendiente' | 'en_revision' |
  *     'aprobado' | 'rechazado' (ver components/vault/DocumentVaultItem.tsx).
- *   - No hay fixtures de usuario asesor/admin separados del cliente en este MVP;
- *     la sesión de auth es única (misma tabla `users`/Supabase Auth), por lo que
- *     los tests de asesor/admin reusan la sesión ya autenticada del test 1 en vez
- *     de intentar un login con rol distinto que no existe todavía.
+ *   - `/backoffice/*` y `/admin/*` ahora exigen rol (asesor/admin/gerencia y
+ *     admin/gerencia respectivamente — ver `app/backoffice/layout.tsx`,
+ *     `app/admin/layout.tsx`, `lib/auth-guards.ts`). Este archivo cambia de
+ *     sesión con el helper `loginAs(page, email, password)` hacia las cuentas
+ *     de staff sembradas por `npm run seed:staff`
+ *     (`scripts/seed-staff-users.mjs`) — correr ese script una vez contra
+ *     Supabase local antes de ejecutar esta suite.
  */
 
 function uniqueEmail(prefix: string) {
@@ -75,6 +76,21 @@ test.describe("Release 3 — Full flow: lead -> cierre", () => {
     const res = await page.goto(url, { waitUntil: "load" });
     loadTimings.push(Date.now() - start);
     return res;
+  }
+
+  /**
+   * Cambia la sesión activa de `page` a una cuenta de staff (asesor/admin/
+   * gerencia). Estas cuentas ahora SÍ existen (ver `scripts/seed-staff-users.mjs`
+   * — `npm run seed:staff` debe correrse una vez contra Supabase local antes de
+   * esta suite), y `/backoffice/*`/`/admin/*` están protegidas por rol
+   * (`app/backoffice/layout.tsx`, `app/admin/layout.tsx`, `lib/auth-guards.ts`)
+   * — el cliente registrado en el test 1 ya no puede entrar a esas rutas.
+   */
+  async function loginAs(page: Page, email: string, password: string) {
+    const res = await page.request.post("/api/auth/login", { data: { email, password } });
+    if (!res.ok()) {
+      throw new Error(`No se pudo iniciar sesión como ${email}: ${res.status()} ${await res.text()}`);
+    }
   }
 
   const user = {
@@ -313,9 +329,11 @@ test.describe("Release 3 — Full flow: lead -> cierre", () => {
     const page = sharedPage;
     test.skip(!applicationId, "No hay applicationId de los tests anteriores.");
 
-    // No existe un usuario/rol "asesor" separado en el MVP (login único, ver
-    // nota de contrato al inicio del archivo) — se reutiliza la sesión ya
-    // autenticada para navegar el backoffice.
+    // /backoffice/* ahora exige rol asesor/admin/gerencia (ver
+    // app/backoffice/layout.tsx) — cambiamos la sesión activa a la cuenta de
+    // asesor sembrada por `npm run seed:staff` (scripts/seed-staff-users.mjs).
+    await loginAs(page, "asesor@nodrix.dev", "Nodrix123!");
+
     const queueRes = await timedGoto(page, "/backoffice/queue");
     test.skip(
       !queueRes || queueRes.status() >= 400,
@@ -408,8 +426,10 @@ test.describe("Release 3 — Full flow: lead -> cierre", () => {
   test("7. Dashboard admin -> KPIs y funnel de conversión", async () => {
     const page = sharedPage;
 
-    // No existe rol admin separado en el MVP (ver nota de contrato al inicio) —
-    // se reutiliza la sesión autenticada del cliente/asesor.
+    // /admin/* exige rol admin/gerencia (ver app/admin/layout.tsx) — cambiamos
+    // la sesión activa a la cuenta de admin sembrada por `npm run seed:staff`.
+    await loginAs(page, "admin@nodrix.dev", "Nodrix123!");
+
     const adminRes = await timedGoto(page, "/admin/dashboard");
     test.skip(
       !adminRes || adminRes.status() >= 400,
