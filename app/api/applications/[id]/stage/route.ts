@@ -3,6 +3,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { apiError, requireAuth, withErrorHandling, HTTP_STATUS } from "@/app/api/_shared";
 import { APPLICATION_STAGES, isValidStage, type ApplicationStage, type AnySupabaseClient } from "@/lib/leads";
 import { STAGE_TRANSITIONS, applyAutomaticTransitions } from "@/lib/stage-machine";
+import { notifyStageChange } from "@/lib/notifications";
 
 /**
  * PATCH /api/applications/[id]/stage
@@ -114,6 +115,9 @@ export const PATCH = withErrorHandling(async (request: Request, context: { param
       HTTP_STATUS.INTERNAL_SERVER_ERROR
     );
   }
+
+  // Notificación por email al cliente (best-effort, ver lib/notifications.ts).
+  await notifyStageChange(supabase, id, stage as ApplicationStage);
 
   // Encadenar cualquier transición automática alcanzable desde el nuevo
   // estado (ej. DOCUMENTOS_APROBADOS -> PRE_EVALUACION_COMPLETADA) — ver

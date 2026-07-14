@@ -1,5 +1,6 @@
 import type { AnySupabaseClient, ApplicationStage } from "@/lib/leads";
 import { calculatePreEvaluation, DEFAULT_SALARY, DEFAULT_SAVINGS } from "@/lib/pre-evaluation";
+import { notifyStageChange } from "@/lib/notifications";
 
 /**
  * Máquina de estados lineal de 9 pasos (mismo orden que el CHECK constraint
@@ -66,6 +67,11 @@ export async function applyAutomaticTransitions(
     if (next === "PRE_EVALUACION_COMPLETADA") {
       await runAutomaticPreEvaluation(supabase, applicationId);
     }
+
+    // Notificación por email al cliente (best-effort, ver lib/notifications.ts).
+    // Se espera (no fire-and-forget) porque en entornos serverless el
+    // proceso puede terminar apenas se envía la respuesta HTTP.
+    await notifyStageChange(supabase, applicationId, next);
 
     appliedStages.push(next);
     current = next;

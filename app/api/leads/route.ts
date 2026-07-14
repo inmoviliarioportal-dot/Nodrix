@@ -14,6 +14,7 @@ import {
 } from "@/lib/leads";
 import { MVP_ORG_ID } from "@/app/api/auth/_constants";
 import { applyAutomaticTransitions } from "@/lib/stage-machine";
+import { notifyStageChange } from "@/lib/notifications";
 
 /**
  * POST /api/leads
@@ -228,6 +229,9 @@ export async function maybeApplyScoring(
     actor_user_id: null,
     note: `Auto-scoring: ${result.category} (${result.score}/100)`,
   });
+
+  // Notificación por email al cliente (best-effort, ver lib/notifications.ts).
+  await notifyStageChange(supabase, application.id, "SCORING_COMPLETADO");
 
   // SCORING_COMPLETADO -> DOCUMENTOS_PENDIENTES está marcada "automatic" en
   // la máquina de estados (lib/stage-machine.ts) — encadenarla aquí mismo en
