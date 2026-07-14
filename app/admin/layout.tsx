@@ -23,6 +23,7 @@ export default async function AdminLayout({
     { href: "/backoffice/queue", label: "Backoffice" },
     { href: "/backoffice/visits", label: "Visitas" },
     { href: "/admin/assignments", label: "Asignar asesor" },
+    { href: "/admin/properties", label: "Propiedades" },
     { href: "/admin/users/new", label: "Crear usuario" },
     { href: "/admin/roles", label: "Roles" },
   ]
