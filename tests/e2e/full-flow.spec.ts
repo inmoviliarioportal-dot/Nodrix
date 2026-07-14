@@ -416,7 +416,7 @@ test.describe("Release 3 — Full flow: lead -> cierre", () => {
       `/admin/dashboard no disponible todavía (status ${adminRes?.status()}) — Release 3 (Admin/Gerencia) aún no publicada.`
     );
 
-    await expect(page.getByRole("heading")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("heading").first()).toBeVisible({ timeout: 10_000 });
 
     // KPIs: al menos un número visible en la página.
     const kpiNumbers = page.locator("text=/\\d+/");

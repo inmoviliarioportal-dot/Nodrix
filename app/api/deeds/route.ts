@@ -37,7 +37,19 @@ const MOCK_NOTARY_ID = "mock-notary-001";
 
 function isMissingTableError(error: { code?: string; message?: string } | null): boolean {
   if (!error) return false;
-  return error.code === "42P01" || /relation .* does not exist/i.test(error.message ?? "");
+  // "42P01" is the raw Postgres code; PostgREST (used by supabase-js) instead
+  // returns "PGRST205" with a "Could not find the table ... in the schema
+  // cache" message when a table isn't exposed in its schema cache. A shape
+  // mismatch (existing table, missing column) reports as "PGRST204" /
+  // "Could not find the 'x' column" — also treated as fallback-worthy.
+  return (
+    error.code === "42P01" ||
+    error.code === "PGRST205" ||
+    error.code === "PGRST204" ||
+    /relation .* does not exist/i.test(error.message ?? "") ||
+    /could not find the table/i.test(error.message ?? "") ||
+    /could not find the .* column/i.test(error.message ?? "")
+  );
 }
 
 /**

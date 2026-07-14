@@ -38,7 +38,21 @@ const DEFAULT_MOCK_SALE_PRICE = 100_000_000; // CLP, mock fallback when salePric
 
 function isMissingTableError(error: { code?: string; message?: string } | null): boolean {
   if (!error) return false;
-  return error.code === "42P01" || /relation .* does not exist/i.test(error.message ?? "");
+  // "42P01" is the raw Postgres code; PostgREST (used by supabase-js) instead
+  // returns "PGRST205" with a "Could not find the table ... in the schema
+  // cache" message when a table isn't exposed in its schema cache. The real
+  // `closures` table (schema.sql) predates this endpoint and has a different
+  // shape (property_id/final_status, no deed_id) — PostgREST reports that as
+  // a missing-column error ("Could not find the 'x' column of 'y'"), which we
+  // also treat as "not the shape we expect" and fall back to the mock store.
+  return (
+    error.code === "42P01" ||
+    error.code === "PGRST205" ||
+    error.code === "PGRST204" ||
+    /relation .* does not exist/i.test(error.message ?? "") ||
+    /could not find the table/i.test(error.message ?? "") ||
+    /could not find the .* column/i.test(error.message ?? "")
+  );
 }
 
 /**
