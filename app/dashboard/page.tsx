@@ -14,13 +14,19 @@ import { DocumentUploadModal } from "@/components/dashboard/DocumentUploadModal"
 import { NextStepCard } from "@/components/dashboard/NextStepCard"
 import { PreEvaluationCard } from "@/components/dashboard/PreEvaluationCard"
 import { ScoringCard } from "@/components/dashboard/ScoringCard"
+import { StageAlert } from "@/components/dashboard/StageAlert"
+import { HookVideo } from "@/components/dashboard/HookVideo"
+import { STAGE_CLIENT_CONTENT } from "@/components/dashboard/stageContent"
 import {
   APPLICATION_STAGES,
   STAGE_LABELS,
   STAGE_MARKETING_LABELS,
+  type ApplicationStage,
   type ApplicationRecord,
   type AuthUserResponse,
 } from "@/components/dashboard/types"
+import { Button } from "@/components/ui/button"
+import { UploadCloud } from "lucide-react"
 
 function isScoringCategory(value: unknown): value is ScoringCategory {
   return value === "BRONCE" || value === "PLATA" || value === "ORO" || value === "PLATINO"
@@ -90,6 +96,8 @@ export default function DashboardPage() {
 
   const stage = application?.stage ?? "RECEPCIONADA"
   const stageLabel = STAGE_LABELS[stage] ?? stage
+  const stageContent =
+    STAGE_CLIENT_CONTENT[stage as ApplicationStage] ?? STAGE_CLIENT_CONTENT.RECEPCIONADA
   const documents = application?.documents ?? []
   const scoring =
     application?.scoring ??
@@ -131,29 +139,55 @@ export default function DashboardPage() {
         </div>
 
         {!loading && application && (
-          <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,360px)_1fr]">
             <div className="glass-card rounded-2xl p-6">
               <h2 className="mb-6 text-sm font-semibold uppercase tracking-wide text-text-tertiary">
-                Timeline de tu solicitud
+                Línea de tiempo
               </h2>
               <Timeline
-                orientation="horizontal"
+                orientation="vertical"
                 currentStage={stage}
                 stages={[...APPLICATION_STAGES]}
                 labels={STAGE_MARKETING_LABELS}
               />
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <ScoringCard scoring={scoring} />
-              <DocumentsCard documents={documents} onUploadClick={() => setUploadOpen(true)} />
-              <PreEvaluationCard
-                minUf={application?.pre_evaluation_min_uf}
-                maxUf={application?.pre_evaluation_max_uf}
-              />
-              <NextStepCard stage={stage} />
+            <div className="flex flex-col gap-4">
+              <StageAlert tone={stageContent.alert.tone} message={stageContent.alert.message} />
+
+              {stageContent.showUploadCta && (
+                <div className="glass-card glow-cyan flex flex-col items-start gap-3 rounded-2xl border border-neon-cyan/40 p-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-1">
+                    <p className="text-sm font-semibold text-text-primary">
+                      Tu solicitud necesita documentos
+                    </p>
+                    <p className="text-xs text-text-secondary">
+                      Súbelos ahora para que tu asesor pueda continuar el proceso.
+                    </p>
+                  </div>
+                  <Button
+                    className="glow-cyan gap-2 bg-neon-cyan text-deep hover:bg-neon-cyan/90"
+                    onClick={() => setUploadOpen(true)}
+                  >
+                    <UploadCloud className="size-4" aria-hidden="true" />
+                    Subir documentos
+                  </Button>
+                </div>
+              )}
+
+              <HookVideo title={stageContent.videoTitle} />
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <ScoringCard scoring={scoring} />
+                <DocumentsCard documents={documents} onUploadClick={() => setUploadOpen(true)} />
+                <PreEvaluationCard
+                  minUf={application?.pre_evaluation_min_uf}
+                  maxUf={application?.pre_evaluation_max_uf}
+                />
+                <NextStepCard stage={stage} />
+              </div>
+              <AdvisorCard />
             </div>
-            <AdvisorCard />
           </div>
         )}
       </div>
