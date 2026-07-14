@@ -28,7 +28,7 @@ export default function AdminReportsPage() {
   const [filters, setFilters] = React.useState<ReportFiltersState>(DEFAULT_FILTERS)
 
   return (
-    <Layout>
+    <Layout navLinks={[{ href: "/admin/dashboard", label: "KPIs" }, { href: "/admin/reports", label: "Reportes" }]}>
       <Toaster />
       <div className="bg-deep-ambient -mx-6 -my-8 min-h-[calc(100vh-4rem)] px-6 py-8 print:m-0 print:bg-none print:p-0">
         <div className="mx-auto flex max-w-6xl flex-col gap-6 print:max-w-full">

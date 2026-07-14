@@ -65,7 +65,15 @@ export default function LoginPage() {
       }
 
       toast.success("Sesión iniciada correctamente")
-      router.push("/dashboard")
+
+      const role = data?.role as "cliente" | "asesor" | "admin" | "gerencia" | undefined
+      const destination =
+        role === "asesor"
+          ? "/backoffice/queue"
+          : role === "admin" || role === "gerencia"
+            ? "/admin/dashboard"
+            : "/dashboard"
+      router.push(destination)
     } catch {
       toast.error("Error de conexión. Intenta nuevamente.")
     } finally {

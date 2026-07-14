@@ -159,7 +159,7 @@ export default function AdminManualPage() {
   }
 
   return (
-    <Layout>
+    <Layout navLinks={[{ href: "/admin/dashboard", label: "KPIs" }, { href: "/admin/reports", label: "Reportes" }]}>
       <Toaster />
       <div className="flex flex-col gap-6">
         <div className="flex items-start gap-3 rounded-lg border border-status-warning/40 bg-status-warning/10 px-4 py-3">

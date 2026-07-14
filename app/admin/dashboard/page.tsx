@@ -19,7 +19,7 @@ export const metadata = {
  */
 export default function AdminDashboardPage() {
   return (
-    <Layout>
+    <Layout navLinks={[{ href: "/admin/dashboard", label: "KPIs" }, { href: "/admin/reports", label: "Reportes" }]}>
       <div className="bg-deep-ambient -mx-6 -my-8 min-h-[calc(100vh-4rem)] px-6 py-8">
         <div className="mx-auto flex max-w-6xl flex-col gap-6">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">

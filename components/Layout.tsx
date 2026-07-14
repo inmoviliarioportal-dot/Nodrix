@@ -1,17 +1,33 @@
 import Link from "next/link"
 
 import { cn } from "@/lib/utils"
+import { LogoutButton } from "@/components/LogoutButton"
+
+export interface LayoutNavLink {
+  href: string
+  label: string
+}
 
 export interface LayoutProps extends React.ComponentProps<"div"> {
   /** Texto del logo/marca. Placeholder hasta definir branding final. */
   brand?: string
+  /** Links de navegación del header. Por defecto, "Dashboard" (portal cliente). */
+  navLinks?: LayoutNavLink[]
 }
+
+const DEFAULT_NAV_LINKS: LayoutNavLink[] = [{ href: "/dashboard", label: "Dashboard" }]
 
 /**
  * Layout base compartido: header con logo placeholder y navegación simple,
  * dark theme premium aplicado globalmente via app/globals.css.
  */
-function Layout({ brand = "Nodrix", className, children, ...props }: LayoutProps) {
+function Layout({
+  brand = "Nodrix",
+  navLinks = DEFAULT_NAV_LINKS,
+  className,
+  children,
+  ...props
+}: LayoutProps) {
   return (
     <div
       className={cn("flex min-h-screen flex-col bg-background text-foreground", className)}
@@ -25,10 +41,17 @@ function Layout({ brand = "Nodrix", className, children, ...props }: LayoutProps
           >
             {brand}
           </Link>
-          <nav className="flex items-center gap-6 text-sm text-text-secondary">
-            <Link href="/dashboard" className="transition-colors duration-200 hover:text-text-primary">
-              Dashboard
-            </Link>
+          <nav className="flex items-center gap-4 text-sm text-text-secondary sm:gap-6">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="hidden transition-colors duration-200 hover:text-text-primary sm:inline"
+              >
+                {link.label}
+              </Link>
+            ))}
+            <LogoutButton />
           </nav>
         </div>
       </header>
