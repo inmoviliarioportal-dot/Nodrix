@@ -53,6 +53,7 @@ export interface ApplicationRow {
   scoring_score: number | null;
   pre_evaluation_min_uf: number | null;
   pre_evaluation_max_uf: number | null;
+  assigned_advisor_id?: string | null;
   created_at: string;
   updated_at: string;
 }
