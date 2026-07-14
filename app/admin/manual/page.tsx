@@ -4,7 +4,6 @@ import * as React from "react"
 import { toast } from "sonner"
 import { TriangleAlertIcon } from "lucide-react"
 
-import { Layout } from "@/components/Layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -159,7 +158,7 @@ export default function AdminManualPage() {
   }
 
   return (
-    <Layout navLinks={[{ href: "/admin/dashboard", label: "KPIs" }, { href: "/admin/reports", label: "Reportes" }]}>
+    <>
       <Toaster />
       <div className="flex flex-col gap-6">
         <div className="flex items-start gap-3 rounded-lg border border-status-warning/40 bg-status-warning/10 px-4 py-3">
@@ -294,6 +293,6 @@ export default function AdminManualPage() {
           </CardContent>
         </Card>
       </div>
-    </Layout>
+    </>
   )
 }

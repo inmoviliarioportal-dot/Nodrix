@@ -4,7 +4,6 @@ import * as React from "react"
 import Link from "next/link"
 import { ArrowLeftIcon } from "lucide-react"
 
-import { Layout } from "@/components/Layout"
 import { Toaster } from "@/components/ui/sonner"
 import { ReportFilters, type ReportFiltersState } from "@/components/admin/ReportFilters"
 import { ExportButtons } from "@/components/admin/ExportButtons"
@@ -28,7 +27,7 @@ export default function AdminReportsPage() {
   const [filters, setFilters] = React.useState<ReportFiltersState>(DEFAULT_FILTERS)
 
   return (
-    <Layout navLinks={[{ href: "/admin/dashboard", label: "KPIs" }, { href: "/admin/reports", label: "Reportes" }]}>
+    <>
       <Toaster />
       <div className="bg-deep-ambient -mx-6 -my-8 min-h-[calc(100vh-4rem)] px-6 py-8 print:m-0 print:bg-none print:p-0">
         <div className="mx-auto flex max-w-6xl flex-col gap-6 print:max-w-full">
@@ -56,6 +55,6 @@ export default function AdminReportsPage() {
           <ReportSections />
         </div>
       </div>
-    </Layout>
+    </>
   )
 }
