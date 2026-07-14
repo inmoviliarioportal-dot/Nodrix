@@ -124,7 +124,7 @@ test.describe("Release 3 — Full flow: lead -> cierre", () => {
     firstName: "Full",
     lastName: "Flow E2E",
     rut: uniqueRut(),
-    gender: "otro",
+    gender: "prefiero_no_decir",
     birthDate: "1990-01-15",
     age: 36,
     phone: "+56933334444",

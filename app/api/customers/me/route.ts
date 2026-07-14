@@ -3,9 +3,9 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase";
 import { requireAuth, withErrorHandling, apiError, HTTP_STATUS } from "@/app/api/_shared";
 import { MVP_ORG_ID } from "@/app/api/auth/_constants";
 
-const VALID_GENDERS = ["femenino", "masculino", "otro", "prefiero_no_decir"];
-const VALID_INVESTMENT_TYPES = ["inversion", "vivienda_propia"];
-const VALID_PROPERTY_STATUSES = ["en_verde", "en_blanco", "usado", "sin_definir"];
+const VALID_GENDERS = ["femenino", "masculino", "prefiero_no_decir"];
+const VALID_INVESTMENT_TYPES = ["inversion", "vivienda_propia", "ambos"];
+const VALID_PROPERTY_STATUSES = ["en_verde", "en_blanco", "entrega_inmediata", "usado", "sin_definir"];
 
 /** Campos editables desde "Editar mis datos". RUT y email quedan fuera de
  * este endpoint a propósito: RUT es la identidad del cliente, y cambiar el

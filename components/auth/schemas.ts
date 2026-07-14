@@ -10,18 +10,19 @@ import { isValidRut } from "@/lib/rut"
 export const GENDER_OPTIONS = [
   { value: "femenino", label: "Femenino" },
   { value: "masculino", label: "Masculino" },
-  { value: "otro", label: "Otro" },
   { value: "prefiero_no_decir", label: "Prefiero no decir" },
 ] as const
 
 export const INVESTMENT_TYPE_OPTIONS = [
   { value: "inversion", label: "Inversión" },
   { value: "vivienda_propia", label: "Vivienda propia" },
+  { value: "ambos", label: "Ambos (comprar e invertir)" },
 ] as const
 
 export const PROPERTY_STATUS_OPTIONS = [
   { value: "en_verde", label: "En verde (planos)" },
   { value: "en_blanco", label: "En blanco (construcción)" },
+  { value: "entrega_inmediata", label: "Entrega inmediata (nuevo)" },
   { value: "usado", label: "Usado" },
   { value: "sin_definir", label: "Aún no lo sé" },
 ] as const
@@ -34,7 +35,7 @@ export const registerSchema = z.object({
     .trim()
     .toUpperCase()
     .refine((value) => isValidRut(value), "RUT inválido (verifica el dígito verificador)"),
-  gender: z.enum(["femenino", "masculino", "otro", "prefiero_no_decir"], {
+  gender: z.enum(["femenino", "masculino", "prefiero_no_decir"], {
     message: "Selecciona una opción",
   }),
   birthDate: z
@@ -55,10 +56,10 @@ export const registerSchema = z.object({
   monthlyIncome: z.coerce
     .number({ message: "Ingresa tu renta líquida mensual" })
     .min(0, "La renta no puede ser negativa"),
-  investmentType: z.enum(["inversion", "vivienda_propia"], {
+  investmentType: z.enum(["inversion", "vivienda_propia", "ambos"], {
     message: "Selecciona una opción",
   }),
-  propertyStatus: z.enum(["en_verde", "en_blanco", "usado", "sin_definir"], {
+  propertyStatus: z.enum(["en_verde", "en_blanco", "entrega_inmediata", "usado", "sin_definir"], {
     message: "Selecciona una opción",
   }),
   password: z

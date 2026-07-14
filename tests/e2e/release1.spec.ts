@@ -82,7 +82,7 @@ test.describe("Release 1 — Flujo completo", () => {
     firstName: "Cliente",
     lastName: "E2E Test",
     rut: uniqueRut(),
-    gender: "otro",
+    gender: "prefiero_no_decir",
     birthDate: "1990-01-15",
     age: "36",
     phone: "+56911112222",

@@ -23,9 +23,9 @@ type RegisterBody = {
   propertyStatus?: string;
 };
 
-const VALID_GENDERS = ["femenino", "masculino", "otro", "prefiero_no_decir"];
-const VALID_INVESTMENT_TYPES = ["inversion", "vivienda_propia"];
-const VALID_PROPERTY_STATUSES = ["en_verde", "en_blanco", "usado", "sin_definir"];
+const VALID_GENDERS = ["femenino", "masculino", "prefiero_no_decir"];
+const VALID_INVESTMENT_TYPES = ["inversion", "vivienda_propia", "ambos"];
+const VALID_PROPERTY_STATUSES = ["en_verde", "en_blanco", "entrega_inmediata", "usado", "sin_definir"];
 
 const REQUIRED_FIELDS: (keyof RegisterBody)[] = [
   "email",
