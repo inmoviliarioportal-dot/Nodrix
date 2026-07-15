@@ -22,6 +22,11 @@
 
 # production
 /build
+dist
+
+# python (skills bundle scripts)
+__pycache__
+.venv
 
 # misc
 .DS_Store
