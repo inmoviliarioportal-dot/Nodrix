@@ -204,16 +204,18 @@ export default function ProcessingPage() {
             })
           );
           window.setTimeout(() => {
-            // No mostramos la pantalla de "propuesta" (Combo Inversionista)
-            // acá -- en este punto solo tenemos salario/ahorro/endeudamiento
-            // autodeclarados (sin liquidación, cotizaciones AFP, etc. reales
-            // todavía), así que cualquier oferta de comuna/precio sería
-            // prematura y confunde al cliente. El scoring ya se calculó con
-            // esos datos autodeclarados (ver lib/scoring.ts); la oferta real
-            // por comuna se muestra recién en el dashboard cuando la
-            // solicitud llega a PRE_EVALUACION_COMPLETADA, después de que
-            // el OCR valida los documentos reales (ver ComunaOffersCard).
-            if (!cancelled) router.push("/dashboard");
+            // No mostramos la pantalla de "propuesta" mock (Combo
+            // Inversionista) acá -- en este punto solo tenemos
+            // salario/ahorro/endeudamiento autodeclarados (sin liquidación,
+            // cotizaciones AFP, etc. reales todavía). En su lugar, el
+            // cliente pasa por /onboarding/initial-proposal para elegir su
+            // propuesta inicial (simulación por tramo de departamentos,
+            // ver lib/proposal-risk.ts) antes de llegar a su panel. La
+            // oferta real por comuna se muestra recién en el dashboard
+            // cuando la solicitud llega a PRE_EVALUACION_COMPLETADA,
+            // después de que el OCR valida los documentos reales (ver
+            // ComunaOffersCard).
+            if (!cancelled) router.push("/onboarding/initial-proposal");
           }, 350);
         }, remaining);
       } catch (err) {

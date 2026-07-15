@@ -4,7 +4,10 @@ import { Building2 } from "lucide-react"
 
 const BAND_LABELS: Record<string, string> = {
   "1": "1 departamento",
-  "2-4": "2 a 4 departamentos",
+  "1-2": "1 a 2 departamentos",
+  "2-3": "2 a 3 departamentos",
+  "3-4": "3 a 4 departamentos",
+  "4-5": "4 a 5 departamentos",
   "5-6": "5 a 6 departamentos",
 }
 

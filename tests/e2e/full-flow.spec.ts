@@ -301,7 +301,7 @@ test.describe("Release 3 — Full flow: lead -> cierre", () => {
     // elección acá para que el resto de la suite (subida de documentos) siga
     // funcionando.
     const proposalRes = await page.request.post(`/api/applications/${applicationId}/select-initial-proposal`, {
-      data: { band: "2-4", purpose: "inversion" },
+      data: { band: "2-3", purpose: "inversion" },
     });
     expect(
       proposalRes.ok(),

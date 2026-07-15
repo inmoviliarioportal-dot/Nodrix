@@ -5,7 +5,7 @@ import { MVP_ORG_ID } from "@/app/api/auth/_constants";
 import { advanceAfterInitialProposalSelection } from "@/lib/stage-machine";
 import type { AnySupabaseClient } from "@/lib/leads";
 
-const VALID_BANDS = ["1", "2-4", "5-6"] as const;
+const VALID_BANDS = ["1", "1-2", "2-3", "3-4", "4-5", "5-6"] as const;
 const VALID_PURPOSES = ["inversion", "vivienda_propia"] as const;
 
 type Body = {

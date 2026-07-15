@@ -2,15 +2,15 @@
 
 import * as React from "react"
 import { toast } from "sonner"
-import { Building2, ShieldCheck, ShieldAlert, ShieldQuestion, TrendingUp, Home } from "lucide-react"
+import { Building2, TrendingUp, Home } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 interface BandResult {
-  band: "1" | "2-4" | "5-6"
+  band: "1" | "1-2" | "2-3" | "3-4" | "4-5" | "5-6"
   label: string
-  level: "alta" | "media" | "baja"
+  approvalProbability: number
 }
 
 type Purpose = "inversion" | "vivienda_propia"
@@ -25,32 +25,21 @@ const PURPOSE_ICONS: Record<Purpose, React.ElementType> = {
   vivienda_propia: Home,
 }
 
-const LEVEL_LABELS: Record<BandResult["level"], string> = {
-  alta: "Alta seguridad",
-  media: "Seguridad media",
-  baja: "Seguridad baja",
-}
-
-const LEVEL_STYLES: Record<BandResult["level"], string> = {
-  alta: "border-status-success/40 bg-status-success/10 text-status-success",
-  media: "border-status-warning/40 bg-status-warning/10 text-status-warning",
-  baja: "border-status-error/40 bg-status-error/10 text-status-error",
-}
-
-const LEVEL_ICONS: Record<BandResult["level"], React.ElementType> = {
-  alta: ShieldCheck,
-  media: ShieldQuestion,
-  baja: ShieldAlert,
+function probabilityStyles(probability: number): string {
+  if (probability >= 65) return "border-status-success/40 bg-status-success/10 text-status-success"
+  if (probability >= 35) return "border-status-warning/40 bg-status-warning/10 text-status-warning"
+  return "border-status-error/40 bg-status-error/10 text-status-error"
 }
 
 /**
  * Selección de propuesta inicial (simulación de riesgo) ANTES de subir
- * documentos: el cliente ve, para cada banda de departamentos (1 / 2-4 /
- * 5-6), qué tan segura es su opción según su scoring -- SIEMPRE se muestran
- * ambos lentes (inversión y vivienda propia), incluso si el cliente
- * registró solo uno de los dos, porque puede interesarle la otra
- * alternativa. Es una simulación: la propuesta final la define el asesor
- * después de la visita y la aprobación bancaria.
+ * documentos: el cliente ve, para cada tramo de departamentos (1 / 1-2 /
+ * 2-3 / 3-4 / 4-5 / 5-6), el % estimado de probabilidad de aprobación
+ * bancaria según su scoring -- SIEMPRE se muestran ambos lentes (inversión
+ * y vivienda propia), incluso si el cliente registró solo uno de los dos,
+ * porque puede interesarle la otra alternativa. Es una simulación: la
+ * propuesta final la define el asesor después de la visita y la aprobación
+ * bancaria.
  */
 function InitialProposalCard({
   applicationId,
@@ -112,9 +101,9 @@ function InitialProposalCard({
           Tu propuesta inicial
         </h2>
         <p className="mt-1 text-sm text-text-secondary">
-          Según tu perfil, esta es una <strong>simulación</strong> de a cuántos departamentos podrías optar.
-          No es una aprobación: queda sujeta a confirmación una vez que envíes tus documentos y estos sean
-          evaluados por el banco.
+          Según tu perfil, este es el <strong>% estimado de probabilidad de aprobación bancaria</strong> por cada
+          tramo de departamentos. Es una <strong>simulación</strong>, no una aprobación: queda sujeta a confirmación
+          una vez que envíes tus documentos y estos sean evaluados por el banco.
         </p>
       </div>
 
@@ -143,38 +132,34 @@ function InitialProposalCard({
         })}
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        {(bands ?? []).map((result) => {
-          const LevelIcon = LEVEL_ICONS[result.level]
-          return (
-            <div
-              key={result.band}
-              className="flex flex-col gap-3 rounded-xl border border-glass-border bg-surface-elevated p-4"
-            >
-              <div className="flex items-center gap-2">
-                <Building2 className="size-4 text-neon-cyan" />
-                <p className="text-sm font-medium text-text-primary">{result.label}</p>
-              </div>
-              <span
-                className={cn(
-                  "inline-flex w-fit items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium",
-                  LEVEL_STYLES[result.level]
-                )}
-              >
-                <LevelIcon className="size-3.5" />
-                {LEVEL_LABELS[result.level]}
-              </span>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={isSubmitting}
-                onClick={() => handleSelect(result.band)}
-              >
-                Elegir esta propuesta
-              </Button>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {(bands ?? []).map((result) => (
+          <div
+            key={result.band}
+            className="flex flex-col gap-3 rounded-xl border border-glass-border bg-surface-elevated p-4"
+          >
+            <div className="flex items-center gap-2">
+              <Building2 className="size-4 text-neon-cyan" />
+              <p className="text-sm font-medium text-text-primary">{result.label}</p>
             </div>
-          )
-        })}
+            <span
+              className={cn(
+                "inline-flex w-fit items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium",
+                probabilityStyles(result.approvalProbability)
+              )}
+            >
+              {result.approvalProbability}% de probabilidad estimada
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={isSubmitting}
+              onClick={() => handleSelect(result.band)}
+            >
+              Elegir esta propuesta
+            </Button>
+          </div>
+        ))}
       </div>
     </div>
   )

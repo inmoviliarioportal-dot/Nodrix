@@ -1,37 +1,42 @@
 import { describe, expect, it } from "vitest";
-import { calculateProposalBands } from "../../lib/proposal-risk";
+import { calculateProposalBands, PROPOSAL_BANDS } from "../../lib/proposal-risk";
 
 describe("calculateProposalBands", () => {
-  it("da baja seguridad en todas las bandas para un score BRONCE muy bajo", () => {
-    const result = calculateProposalBands(10);
-    expect(result.map((r) => r.level)).toEqual(["baja", "baja", "baja"]);
+  it("retorna las 6 bandas en orden", () => {
+    const result = calculateProposalBands(80);
+    expect(result.map((r) => r.band)).toEqual(PROPOSAL_BANDS);
+    expect(result).toHaveLength(6);
   });
 
-  it("da alta seguridad en 1 depto pero baja/media en las bandas más altas para un score PLATA", () => {
-    const result = calculateProposalBands(45);
-    const byBand = Object.fromEntries(result.map((r) => [r.band, r.level]));
-    expect(byBand["1"]).toBe("alta");
-    expect(byBand["2-4"]).toBe("media");
-    expect(byBand["5-6"]).toBe("baja");
+  it("el % de aprobación decrece monotónicamente a medida que crece la banda", () => {
+    const result = calculateProposalBands(85);
+    for (let i = 1; i < result.length; i++) {
+      expect(result[i].approvalProbability).toBeLessThanOrEqual(result[i - 1].approvalProbability);
+    }
   });
 
-  it("da alta seguridad en 1 y 2-4 deptos para un score ORO", () => {
-    const result = calculateProposalBands(65);
-    const byBand = Object.fromEntries(result.map((r) => [r.band, r.level]));
-    expect(byBand["1"]).toBe("alta");
-    expect(byBand["2-4"]).toBe("alta");
-    expect(byBand["5-6"]).toBe("media");
-  });
-
-  it("da alta seguridad en las 3 bandas para un score BLACK (excelente)", () => {
+  it("un score excelente (BLACK) da probabilidades altas incluso en la banda más exigente", () => {
     const result = calculateProposalBands(95);
-    expect(result.map((r) => r.level)).toEqual(["alta", "alta", "alta"]);
+    const byBand = Object.fromEntries(result.map((r) => [r.band, r.approvalProbability]));
+    expect(byBand["1"]).toBeGreaterThanOrEqual(85);
+    expect(byBand["5-6"]).toBeGreaterThanOrEqual(30);
   });
 
-  it("clampa scores fuera de rango en vez de romper", () => {
+  it("un score bajo (BRONCE) da probabilidades bajas en todas las bandas", () => {
+    const result = calculateProposalBands(15);
+    expect(result.every((r) => r.approvalProbability <= 20)).toBe(true);
+  });
+
+  it("clampa el % entre 3 y 97 en vez de dar 0% o 100% absolutos", () => {
+    const low = calculateProposalBands(-10);
+    const high = calculateProposalBands(150);
+    expect(low.every((r) => r.approvalProbability >= 3)).toBe(true);
+    expect(high.every((r) => r.approvalProbability <= 97)).toBe(true);
+  });
+
+  it("nunca lanza con scores fuera de rango", () => {
     expect(() => calculateProposalBands(-10)).not.toThrow();
-    expect(() => calculateProposalBands(150)).not.toThrow();
-    expect(calculateProposalBands(-10).every((r) => r.level === "baja")).toBe(true);
-    expect(calculateProposalBands(150).every((r) => r.level === "alta")).toBe(true);
+    expect(() => calculateProposalBands(1000)).not.toThrow();
+    expect(() => calculateProposalBands(NaN)).not.toThrow();
   });
 });
