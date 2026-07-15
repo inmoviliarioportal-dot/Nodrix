@@ -48,7 +48,7 @@ export const PATCH = withErrorHandling(async (request: Request, context: { param
 
   const { data: current, error: currentError } = await supabase
     .from("applications")
-    .select("id, stage, scoring_score")
+    .select("id, stage, scoring_score, accepted_proposal_option_id")
     .eq("id", id)
     .maybeSingle();
 
@@ -61,6 +61,8 @@ export const PATCH = withErrorHandling(async (request: Request, context: { param
 
   const currentStage = (current as { stage: string }).stage as ApplicationStage;
   const scoringScore = (current as { scoring_score: number | null }).scoring_score;
+  const acceptedProposalOptionId = (current as { accepted_proposal_option_id: string | null })
+    .accepted_proposal_option_id;
 
   const transition = STAGE_TRANSITIONS[currentStage];
 
@@ -80,6 +82,14 @@ export const PATCH = withErrorHandling(async (request: Request, context: { param
       "Cannot move to SCORING_COMPLETADO: the scoring engine has not produced a scoring_score for this application yet.",
       HTTP_STATUS.BAD_REQUEST,
       "SCORING_NOT_READY"
+    );
+  }
+
+  if (currentStage === "ENVIADO_A_BANCO" && stage === "ESCRITURACION_AGENDADA" && !acceptedProposalOptionId) {
+    return apiError(
+      "El cliente todavía no acepta ninguna opción de la propuesta final -- no se puede avanzar a escrituración.",
+      HTTP_STATUS.BAD_REQUEST,
+      "PROPOSAL_NOT_ACCEPTED"
     );
   }
 

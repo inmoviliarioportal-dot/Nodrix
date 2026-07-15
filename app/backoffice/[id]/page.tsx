@@ -9,6 +9,7 @@ import { Toaster } from "@/components/ui/sonner"
 import { DetailHeader } from "@/components/backoffice/DetailHeader"
 import { StageTimeline } from "@/components/backoffice/StageTimeline"
 import { DocumentsSection } from "@/components/backoffice/DocumentsSection"
+import { FinalProposalSection } from "@/components/backoffice/FinalProposalSection"
 import { PreEvaluationSection } from "@/components/backoffice/PreEvaluationSection"
 import { NotesSection } from "@/components/backoffice/NotesSection"
 import { StateTransition } from "@/components/backoffice/StateTransition"
@@ -129,6 +130,8 @@ export default function BackofficeApplicationDetailPage() {
             <DocumentsSection documents={documents} onDocumentsChange={setDocuments} />
 
             <PreEvaluationSection application={application} onUpdated={setApplication} />
+
+            <FinalProposalSection applicationId={application.id} stage={application.stage} />
 
             <NotesSection
               applicationId={application.id}
