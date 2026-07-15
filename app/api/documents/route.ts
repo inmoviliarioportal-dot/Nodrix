@@ -101,6 +101,24 @@ export const POST = withErrorHandling(async (request: Request) => {
     return apiError("Missing or invalid 'type' field", HTTP_STATUS.BAD_REQUEST, "MISSING_TYPE");
   }
 
+  // El cliente debe elegir su propuesta inicial (simulación de riesgo, ver
+  // POST /api/applications/[id]/select-initial-proposal) ANTES de subir
+  // documentos -- esa acción es la que avanza la application a
+  // DOCUMENTOS_PENDIENTES. Si todavía está en SCORING_COMPLETADO (o antes),
+  // no aceptamos documentos para evitar confundir al cliente con una carga
+  // de archivos sin haber visto su simulación.
+  const { data: applicationForStage } = await (supabase.from("applications") as any)
+    .select("stage")
+    .eq("id", applicationId)
+    .maybeSingle();
+  if (applicationForStage && ["RECEPCIONADA", "SCORING_COMPLETADO"].includes(applicationForStage.stage)) {
+    return apiError(
+      "Primero debes elegir tu propuesta inicial antes de subir documentos.",
+      HTTP_STATUS.BAD_REQUEST,
+      "PROPOSAL_NOT_SELECTED"
+    );
+  }
+
   if (!ALLOWED_MIME_TYPES.has(file.type)) {
     return apiError(
       `File type '${file.type}' not allowed. Allowed: PDF, JPEG, PNG, WEBP`,

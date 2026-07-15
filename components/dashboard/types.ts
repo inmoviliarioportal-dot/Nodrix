@@ -115,6 +115,9 @@ export interface ApplicationRecord {
   pre_evaluation_max_uf?: number | null;
   documents?: DocumentRecord[];
   scoring?: ScoringResult | null;
+  initial_proposal_band?: string | null;
+  initial_proposal_purpose?: string | null;
+  initial_proposal_selected_at?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -140,7 +143,7 @@ export function nextStepForStage(stage: string): string {
     case "RECEPCIONADA":
       return "Estamos revisando tu solicitud. Pronto calcularemos tu scoring.";
     case "SCORING_COMPLETADO":
-      return "Sube tu cédula de identidad y liquidaciones de sueldo para continuar.";
+      return "Elige tu propuesta inicial (simulación) para poder continuar con la subida de documentos.";
     case "DOCUMENTOS_PENDIENTES":
       return "Sube los documentos solicitados desde la sección Documentos.";
     case "DOCUMENTOS_APROBADOS":

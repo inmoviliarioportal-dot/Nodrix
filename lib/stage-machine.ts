@@ -15,12 +15,19 @@ import { notifyStageChange } from "@/lib/notifications";
  */
 export const STAGE_TRANSITIONS: Record<ApplicationStage, { next: ApplicationStage; automatic: boolean } | null> = {
   RECEPCIONADA: { next: "SCORING_COMPLETADO", automatic: false },
-  SCORING_COMPLETADO: { next: "DOCUMENTOS_PENDIENTES", automatic: true },
+  // Antes automática: ahora el cliente debe elegir su propuesta inicial
+  // (banda de 1/2-4/5-6 deptos, simulación de riesgo) antes de pasar a subir
+  // documentos -- ver POST /api/applications/[id]/select-initial-proposal,
+  // que hace esta transición manualmente una vez que el cliente elige.
+  SCORING_COMPLETADO: { next: "DOCUMENTOS_PENDIENTES", automatic: false },
   DOCUMENTOS_PENDIENTES: { next: "DOCUMENTOS_APROBADOS", automatic: false },
   DOCUMENTOS_APROBADOS: { next: "PRE_EVALUACION_COMPLETADA", automatic: true },
   PRE_EVALUACION_COMPLETADA: { next: "VISITA_COMPLETADA", automatic: false },
   VISITA_COMPLETADA: { next: "ENVIADO_A_BANCO", automatic: false },
-  ENVIADO_A_BANCO: { next: "ESCRITURACION_AGENDADA", automatic: true },
+  // Antes automática: ahora requiere que el asesor cargue la propuesta
+  // final (hasta 6 opciones de departamento) y el cliente acepte una antes
+  // de avanzar a escrituración -- ver /api/applications/[id]/proposal-options.
+  ENVIADO_A_BANCO: { next: "ESCRITURACION_AGENDADA", automatic: false },
   ESCRITURACION_AGENDADA: { next: "CIERRE", automatic: false },
   CIERRE: null,
 };
@@ -195,4 +202,42 @@ export async function maybeAdvanceAfterDocumentApproval(
   } catch (err) {
     console.error("[stage-machine] maybeAdvanceAfterDocumentApproval failed:", err);
   }
+}
+
+/**
+ * Avanza SCORING_COMPLETADO -> DOCUMENTOS_PENDIENTES una vez que el cliente
+ * elige su propuesta inicial (banda de deptos + lente inversión/vivienda,
+ * ver POST /api/applications/[id]/select-initial-proposal). Esta transición
+ * dejó de ser automática (ver STAGE_TRANSITIONS) justamente para esperar
+ * esta elección antes de pedir documentos.
+ *
+ * A diferencia de `applyAutomaticTransitions`, esta SÍ lanza en caso de
+ * error (el caller debe poder informarle al cliente que la selección no se
+ * guardó, en vez de fallar en silencio).
+ */
+export async function advanceAfterInitialProposalSelection(
+  supabase: AnySupabaseClient,
+  applicationId: string
+): Promise<void> {
+  const { error: updateError } = await supabase
+    .from("applications")
+    .update({ stage: "DOCUMENTOS_PENDIENTES" })
+    .eq("id", applicationId);
+  if (updateError) {
+    throw new Error(`Failed to advance stage after proposal selection: ${updateError.message}`);
+  }
+
+  await supabase.from("application_stage_history").insert({
+    application_id: applicationId,
+    from_stage: "SCORING_COMPLETADO",
+    to_stage: "DOCUMENTOS_PENDIENTES",
+    actor_user_id: null,
+    note: "Cliente seleccionó su propuesta inicial (simulación) y avanzó a documentación.",
+  });
+
+  await notifyStageChange(supabase, applicationId, "DOCUMENTOS_PENDIENTES");
+
+  // Por si en el futuro DOCUMENTOS_PENDIENTES tuviera alguna transición
+  // automática encadenada (hoy no la tiene).
+  await applyAutomaticTransitions(supabase, applicationId, "DOCUMENTOS_PENDIENTES");
 }

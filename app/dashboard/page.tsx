@@ -14,6 +14,9 @@ import { AdvisorCard } from "@/components/dashboard/AdvisorCard"
 import { ComunaOffersCard } from "@/components/dashboard/ComunaOffersCard"
 import { DocumentsCard } from "@/components/dashboard/DocumentsCard"
 import { DocumentUploadModal } from "@/components/dashboard/DocumentUploadModal"
+import { FinalProposalCard } from "@/components/dashboard/FinalProposalCard"
+import { InitialProposalCard } from "@/components/dashboard/InitialProposalCard"
+import { InitialProposalReminder } from "@/components/dashboard/InitialProposalReminder"
 import { NextStepCard } from "@/components/dashboard/NextStepCard"
 import { PreEvaluationCard } from "@/components/dashboard/PreEvaluationCard"
 import { ScoringCard } from "@/components/dashboard/ScoringCard"
@@ -235,17 +238,35 @@ export default function DashboardPage() {
 
               <HookVideo title={stageContent.videoTitle} videoUrl={stageContent.videoUrl} />
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <ScoringCard scoring={scoring} />
-                <DocumentsCard documents={documents} onUploadClick={() => setUploadOpen(true)} />
-                <PreEvaluationCard
-                  minUf={application?.pre_evaluation_min_uf}
-                  maxUf={application?.pre_evaluation_max_uf}
-                />
-                <NextStepCard stage={stage} />
-              </div>
+              {stage === "SCORING_COMPLETADO" && application ? (
+                // Antes de subir documentos, el cliente debe elegir su
+                // propuesta inicial (simulación de riesgo) -- no tiene
+                // sentido mostrarle la tarjeta de documentos todavía.
+                <InitialProposalCard applicationId={application.id} onSelected={loadData} />
+              ) : (
+                <>
+                  {application?.initial_proposal_band && application?.initial_proposal_purpose && (
+                    <InitialProposalReminder
+                      band={application.initial_proposal_band}
+                      purpose={application.initial_proposal_purpose}
+                    />
+                  )}
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <ScoringCard scoring={scoring} />
+                    <DocumentsCard documents={documents} onUploadClick={() => setUploadOpen(true)} />
+                    <PreEvaluationCard
+                      minUf={application?.pre_evaluation_min_uf}
+                      maxUf={application?.pre_evaluation_max_uf}
+                    />
+                    <NextStepCard stage={stage} />
+                  </div>
+                </>
+              )}
               {stage === "PRE_EVALUACION_COMPLETADA" && application && (
                 <ComunaOffersCard applicationId={application.id} />
+              )}
+              {["ENVIADO_A_BANCO", "ESCRITURACION_AGENDADA", "CIERRE"].includes(stage) && application && (
+                <FinalProposalCard applicationId={application.id} />
               )}
               <AdvisorCard />
             </div>

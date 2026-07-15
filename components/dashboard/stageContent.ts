@@ -40,7 +40,7 @@ export const STAGE_CLIENT_CONTENT: Record<ApplicationStage, StageClientContent> 
   SCORING_COMPLETADO: {
     alert: {
       tone: "success",
-      message: "¡Tu análisis de perfil está listo! Revisa tu categoría de inversión.",
+      message: "¡Tu análisis de perfil está listo! Elige tu propuesta inicial antes de subir documentos.",
     },
     videoTitle: "Cómo interpretar tu categoría de scoring",
     showUploadCta: false,

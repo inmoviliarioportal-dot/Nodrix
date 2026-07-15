@@ -1,0 +1,51 @@
+import { NextResponse } from "next/server";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { apiError, requireAuth, withErrorHandling, HTTP_STATUS } from "@/app/api/_shared";
+import { MVP_ORG_ID } from "@/app/api/auth/_constants";
+import { calculateProposalBands } from "@/lib/proposal-risk";
+import type { AnySupabaseClient } from "@/lib/leads";
+
+/**
+ * GET /api/applications/[id]/proposal-bands
+ *
+ * Simulación de riesgo previa a la subida de documentos: calcula, a partir
+ * del `scoring_score` ya obtenido, el nivel de seguridad (alta/media/baja)
+ * para las 3 bandas de departamentos (1 / 2-4 / 5-6). Devuelve también el
+ * `investment_type` registrado del cliente (inversion/vivienda_propia/ambos)
+ * para que la UI resalte el lente correspondiente -- pero SIEMPRE se
+ * calculan y devuelven ambos lentes (inversión y vivienda), incluso si el
+ * cliente registró solo "vivienda_propia", según pidió el negocio.
+ */
+export const GET = withErrorHandling(async (_request: Request, context: { params: Promise<{ id: string }> }) => {
+  const auth = await requireAuth();
+  if (!auth.authorized) return auth.response;
+
+  const { id } = await context.params;
+  const supabase = createSupabaseServiceRoleClient() as unknown as AnySupabaseClient;
+
+  const { data: application } = await (supabase.from("applications") as any)
+    .select("id, stage, scoring_score, customer_id, initial_proposal_band, initial_proposal_purpose")
+    .eq("id", id)
+    .eq("org_id", MVP_ORG_ID)
+    .maybeSingle();
+
+  if (!application) {
+    return apiError("Solicitud no encontrada", HTTP_STATUS.NOT_FOUND, "APPLICATION_NOT_FOUND");
+  }
+
+  const { data: customer } = await (supabase.from("customers") as any)
+    .select("investment_type")
+    .eq("id", application.customer_id)
+    .maybeSingle();
+
+  const bands = calculateProposalBands(application.scoring_score ?? 0);
+
+  return NextResponse.json({
+    bands,
+    registeredPurpose: customer?.investment_type ?? null,
+    selection:
+      application.initial_proposal_band && application.initial_proposal_purpose
+        ? { band: application.initial_proposal_band, purpose: application.initial_proposal_purpose }
+        : null,
+  });
+});

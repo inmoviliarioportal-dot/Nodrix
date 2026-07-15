@@ -294,6 +294,19 @@ test.describe("Release 3 — Full flow: lead -> cierre", () => {
         `applications.scoring_score debería estar seteado tras el auto-scoring: ${JSON.stringify(appBody)}`
       ).not.toBeNull();
     }
+
+    // SCORING_COMPLETADO -> DOCUMENTOS_PENDIENTES dejó de ser automática: el
+    // cliente debe elegir su propuesta inicial (simulación de riesgo) antes
+    // de poder subir documentos (ver lib/proposal-risk.ts). Replicamos esa
+    // elección acá para que el resto de la suite (subida de documentos) siga
+    // funcionando.
+    const proposalRes = await page.request.post(`/api/applications/${applicationId}/select-initial-proposal`, {
+      data: { band: "2-4", purpose: "inversion" },
+    });
+    expect(
+      proposalRes.ok(),
+      `POST select-initial-proposal debería responder 2xx (recibido ${proposalRes.status()}: ${await proposalRes.text()})`
+    ).toBeTruthy();
   });
 
   test("3. Upload de documento -> aparece con status 'pendiente'", async () => {
@@ -523,8 +536,38 @@ test.describe("Release 3 — Full flow: lead -> cierre", () => {
     const page = sharedPage;
     test.skip(!applicationId, "No hay applicationId de los tests anteriores.");
 
-    // Completar el resto del pipeline lineal hasta ESCRITURACION_AGENDADA
-    // (avanza desde el stage ACTUAL, no desde uno asumido).
+    // Completar el resto del pipeline lineal hasta ENVIADO_A_BANCO (avanza
+    // desde el stage ACTUAL, no desde uno asumido).
+    await advanceStageTo(page, applicationId!, "ENVIADO_A_BANCO");
+
+    // ENVIADO_A_BANCO -> ESCRITURACION_AGENDADA dejó de ser automática: el
+    // asesor debe cargar la propuesta final (hasta 6 opciones) y el cliente
+    // aceptar una antes de poder avanzar (ver lib/stage-machine.ts). Se
+    // replica ese flujo acá con una sola opción para no bloquear el resto de
+    // la suite.
+    const optionRes = await page.request.post(`/api/applications/${applicationId}/proposal-options`, {
+      data: { departmentCount: 2, purpose: "inversion", comuna: "Ñuñoa", priceUf: 6200 },
+    });
+    test.skip(
+      optionRes.status() === 404,
+      "POST /api/applications/[id]/proposal-options no existe todavía."
+    );
+    expect(
+      optionRes.ok(),
+      `POST proposal-options debería responder 2xx (recibido ${optionRes.status()}: ${await optionRes.text()})`
+    ).toBeTruthy();
+    const optionBody = await optionRes.json().catch(() => ({}));
+    const optionId = optionBody?.option?.id;
+    test.skip(!optionId, "No se pudo obtener el id de la opción de propuesta final recién creada.");
+
+    const acceptRes = await page.request.post(
+      `/api/applications/${applicationId}/proposal-options/${optionId}/accept`
+    );
+    expect(
+      acceptRes.ok(),
+      `POST proposal-options/accept debería responder 2xx (recibido ${acceptRes.status()}: ${await acceptRes.text()})`
+    ).toBeTruthy();
+
     await advanceStageTo(page, applicationId!, "ESCRITURACION_AGENDADA");
 
     const deedRes = await page.request.post("/api/deeds", { data: { applicationId } });
