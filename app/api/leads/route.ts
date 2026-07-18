@@ -121,6 +121,12 @@ export const POST = withErrorHandling(async (request: Request) => {
         financial
       );
       latestApplication = (scored ?? newApplication) as ApplicationRow;
+
+      // Rama real de la mayoría de los clientes: ya se registraron (el
+      // customer existe) y esta es su PRIMERA application, recién creada
+      // acá mismo. El aval solo aplica a una application recién creada, así
+      // que se inserta acá igual que en la rama "customer nuevo" de abajo.
+      await maybeInsertGuarantor(supabase, (newApplication as ApplicationRow).id, financial);
     }
 
     return NextResponse.json(
