@@ -161,6 +161,10 @@ export default function ProcessingPage() {
         monthlyDebtPayments: payload?.monthlyDebtPayments,
         investmentType: payload?.investmentType,
         propertyStatus: payload?.propertyStatus,
+        hasAval: payload?.hasAval,
+        avalRelationship: payload?.avalRelationship,
+        avalMonthlySalary: payload?.avalMonthlySalary,
+        avalEmploymentType: payload?.avalEmploymentType,
       };
 
       if (!requestBody.name || !requestBody.email) {

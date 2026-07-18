@@ -55,6 +55,11 @@ export default function DashboardPage() {
   const [error, setError] = React.useState<string | null>(null)
   const [application, setApplication] = React.useState<ApplicationRecord | null>(null)
   const [uploadOpen, setUploadOpen] = React.useState(false)
+  // Solo relevante en stage SCORING_COMPLETADO: si el cliente no califica
+  // (UF estimadas < MIN_QUALIFYING_UF), ocultamos el timeline y demás
+  // secciones de progreso, dejando únicamente la tarjeta ámbar de
+  // InitialProposalCard + el botón de actualizar datos.
+  const [initialProposalQualifies, setInitialProposalQualifies] = React.useState<boolean | null>(null)
 
   const loadData = React.useCallback(async () => {
     setLoading(true)
@@ -101,6 +106,10 @@ export default function DashboardPage() {
   React.useEffect(() => {
     loadData()
   }, [loadData])
+
+  React.useEffect(() => {
+    if (application?.stage !== "SCORING_COMPLETADO") setInitialProposalQualifies(null)
+  }, [application?.stage])
 
   const stage = application?.stage ?? "RECEPCIONADA"
   const stageLabel = STAGE_LABELS[stage] ?? stage
@@ -194,7 +203,20 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {!loading && application && (
+        {!loading && application && stage === "SCORING_COMPLETADO" && initialProposalQualifies === false && (
+          // Cliente en análisis de perfil que NO califica: ocultamos timeline
+          // y demás secciones de progreso, dejando solo la tarjeta ámbar.
+          <div className="flex flex-col gap-4">
+            <InitialProposalCard
+              applicationId={application.id}
+              onSelected={loadData}
+              onQualificationChange={setInitialProposalQualifies}
+            />
+            <AdvisorCard />
+          </div>
+        )}
+
+        {!loading && application && !(stage === "SCORING_COMPLETADO" && initialProposalQualifies === false) && (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,360px)_1fr]">
             <div className="glass-card rounded-2xl p-6">
               <h2 className="mb-6 text-sm font-semibold uppercase tracking-wide text-text-tertiary">
@@ -215,6 +237,16 @@ export default function DashboardPage() {
                 <Clock className="size-3.5 shrink-0" aria-hidden="true" />
                 <span>Duración estimada de esta etapa: {stageContent.estimatedDuration}</span>
               </div>
+
+              {stage === "SCORING_COMPLETADO" && (
+                <Button
+                  variant="outline"
+                  className="w-fit"
+                  render={<Link href="/onboarding/wizard?edit=true" />}
+                >
+                  Actualizar mis datos
+                </Button>
+              )}
 
               {stageContent.showUploadCta && (
                 <div className="glass-card glow-cyan flex flex-col items-start gap-3 rounded-2xl border border-neon-cyan/40 p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -242,7 +274,11 @@ export default function DashboardPage() {
                 // Antes de subir documentos, el cliente debe elegir su
                 // propuesta inicial (simulación de riesgo) -- no tiene
                 // sentido mostrarle la tarjeta de documentos todavía.
-                <InitialProposalCard applicationId={application.id} onSelected={loadData} />
+                <InitialProposalCard
+                  applicationId={application.id}
+                  onSelected={loadData}
+                  onQualificationChange={setInitialProposalQualifies}
+                />
               ) : (
                 <>
                   {application?.initial_proposal_band && application?.initial_proposal_purpose && (

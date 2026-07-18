@@ -12,7 +12,10 @@ export const WIZARD_STORAGE_KEY = "wizard-progress";
 // a ser rangos. Progreso guardado con el shape viejo (v2, números libres) se
 // descarta (ver `loadWizardProgress`) en vez de migrarse -- mismo patrón que
 // la v2 anterior.
-const WIZARD_STORAGE_VERSION = 3;
+// v4: se agregan los campos de aval/codeudor (Paso 3) -- progreso v3 se
+// descarta igual que en el bump anterior, no vale la pena migrar un wizard a
+// medio llenar.
+const WIZARD_STORAGE_VERSION = 4;
 
 /** Mismos 4 valores EXACTOS que `CustomerFinancialProfile.employmentType` en lib/scoring.ts */
 export type WizardEmploymentType =
@@ -44,6 +47,13 @@ export interface WizardData {
   savingsBandId: string | null;
   hasExistingDebt: boolean | null;
   debtBandId: string | null;
+  // Paso 3 -- aval/codeudor. Los bancos chilenos típicamente solo aceptan
+  // parentescos cercanos como aval hipotecario (cónyuge, padre, madre, hijo,
+  // hermano) -- ver WizardAvalRelationship.
+  hasAval: boolean | null;
+  avalRelationship: string | null;
+  avalSalaryBandId: string | null;
+  avalEmploymentType: WizardEmploymentType | null;
 }
 
 export interface WizardProgress {
@@ -61,6 +71,10 @@ export const WIZARD_INITIAL_DATA: WizardData = {
   savingsBandId: null,
   hasExistingDebt: null,
   debtBandId: null,
+  hasAval: null,
+  avalRelationship: null,
+  avalSalaryBandId: null,
+  avalEmploymentType: null,
 };
 
 export function saveWizardProgress(step: number, data: WizardData): void {

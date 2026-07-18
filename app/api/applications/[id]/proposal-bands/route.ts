@@ -39,6 +39,14 @@ export const GET = withErrorHandling(async (_request: Request, context: { params
     .eq("id", application.customer_id)
     .maybeSingle();
 
+  // Si el cliente declaró un aval/codeudor en el wizard, su renta suma a la
+  // capacidad de pago (ver lib/uf-preevaluation.ts) -- a lo más un aval por
+  // application (ver migración 017_guarantors.sql).
+  const { data: guarantor } = await (supabase.from("guarantors") as any)
+    .select("monthly_income")
+    .eq("application_id", id)
+    .maybeSingle();
+
   const bands = calculateProposalBands(application.scoring_score ?? 0);
 
   // La banda "1" es la de mayor probabilidad de aprobación (menor cantidad
@@ -53,6 +61,7 @@ export const GET = withErrorHandling(async (_request: Request, context: { params
     monthlyDebtPaymentsCLP: 0,
     savingsAmountCLP: application.savings_amount ?? 0,
     approvalProbability: mostLikelyBand?.approvalProbability ?? 0,
+    avalMonthlySalaryCLP: guarantor?.monthly_income ?? undefined,
   });
 
   return NextResponse.json({

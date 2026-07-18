@@ -103,6 +103,24 @@ describe("calculateUFPreEvaluation", () => {
     expect(Number.isFinite(result.estimatedPropertyValueUF)).toBe(true);
   });
 
+  it("agregar avalMonthlySalaryCLP aumenta el resultado respecto a no tener aval", () => {
+    const withoutAval = calculateUFPreEvaluation({
+      monthlySalaryCLP: 1_500_000,
+      monthlyDebtPaymentsCLP: 0,
+      savingsAmountCLP: 3_000_000,
+      approvalProbability: 70,
+    });
+    const withAval = calculateUFPreEvaluation({
+      monthlySalaryCLP: 1_500_000,
+      monthlyDebtPaymentsCLP: 0,
+      savingsAmountCLP: 3_000_000,
+      approvalProbability: 70,
+      avalMonthlySalaryCLP: 1_000_000,
+    });
+    expect(withAval.maxLoanUF).toBeGreaterThan(withoutAval.maxLoanUF);
+    expect(withAval.estimatedPropertyValueUF).toBeGreaterThan(withoutAval.estimatedPropertyValueUF);
+  });
+
   it("incluye un disclaimer no vacío", () => {
     const result = calculateUFPreEvaluation({
       monthlySalaryCLP: 2_000_000,

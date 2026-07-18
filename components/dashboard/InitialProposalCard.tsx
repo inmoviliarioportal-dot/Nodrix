@@ -1,11 +1,12 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { Building2, TrendingUp, Home } from "lucide-react"
+import { AlertTriangle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { MIN_QUALIFYING_UF } from "@/lib/uf-preevaluation"
 
 interface BandResult {
   band: "1" | "1-2" | "2-3" | "3-4" | "4-5" | "5-6"
@@ -21,46 +22,34 @@ interface UFPreEvaluation {
   disclaimer: string
 }
 
-type Purpose = "inversion" | "vivienda_propia"
-
-const PURPOSE_LABELS: Record<Purpose, string> = {
-  inversion: "Inversión",
-  vivienda_propia: "Vivienda propia",
-}
-
-const PURPOSE_ICONS: Record<Purpose, React.ElementType> = {
-  inversion: TrendingUp,
-  vivienda_propia: Home,
-}
-
-function probabilityStyles(probability: number): string {
-  if (probability >= 65) return "border-status-success/40 bg-status-success/10 text-status-success"
-  if (probability >= 35) return "border-status-warning/40 bg-status-warning/10 text-status-warning"
-  return "border-status-error/40 bg-status-error/10 text-status-error"
-}
-
 /**
- * Selección de propuesta inicial (simulación de riesgo) ANTES de subir
- * documentos: el cliente ve, para cada tramo de departamentos (1 / 1-2 /
- * 2-3 / 3-4 / 4-5 / 5-6), el % estimado de probabilidad de aprobación
- * bancaria según su scoring -- SIEMPRE se muestran ambos lentes (inversión
- * y vivienda propia), incluso si el cliente registró solo uno de los dos,
- * porque puede interesarle la otra alternativa. Es una simulación: la
- * propuesta final la define el asesor después de la visita y la aprobación
- * bancaria.
+ * Selección de propuesta inicial: el cliente YA NO ve las 6 bandas de
+ * departamentos con su % de probabilidad de aprobación (eso queda para uso
+ * interno del asesor en backoffice, ver lib/proposal-risk.ts) -- solo ve el
+ * monto estimado en UF al que podría optar.
+ *
+ * - Si califica (>= MIN_QUALIFYING_UF), un botón "Continuar" auto-selecciona
+ *   la banda interna de mayor cantidad de departamentos con probabilidad
+ *   >= 50% (o la banda "1" si ninguna llega a 50%) y avanza la solicitud.
+ * - Si no califica, se muestra una tarjeta ámbar de advertencia con opción
+ *   de actualizar los datos financieros -- sin avanzar de etapa.
  */
 function InitialProposalCard({
   applicationId,
   onSelected,
+  onQualificationChange,
 }: {
   applicationId: string
   onSelected: (registeredPurpose: string | null) => void
+  /** Notifica al padre si el cliente califica o no, para que pueda ocultar
+   * el resto de la UI del dashboard (timeline, etc.) en el caso no calificado. */
+  onQualificationChange?: (qualifies: boolean) => void
 }) {
+  const router = useRouter()
   const [bands, setBands] = React.useState<BandResult[] | null>(null)
   const [ufPreEvaluation, setUfPreEvaluation] = React.useState<UFPreEvaluation | null>(null)
   const [registeredPurpose, setRegisteredPurpose] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(true)
-  const [activePurpose, setActivePurpose] = React.useState<Purpose>("inversion")
   const [isSubmitting, setIsSubmitting] = React.useState(false)
 
   React.useEffect(() => {
@@ -70,26 +59,44 @@ function InitialProposalCard({
         setBands(data?.bands ?? [])
         setUfPreEvaluation(data?.ufPreEvaluation ?? null)
         setRegisteredPurpose(data?.registeredPurpose ?? null)
-        if (data?.registeredPurpose === "vivienda_propia") setActivePurpose("vivienda_propia")
       })
       .catch(() => setBands([]))
       .finally(() => setLoading(false))
   }, [applicationId])
 
-  async function handleSelect(band: BandResult["band"]) {
+  const qualifies = (ufPreEvaluation?.estimatedPropertyValueUF ?? 0) >= MIN_QUALIFYING_UF
+
+  React.useEffect(() => {
+    if (!loading) onQualificationChange?.(qualifies)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, qualifies])
+
+  async function handleContinue() {
+    if (!bands || bands.length === 0) {
+      toast.error("No pudimos calcular tu propuesta. Intenta más tarde.")
+      return
+    }
+
+    // El cliente nunca ve esta lógica ni el %: se auto-elige internamente la
+    // banda de MAYOR cantidad de departamentos con >= 50% de probabilidad,
+    // o si ninguna llega, la banda "1" (la de mayor probabilidad individual).
+    const eligible = bands.filter((b) => b.approvalProbability >= 50)
+    const chosen = eligible.length > 0 ? eligible[eligible.length - 1] : bands.find((b) => b.band === "1") ?? bands[0]
+    const purpose = registeredPurpose === "vivienda_propia" ? "vivienda_propia" : "inversion"
+
     setIsSubmitting(true)
     try {
       const res = await fetch(`/api/applications/${applicationId}/select-initial-proposal`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ band, purpose: activePurpose }),
+        body: JSON.stringify({ band: chosen.band, purpose }),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => null)
-        toast.error(data?.error ?? "No se pudo guardar tu selección.")
+        toast.error(data?.error ?? "No se pudo continuar con tu solicitud.")
         return
       }
-      toast.success("Propuesta inicial seleccionada. Ahora sube tus documentos.")
+      toast.success("¡Tu solicitud avanzó a la siguiente etapa!")
       onSelected(registeredPurpose)
     } finally {
       setIsSubmitting(false)
@@ -99,7 +106,33 @@ function InitialProposalCard({
   if (loading) {
     return (
       <div className="glass-card rounded-2xl p-6">
-        <p className="text-sm text-text-tertiary">Calculando tu simulación de riesgo...</p>
+        <p className="text-sm text-text-tertiary">Calculando tu pre-evaluación...</p>
+      </div>
+    )
+  }
+
+  if (!qualifies) {
+    return (
+      <div className="glass-card flex flex-col gap-4 rounded-2xl border border-warning/30 bg-warning/5 p-6">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="mt-0.5 size-5 shrink-0 text-warning" aria-hidden="true" />
+          <div className="flex flex-col gap-2">
+            <h2 className="font-heading text-sm font-semibold uppercase tracking-wide text-text-tertiary">
+              Análisis de perfil
+            </h2>
+            <p className="text-sm leading-relaxed text-text-primary">
+              Por el momento tu perfil no califica para acceder a un inmueble según nuestra pre-evaluación.
+              Mantendremos tus datos guardados para que puedas volver a evaluarte más adelante con mejor información.
+            </p>
+          </div>
+        </div>
+        <Button
+          variant="outline"
+          className="w-fit"
+          onClick={() => router.push("/onboarding/wizard?edit=true")}
+        >
+          Actualizar mis datos
+        </Button>
       </div>
     )
   }
@@ -111,13 +144,12 @@ function InitialProposalCard({
           Tu propuesta inicial
         </h2>
         <p className="mt-1 text-sm text-text-secondary">
-          Según tu perfil, este es el <strong>% estimado de probabilidad de aprobación bancaria</strong> por cada
-          tramo de departamentos. Es una <strong>simulación</strong>, no una aprobación: queda sujeta a confirmación
-          una vez que envíes tus documentos y estos sean evaluados por el banco.
+          Según tu perfil, este es el monto estimado al que podrías optar. Es una <strong>pre-evaluación</strong>, no
+          una aprobación bancaria: queda sujeta a confirmación una vez que envíes tus documentos.
         </p>
       </div>
 
-      {ufPreEvaluation && ufPreEvaluation.estimatedPropertyValueUF > 0 && (
+      {ufPreEvaluation && (
         <div className="rounded-xl border border-neon-cyan/30 bg-neon-cyan/5 p-4">
           <p className="text-sm text-text-secondary">
             Podrías optar a aproximadamente{" "}
@@ -128,60 +160,13 @@ function InitialProposalCard({
         </div>
       )}
 
-      <div className="flex gap-1 rounded-lg border border-glass-border bg-surface-elevated p-1">
-        {(["inversion", "vivienda_propia"] as Purpose[]).map((purpose) => {
-          const Icon = PURPOSE_ICONS[purpose]
-          return (
-            <button
-              key={purpose}
-              type="button"
-              onClick={() => setActivePurpose(purpose)}
-              className={cn(
-                "flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                activePurpose === purpose
-                  ? "bg-neon-cyan/10 text-neon-cyan"
-                  : "text-text-tertiary hover:text-text-primary"
-              )}
-            >
-              <Icon className="size-3.5" />
-              {PURPOSE_LABELS[purpose]}
-              {registeredPurpose === purpose && (
-                <span className="rounded-full bg-neon-cyan/20 px-1.5 py-0.5 text-[10px]">tu elección</span>
-              )}
-            </button>
-          )
-        })}
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {(bands ?? []).map((result) => (
-          <div
-            key={result.band}
-            className="flex flex-col gap-3 rounded-xl border border-glass-border bg-surface-elevated p-4"
-          >
-            <div className="flex items-center gap-2">
-              <Building2 className="size-4 text-neon-cyan" />
-              <p className="text-sm font-medium text-text-primary">{result.label}</p>
-            </div>
-            <span
-              className={cn(
-                "inline-flex w-fit items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium",
-                probabilityStyles(result.approvalProbability)
-              )}
-            >
-              {result.approvalProbability}% de probabilidad estimada
-            </span>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={isSubmitting}
-              onClick={() => handleSelect(result.band)}
-            >
-              Elegir esta propuesta
-            </Button>
-          </div>
-        ))}
-      </div>
+      <Button
+        className="glow-cyan w-fit gap-2 bg-neon-cyan text-deep hover:bg-neon-cyan/90"
+        disabled={isSubmitting}
+        onClick={handleContinue}
+      >
+        Continuar
+      </Button>
     </div>
   )
 }

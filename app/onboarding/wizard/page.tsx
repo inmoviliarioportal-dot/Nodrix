@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Briefcase, PiggyBank, Wallet, Home, Check, X } from "lucide-react";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Briefcase, PiggyBank, Wallet, Home, Check, X, Users } from "lucide-react";
 import { SelectableCard } from "@/components/wizard/SelectableCard";
 import { WizardProgress } from "@/components/wizard/WizardProgress";
 import { INVESTMENT_TYPE_OPTIONS, PROPERTY_STATUS_OPTIONS } from "@/components/auth/schemas";
-import { SALARY_BANDS, SAVINGS_BANDS, DEBT_BANDS } from "@/lib/financial-bands";
+import { SALARY_BANDS, SAVINGS_BANDS, DEBT_BANDS, type FinancialBand } from "@/lib/financial-bands";
 import {
   WIZARD_INITIAL_DATA,
   clearWizardProgress,
@@ -15,6 +15,35 @@ import {
   type WizardData,
   type WizardEmploymentType,
 } from "@/lib/wizard-storage";
+
+/** Parentescos que los bancos chilenos típicamente aceptan como aval/codeudor
+ * válido para un crédito hipotecario -- se limita a estos 5, sin "otro"
+ * genérico, tal como pidió el negocio. */
+const AVAL_RELATIONSHIP_OPTIONS: { label: string; value: string }[] = [
+  { label: "Cónyuge/Conviviente civil", value: "conyuge" },
+  { label: "Padre", value: "padre" },
+  { label: "Madre", value: "madre" },
+  { label: "Hijo/a", value: "hijo" },
+  { label: "Hermano/a", value: "hermano" },
+];
+
+/** Encuentra la banda cuyo `representative` está más cerca de un valor CLP
+ * dado -- usado para precargar el wizard en modo edición a partir de valores
+ * numéricos ya guardados en `customers`/`applications` (no hace falta
+ * exactitud perfecta, solo la mejor aproximación disponible). */
+function closestBandId(bands: FinancialBand[], value: number | null | undefined): string | null {
+  if (typeof value !== "number") return null;
+  let best: FinancialBand | null = null;
+  let bestDiff = Infinity;
+  for (const band of bands) {
+    const diff = Math.abs(band.representative - value);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      best = band;
+    }
+  }
+  return best?.id ?? null;
+}
 
 /** Clave sessionStorage usada para pasar el payload completo del lead a
  * /onboarding/processing (pantalla de AI Processing, otro agente).
@@ -51,20 +80,36 @@ interface RegisteredProfile {
 }
 
 export default function WizardPage() {
+  return (
+    <Suspense fallback={null}>
+      <WizardPageInner />
+    </Suspense>
+  );
+}
+
+function WizardPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isEditMode = searchParams.get("edit") === "true";
   const [step, setStep] = useState(1);
   const [data, setData] = useState<WizardData>(WIZARD_INITIAL_DATA);
   const [transitioning, setTransitioning] = useState(false);
   const [profile, setProfile] = useState<RegisteredProfile | null>(null);
   const [profileError, setProfileError] = useState(false);
+  const [applicationId, setApplicationId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const hasRestored = useRef(false);
 
-  // Restaurar progreso guardado en localStorage al montar.
+  // Restaurar progreso guardado en localStorage al montar (solo en modo
+  // normal -- en modo edición precargamos desde la application/customer
+  // reales en vez de un progreso a medio llenar).
   useEffect(() => {
-    const saved = loadWizardProgress();
-    if (saved) {
-      setStep(saved.step);
-      setData(saved.data);
+    if (!isEditMode) {
+      const saved = loadWizardProgress();
+      if (saved) {
+        setStep(saved.step);
+        setData(saved.data);
+      }
     }
     hasRestored.current = true;
 
@@ -73,7 +118,7 @@ export default function WizardPage() {
     // registro extendido), avisamos en vez de enviar un lead incompleto.
     fetch("/api/auth/user")
       .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
+      .then(async (json) => {
         const customer = json?.customer;
         const user = json?.user;
         if (!customer && !user) {
@@ -86,15 +131,43 @@ export default function WizardPage() {
           phone: customer?.phone ?? "",
           rut: customer?.rut_ciphertext ?? null,
         });
+
+        if (isEditMode && customer?.id) {
+          // Precarga: busca la application actual del cliente (mismo patrón
+          // de fallback que app/onboarding/initial-proposal/page.tsx) y
+          // mapea sus valores numéricos a la banda más cercana.
+          try {
+            const appsRes = await fetch(`/api/applications?customer_id=${customer.id}&limit=1`);
+            if (appsRes.ok) {
+              const { applications } = await appsRes.json();
+              const app = applications?.[0];
+              if (app?.id) {
+                setApplicationId(app.id);
+                setData((prev) => ({
+                  ...prev,
+                  salaryBandId: closestBandId(SALARY_BANDS, customer.monthly_income) ?? prev.salaryBandId,
+                  investmentType: customer.investment_type ?? prev.investmentType,
+                  propertyStatus: customer.property_status ?? prev.propertyStatus,
+                  savingsBandId: closestBandId(SAVINGS_BANDS, app.savings_amount) ?? prev.savingsBandId,
+                }));
+              }
+            }
+          } catch {
+            // best-effort: si falla la precarga, el cliente igual puede
+            // llenar el wizard desde cero.
+          }
+        }
       })
       .catch(() => setProfileError(true));
-  }, []);
+  }, [isEditMode]);
 
-  // Autosave cada vez que cambian los datos o el paso (tras la restauración inicial).
+  // Autosave cada vez que cambian los datos o el paso (tras la restauración
+  // inicial) -- solo en modo normal, en modo edición no queremos pisar el
+  // progreso guardado de un eventual wizard normal en curso.
   useEffect(() => {
-    if (!hasRestored.current) return;
+    if (!hasRestored.current || isEditMode) return;
     saveWizardProgress(step, data);
-  }, [step, data]);
+  }, [step, data, isEditMode]);
 
   function update<K extends keyof WizardData>(key: K, value: WizardData[K]) {
     setData((prev) => ({ ...prev, [key]: value }));
@@ -121,13 +194,17 @@ export default function WizardPage() {
       case 3:
         if (data.savingsBandId === null || data.hasExistingDebt === null) return false;
         if (data.hasExistingDebt && !data.debtBandId) return false;
+        if (data.hasAval === null) return false;
+        if (data.hasAval && (!data.avalRelationship || !data.avalSalaryBandId || !data.avalEmploymentType)) {
+          return false;
+        }
         return true;
       default:
         return false;
     }
   }
 
-  function handleNext() {
+  async function handleNext() {
     if (!canAdvance()) return;
 
     if (step < TOTAL_STEPS) {
@@ -140,14 +217,10 @@ export default function WizardPage() {
       return;
     }
 
-    // Paso final: arma el payload EXACTO del contrato de POST /api/leads y lo
-    // pasa a la pantalla de AI Processing vía sessionStorage. Este componente
-    // NO llama a /api/leads directamente — eso lo hace /onboarding/processing.
-    // name/email/phone/rut vienen del registro (no se piden de nuevo acá);
-    // salario/ahorro/deuda se resuelven desde el `representative` de la banda
-    // elegida (ver lib/financial-bands.ts) — el cliente eligió un rango, no
-    // tipeó un número, pero el motor de scoring (lib/scoring.ts) sigue
-    // esperando números.
+    // Resuelve los valores representativos de las bandas elegidas -- el
+    // cliente eligió un rango, no tipeó un número, pero el motor de scoring
+    // (lib/scoring.ts) y el endpoint de actualización siguen esperando
+    // números (ver lib/financial-bands.ts).
     const salaryRepresentative =
       SALARY_BANDS.find((b) => b.id === data.salaryBandId)?.representative ?? null;
     const savingsRepresentative =
@@ -155,7 +228,56 @@ export default function WizardPage() {
     const debtRepresentative = data.hasExistingDebt
       ? (DEBT_BANDS.find((b) => b.id === data.debtBandId)?.representative ?? 0)
       : 0;
+    const avalSalaryRepresentative = data.hasAval
+      ? (SALARY_BANDS.find((b) => b.id === data.avalSalaryBandId)?.representative ?? null)
+      : null;
 
+    if (isEditMode) {
+      // Modo edición: llama directamente al endpoint de actualización (no
+      // pasa por sessionStorage ni por la pantalla de AI Processing) y
+      // vuelve a /onboarding/initial-proposal para que el cliente vea su UF
+      // recalculado.
+      if (!applicationId) {
+        setProfileError(true);
+        return;
+      }
+
+      setSubmitting(true);
+      try {
+        const res = await fetch(`/api/applications/${applicationId}/update-financial-profile`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            employmentType: data.employmentType,
+            employmentYears: data.employmentYears,
+            monthlySalary: salaryRepresentative,
+            savingsAmount: savingsRepresentative,
+            hasExistingDebt: data.hasExistingDebt,
+            monthlyDebtPayments: debtRepresentative,
+            investmentType: data.investmentType,
+            propertyStatus: data.propertyStatus,
+            hasAval: data.hasAval,
+            avalRelationship: data.hasAval ? data.avalRelationship : undefined,
+            avalMonthlySalary: data.hasAval ? avalSalaryRepresentative : undefined,
+            avalEmploymentType: data.hasAval ? data.avalEmploymentType : undefined,
+          }),
+        });
+        if (!res.ok) {
+          setProfileError(true);
+          return;
+        }
+        router.push("/onboarding/initial-proposal");
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
+    // Paso final (flujo normal): arma el payload EXACTO del contrato de
+    // POST /api/leads y lo pasa a la pantalla de AI Processing vía
+    // sessionStorage. Este componente NO llama a /api/leads directamente —
+    // eso lo hace /onboarding/processing. name/email/phone/rut vienen del
+    // registro (no se piden de nuevo acá).
     const payload = {
       name: profile.name,
       email: profile.email,
@@ -169,6 +291,10 @@ export default function WizardPage() {
       monthlyDebtPayments: debtRepresentative,
       investmentType: data.investmentType,
       propertyStatus: data.propertyStatus,
+      hasAval: data.hasAval,
+      avalRelationship: data.hasAval ? data.avalRelationship : undefined,
+      avalMonthlySalary: data.hasAval ? avalSalaryRepresentative : undefined,
+      avalEmploymentType: data.hasAval ? data.avalEmploymentType : undefined,
     };
 
     try {
@@ -230,14 +356,14 @@ export default function WizardPage() {
           <button
             type="button"
             onClick={handleNext}
-            disabled={!canAdvance()}
+            disabled={!canAdvance() || submitting}
             className="glow-purple rounded-xl px-8 py-3 text-sm font-semibold transition-all duration-200 ease-out disabled:cursor-not-allowed disabled:opacity-30"
             style={{
               backgroundColor: "var(--neon-purple)",
               color: "var(--deep)",
             }}
           >
-            {step === TOTAL_STEPS ? "Finalizar" : "Siguiente"}
+            {submitting ? "Guardando..." : step === TOTAL_STEPS ? "Finalizar" : "Siguiente"}
           </button>
         </div>
       </div>
@@ -462,6 +588,87 @@ function StepSavings({
                   onClick={() => onChange("debtBandId", band.id)}
                 />
               ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div>
+        <h2
+          className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide"
+          style={{ color: "var(--text-secondary)" }}
+        >
+          <Users size={16} /> ¿Cuentas con un aval o codeudor?
+        </h2>
+        <div className="grid grid-cols-2 gap-3">
+          <SelectableCard
+            label="Sí"
+            icon={Check}
+            selected={data.hasAval === true}
+            onClick={() => onChange("hasAval", true)}
+          />
+          <SelectableCard
+            label="No"
+            icon={X}
+            selected={data.hasAval === false}
+            onClick={() => {
+              onChange("hasAval", false);
+              onChange("avalRelationship", null);
+              onChange("avalSalaryBandId", null);
+              onChange("avalEmploymentType", null);
+            }}
+          />
+        </div>
+
+        {data.hasAval && (
+          <div className="mt-6 flex flex-col gap-6">
+            <div>
+              <h3 className="mb-3 text-sm" style={{ color: "var(--text-tertiary)" }}>
+                Parentesco con el aval
+              </h3>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {AVAL_RELATIONSHIP_OPTIONS.map((opt) => (
+                  <SelectableCard
+                    key={opt.value}
+                    label={opt.label}
+                    selected={data.avalRelationship === opt.value}
+                    onClick={() => onChange("avalRelationship", opt.value)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="mb-3 text-sm" style={{ color: "var(--text-tertiary)" }}>
+                Renta líquida mensual del aval
+              </h3>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {SALARY_BANDS.map((band) => (
+                  <SelectableCard
+                    key={band.id}
+                    label={band.label}
+                    selected={data.avalSalaryBandId === band.id}
+                    onClick={() => onChange("avalSalaryBandId", band.id)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="mb-3 text-sm" style={{ color: "var(--text-tertiary)" }}>
+                Tipo de contrato del aval
+              </h3>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {EMPLOYMENT_OPTIONS.map((opt) => (
+                  <SelectableCard
+                    key={opt.value}
+                    label={opt.label}
+                    description={opt.description}
+                    selected={data.avalEmploymentType === opt.value}
+                    onClick={() => onChange("avalEmploymentType", opt.value)}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         )}

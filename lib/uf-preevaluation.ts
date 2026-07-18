@@ -30,11 +30,25 @@ export const ANNUAL_INTEREST_RATE = 0.045;
 /** Plazo referencial de crédito hipotecario, en años. */
 export const LOAN_TERM_YEARS = 25;
 
+/**
+ * Umbral mínimo de UF estimadas para que el cliente "califique" para acceder
+ * a un inmueble en la pre-evaluación. Por debajo de este número, el cliente
+ * no ve bandas/propuesta -- solo un mensaje de que por ahora no califica
+ * (ver components/dashboard/InitialProposalCard.tsx).
+ */
+export const MIN_QUALIFYING_UF = 1700;
+
 export interface UFPreEvaluationInput {
   monthlySalaryCLP: number;
   monthlyDebtPaymentsCLP: number;
   savingsAmountCLP: number; // pie disponible
   approvalProbability: number; // 0-100, viene de calculateProposalBands
+  /**
+   * Renta líquida mensual del aval/codeudor (CLP), si el cliente declaró uno
+   * en el wizard. Opcional -- si no viene, el cálculo es idéntico al de
+   * antes (sin aval).
+   */
+  avalMonthlySalaryCLP?: number;
 }
 
 export interface UFPreEvaluationResult {
@@ -61,8 +75,17 @@ export function calculateUFPreEvaluation(input: UFPreEvaluationInput): UFPreEval
     ? Math.min(100, Math.max(0, input.approvalProbability))
     : 0;
 
+  const avalMonthlySalaryCLP = safeNonNegative(input.avalMonthlySalaryCLP ?? 0);
+
+  // El aval no tiene deuda propia registrada en este MVP (no se le pide un
+  // perfil financiero completo, solo renta) -- por eso su aporte a la cuota
+  // máxima se suma íntegro, sin restarle nada, a diferencia del titular. Es
+  // una simplificación razonable para el MVP: en la práctica un banco
+  // evaluaría también la deuda del aval, pero no la recolectamos hoy.
   const maxMonthlyInstallmentCLP = safeNonNegative(
-    monthlySalaryCLP * MAX_DEBT_TO_INCOME_RATIO - monthlyDebtPaymentsCLP
+    monthlySalaryCLP * MAX_DEBT_TO_INCOME_RATIO -
+      monthlyDebtPaymentsCLP +
+      avalMonthlySalaryCLP * MAX_DEBT_TO_INCOME_RATIO
   );
 
   const monthlyRate = ANNUAL_INTEREST_RATE / 12;

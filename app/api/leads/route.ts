@@ -175,11 +175,49 @@ export const POST = withErrorHandling(async (request: Request) => {
     financial
   );
 
+  await maybeInsertGuarantor(supabase, (application as ApplicationRow).id, financial);
+
   return NextResponse.json(
     { duplicate: false, customer, application: scoredApplication ?? application },
     { status: 201 }
   );
 });
+
+const VALID_AVAL_RELATIONSHIPS = ["conyuge", "padre", "madre", "hijo", "hermano"];
+const VALID_AVAL_EMPLOYMENT_TYPES = ["indefinido", "plazo_fijo", "honorarios", "independiente"];
+
+/**
+ * Inserta la fila de `guarantors` para una application RECIÉN creada, si el
+ * payload trae `hasAval: true` con los 3 campos requeridos bien tipados.
+ * Best-effort (mismo patrón que `updateCustomerProfileFields`): un error acá
+ * no debe bloquear la creación del lead.
+ */
+async function maybeInsertGuarantor(
+  supabase: AnySupabaseClient,
+  applicationId: string,
+  financial: Record<string, unknown>
+): Promise<void> {
+  if (financial.hasAval !== true) return;
+
+  const { avalRelationship, avalMonthlySalary, avalEmploymentType } = financial;
+  if (
+    typeof avalRelationship !== "string" ||
+    !VALID_AVAL_RELATIONSHIPS.includes(avalRelationship) ||
+    typeof avalMonthlySalary !== "number" ||
+    typeof avalEmploymentType !== "string" ||
+    !VALID_AVAL_EMPLOYMENT_TYPES.includes(avalEmploymentType)
+  ) {
+    return;
+  }
+
+  await supabase.from("guarantors").insert({
+    org_id: MVP_ORG_ID,
+    application_id: applicationId,
+    relationship: avalRelationship,
+    monthly_income: avalMonthlySalary,
+    employment_type: avalEmploymentType,
+  });
+}
 
 /**
  * GET /api/leads
@@ -282,7 +320,7 @@ const VALID_PROPERTY_STATUSES = ["en_verde", "en_blanco", "entrega_inmediata", "
  * los campos no vienen, no bloquea la creación/dedup del lead (mismo patrón
  * que `maybeApplyScoring`, que tampoco bloquea si falta el perfil completo).
  */
-async function updateCustomerProfileFields(
+export async function updateCustomerProfileFields(
   supabase: AnySupabaseClient,
   customerId: string,
   financial: Record<string, unknown>
