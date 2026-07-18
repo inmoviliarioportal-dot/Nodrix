@@ -81,7 +81,7 @@ export default function RegisterPage() {
       // application) — reduce fricción/abandono justo después de
       // registrarse. El wizard precarga nombre/email/teléfono desde la
       // cuenta recién creada (ver app/onboarding/wizard/page.tsx).
-      router.push("/onboarding/wizard")
+      router.push("/onboarding/welcome")
     } catch {
       toast.error("Error de conexión. Intenta nuevamente.")
     } finally {

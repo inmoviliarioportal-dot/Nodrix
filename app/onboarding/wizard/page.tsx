@@ -179,7 +179,7 @@ export default function WizardPage() {
     }
 
     clearWizardProgress();
-    router.push("/onboarding/processing");
+    router.push("/onboarding/simulating");
   }
 
   function handleBack() {
