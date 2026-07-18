@@ -4,6 +4,7 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 
 import { InitialProposalCard } from "@/components/dashboard/InitialProposalCard"
+import { PropertyPreferencesCard } from "@/components/dashboard/PropertyPreferencesCard"
 
 const OUTPUT_KEY = "onboarding-result"
 
@@ -19,6 +20,8 @@ export default function InitialProposalPage() {
   const router = useRouter()
   const [applicationId, setApplicationId] = React.useState<string | null>(null)
   const [notFound, setNotFound] = React.useState(false)
+  const [showPropertyPreferences, setShowPropertyPreferences] = React.useState(false)
+  const [purpose, setPurpose] = React.useState<"inversion" | "vivienda_propia" | "ambos" | null>(null)
 
   React.useEffect(() => {
     let id: string | null = null
@@ -98,7 +101,21 @@ export default function InitialProposalPage() {
             Antes de subir tus documentos, elige tu propuesta inicial.
           </p>
         </header>
-        <InitialProposalCard applicationId={applicationId} onSelected={() => router.push("/dashboard")} />
+        {showPropertyPreferences && purpose ? (
+          <PropertyPreferencesCard purpose={purpose} onContinue={() => router.push("/dashboard")} />
+        ) : (
+          <InitialProposalCard
+            applicationId={applicationId}
+            onSelected={(registeredPurpose) => {
+              if (registeredPurpose === "vivienda_propia" || registeredPurpose === "ambos") {
+                setPurpose(registeredPurpose)
+                setShowPropertyPreferences(true)
+                return
+              }
+              router.push("/dashboard")
+            }}
+          />
+        )}
       </div>
     </main>
   )

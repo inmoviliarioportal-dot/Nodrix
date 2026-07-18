@@ -13,6 +13,14 @@ interface BandResult {
   approvalProbability: number
 }
 
+interface UFPreEvaluation {
+  maxMonthlyInstallmentCLP: number
+  maxLoanUF: number
+  pieUF: number
+  estimatedPropertyValueUF: number
+  disclaimer: string
+}
+
 type Purpose = "inversion" | "vivienda_propia"
 
 const PURPOSE_LABELS: Record<Purpose, string> = {
@@ -46,9 +54,10 @@ function InitialProposalCard({
   onSelected,
 }: {
   applicationId: string
-  onSelected: () => void
+  onSelected: (registeredPurpose: string | null) => void
 }) {
   const [bands, setBands] = React.useState<BandResult[] | null>(null)
+  const [ufPreEvaluation, setUfPreEvaluation] = React.useState<UFPreEvaluation | null>(null)
   const [registeredPurpose, setRegisteredPurpose] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [activePurpose, setActivePurpose] = React.useState<Purpose>("inversion")
@@ -59,6 +68,7 @@ function InitialProposalCard({
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         setBands(data?.bands ?? [])
+        setUfPreEvaluation(data?.ufPreEvaluation ?? null)
         setRegisteredPurpose(data?.registeredPurpose ?? null)
         if (data?.registeredPurpose === "vivienda_propia") setActivePurpose("vivienda_propia")
       })
@@ -80,7 +90,7 @@ function InitialProposalCard({
         return
       }
       toast.success("Propuesta inicial seleccionada. Ahora sube tus documentos.")
-      onSelected()
+      onSelected(registeredPurpose)
     } finally {
       setIsSubmitting(false)
     }
@@ -106,6 +116,17 @@ function InitialProposalCard({
           una vez que envíes tus documentos y estos sean evaluados por el banco.
         </p>
       </div>
+
+      {ufPreEvaluation && ufPreEvaluation.estimatedPropertyValueUF > 0 && (
+        <div className="rounded-xl border border-neon-cyan/30 bg-neon-cyan/5 p-4">
+          <p className="text-sm text-text-secondary">
+            Podrías optar a aproximadamente{" "}
+            <strong className="text-text-primary">{Math.round(ufPreEvaluation.estimatedPropertyValueUF)} UF</strong>{" "}
+            según tu perfil.
+          </p>
+          <p className="mt-1 text-xs text-text-tertiary">{ufPreEvaluation.disclaimer}</p>
+        </div>
+      )}
 
       <div className="flex gap-1 rounded-lg border border-glass-border bg-surface-elevated p-1">
         {(["inversion", "vivienda_propia"] as Purpose[]).map((purpose) => {

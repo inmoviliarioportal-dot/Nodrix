@@ -3,6 +3,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { apiError, requireAuth, withErrorHandling, HTTP_STATUS } from "@/app/api/_shared";
 import { MVP_ORG_ID } from "@/app/api/auth/_constants";
 import { calculateProposalBands } from "@/lib/proposal-risk";
+import { calculateUFPreEvaluation } from "@/lib/uf-preevaluation";
 import type { AnySupabaseClient } from "@/lib/leads";
 
 /**
@@ -24,7 +25,7 @@ export const GET = withErrorHandling(async (_request: Request, context: { params
   const supabase = createSupabaseServiceRoleClient() as unknown as AnySupabaseClient;
 
   const { data: application } = await (supabase.from("applications") as any)
-    .select("id, stage, scoring_score, customer_id, initial_proposal_band, initial_proposal_purpose")
+    .select("id, stage, scoring_score, customer_id, savings_amount, initial_proposal_band, initial_proposal_purpose")
     .eq("id", id)
     .eq("org_id", MVP_ORG_ID)
     .maybeSingle();
@@ -34,14 +35,29 @@ export const GET = withErrorHandling(async (_request: Request, context: { params
   }
 
   const { data: customer } = await (supabase.from("customers") as any)
-    .select("investment_type")
+    .select("investment_type, monthly_income")
     .eq("id", application.customer_id)
     .maybeSingle();
 
   const bands = calculateProposalBands(application.scoring_score ?? 0);
 
+  // La banda "1" es la de mayor probabilidad de aprobación (menor cantidad
+  // de departamentos comprometidos) -- se usa como referencia conservadora
+  // para el haircut de la pre-evaluación en UF.
+  const mostLikelyBand = bands.find((b) => b.band === "1") ?? bands[0];
+  // NOTA: `monthly_debt_payments` no se persiste hoy en ninguna tabla (solo
+  // se usa en memoria al calcular el scoring inicial) -- se asume 0 acá.
+  // Si en el futuro se persiste, reemplazar este valor fijo.
+  const ufPreEvaluation = calculateUFPreEvaluation({
+    monthlySalaryCLP: customer?.monthly_income ?? 0,
+    monthlyDebtPaymentsCLP: 0,
+    savingsAmountCLP: application.savings_amount ?? 0,
+    approvalProbability: mostLikelyBand?.approvalProbability ?? 0,
+  });
+
   return NextResponse.json({
     bands,
+    ufPreEvaluation,
     registeredPurpose: customer?.investment_type ?? null,
     selection:
       application.initial_proposal_band && application.initial_proposal_purpose
