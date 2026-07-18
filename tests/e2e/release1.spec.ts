@@ -86,7 +86,9 @@ test.describe("Release 1 — Flujo completo", () => {
     birthDate: "1990-01-15",
     age: "36",
     phone: "+56911112222",
-    monthlyIncome: "1200000",
+    // monthlyIncome/investmentType/propertyStatus ya no se piden en el
+    // registro -- se recolectan en el wizard (rangos) y se envían a
+    // POST /api/leads en el test "2. Lead -> Auto-scoring" más abajo.
     investmentType: "inversion",
     propertyStatus: "sin_definir",
   };
@@ -116,18 +118,6 @@ test.describe("Release 1 — Flujo completo", () => {
     await page.locator('input[name="age"], input[id="age"]').first().fill(user.age);
     await page.locator('input[name="phone"], input[type="tel"]').first().fill(user.phone);
     await page.locator('input[name="email"], input[type="email"]').first().fill(user.email);
-    await page
-      .locator('input[name="monthlyIncome"], input[id="monthlyIncome"]')
-      .first()
-      .fill(user.monthlyIncome);
-    await page
-      .locator('select[name="investmentType"], select[id="investmentType"]')
-      .first()
-      .selectOption(user.investmentType);
-    await page
-      .locator('select[name="propertyStatus"], select[id="propertyStatus"]')
-      .first()
-      .selectOption(user.propertyStatus);
     await page.locator('input[name="password"], input[type="password"]').first().fill(user.password);
 
     await page.getByRole("button", { name: "Registrarse" }).click();
@@ -177,6 +167,8 @@ test.describe("Release 1 — Flujo completo", () => {
         employmentYears: 4,
         hasExistingDebt: false,
         monthlyDebtPayments: 0,
+        investmentType: user.investmentType,
+        propertyStatus: user.propertyStatus,
       },
     });
 

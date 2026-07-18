@@ -128,7 +128,9 @@ test.describe("Release 3 — Full flow: lead -> cierre", () => {
     birthDate: "1990-01-15",
     age: 36,
     phone: "+56933334444",
-    monthlyIncome: 1_200_000,
+    // monthlyIncome/investmentType/propertyStatus ya no se piden en el
+    // registro -- se recolectan en el wizard (rangos) y se envían a
+    // POST /api/leads (ver test "2. Lead -> Auto-scoring" más abajo).
     investmentType: "inversion",
     propertyStatus: "sin_definir",
   };
@@ -208,9 +210,6 @@ test.describe("Release 3 — Full flow: lead -> cierre", () => {
         birthDate: user.birthDate,
         age: user.age,
         phone: user.phone,
-        monthlyIncome: user.monthlyIncome,
-        investmentType: user.investmentType,
-        propertyStatus: user.propertyStatus,
       },
     });
 
@@ -253,6 +252,8 @@ test.describe("Release 3 — Full flow: lead -> cierre", () => {
         employmentYears: 5,
         hasExistingDebt: false,
         monthlyDebtPayments: 0,
+        investmentType: user.investmentType,
+        propertyStatus: user.propertyStatus,
       },
     });
 

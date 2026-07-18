@@ -6,11 +6,13 @@
  */
 
 export const WIZARD_STORAGE_KEY = "wizard-progress";
-// v2: el wizard dejó de pedir propósito/renta/contacto -- esos datos ya se
-// capturan en el registro extendido (nombre, email, teléfono, renta, tipo de
-// inversión). Progreso guardado con el shape viejo se descarta (ver
-// `loadWizardProgress`) en vez de migrarse.
-const WIZARD_STORAGE_VERSION = 2;
+// v3: monthlyIncome/investmentType/propertyStatus se movieron del registro
+// al wizard (Paso 2, como rangos/tarjetas -- ver lib/financial-bands.ts), y
+// el ahorro/deuda numéricos del Paso 2 anterior (ahora Paso 3) también pasan
+// a ser rangos. Progreso guardado con el shape viejo (v2, números libres) se
+// descarta (ver `loadWizardProgress`) en vez de migrarse -- mismo patrón que
+// la v2 anterior.
+const WIZARD_STORAGE_VERSION = 3;
 
 /** Mismos 4 valores EXACTOS que `CustomerFinancialProfile.employmentType` en lib/scoring.ts */
 export type WizardEmploymentType =
@@ -19,14 +21,29 @@ export type WizardEmploymentType =
   | "honorarios"
   | "independiente";
 
+/** Mismos 3 valores EXACTOS que antes validaba POST /api/auth/register (ver components/auth/schemas.ts) */
+export type WizardInvestmentType = "inversion" | "vivienda_propia" | "ambos";
+
+/** Mismos 5 valores EXACTOS que antes validaba POST /api/auth/register */
+export type WizardPropertyStatus =
+  | "en_verde"
+  | "en_blanco"
+  | "usado"
+  | "entrega_inmediata"
+  | "sin_definir";
+
 export interface WizardData {
   // Paso 1
   employmentType: WizardEmploymentType | null;
   employmentYears: number | null;
   // Paso 2
-  savingsAmount: number | null;
+  salaryBandId: string | null;
+  investmentType: WizardInvestmentType | null;
+  propertyStatus: WizardPropertyStatus | null;
+  // Paso 3
+  savingsBandId: string | null;
   hasExistingDebt: boolean | null;
-  monthlyDebtPayments: number | null;
+  debtBandId: string | null;
 }
 
 export interface WizardProgress {
@@ -38,9 +55,12 @@ export interface WizardProgress {
 export const WIZARD_INITIAL_DATA: WizardData = {
   employmentType: null,
   employmentYears: null,
-  savingsAmount: null,
+  salaryBandId: null,
+  investmentType: null,
+  propertyStatus: null,
+  savingsBandId: null,
   hasExistingDebt: null,
-  monthlyDebtPayments: null,
+  debtBandId: null,
 };
 
 export function saveWizardProgress(step: number, data: WizardData): void {

@@ -7,13 +7,7 @@ import { toast } from "sonner"
 
 import { Layout } from "@/components/Layout"
 import { AuthCard } from "@/components/auth/AuthCard"
-import {
-  registerSchema,
-  type RegisterFormData,
-  GENDER_OPTIONS,
-  INVESTMENT_TYPE_OPTIONS,
-  PROPERTY_STATUS_OPTIONS,
-} from "@/components/auth/schemas"
+import { registerSchema, type RegisterFormData, GENDER_OPTIONS } from "@/components/auth/schemas"
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel, FieldError } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -32,9 +26,6 @@ const initialForm: FormState = {
   age: "",
   phone: "",
   email: "",
-  monthlyIncome: "",
-  investmentType: "",
-  propertyStatus: "",
   password: "",
 }
 
@@ -251,69 +242,6 @@ export default function RegisterPage() {
                 onChange={(e) => handleChange("email", e.target.value)}
               />
               <FieldError>{errors.email}</FieldError>
-            </Field>
-          </div>
-
-          <Field data-invalid={!!errors.monthlyIncome}>
-            <FieldLabel htmlFor="monthlyIncome">Renta líquida mensual (CLP)</FieldLabel>
-            <Input
-              className="bg-surface-elevated border-glass-border focus-visible:border-neon-cyan focus-visible:ring-neon-cyan/30"
-              id="monthlyIncome"
-              name="monthlyIncome"
-              type="number"
-              min={0}
-              step={1000}
-              placeholder="1200000"
-              value={form.monthlyIncome}
-              aria-invalid={!!errors.monthlyIncome}
-              onChange={(e) => handleChange("monthlyIncome", e.target.value)}
-            />
-            <FieldError>{errors.monthlyIncome}</FieldError>
-          </Field>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field data-invalid={!!errors.investmentType}>
-              <FieldLabel htmlFor="investmentType">Tipo de inversión</FieldLabel>
-              <select
-                id="investmentType"
-                name="investmentType"
-                className={selectClassName}
-                value={form.investmentType}
-                aria-invalid={!!errors.investmentType}
-                onChange={(e) => handleChange("investmentType", e.target.value)}
-              >
-                <option value="" disabled>
-                  Selecciona
-                </option>
-                {INVESTMENT_TYPE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <FieldError>{errors.investmentType}</FieldError>
-            </Field>
-
-            <Field data-invalid={!!errors.propertyStatus}>
-              <FieldLabel htmlFor="propertyStatus">Estado del inmueble</FieldLabel>
-              <select
-                id="propertyStatus"
-                name="propertyStatus"
-                className={selectClassName}
-                value={form.propertyStatus}
-                aria-invalid={!!errors.propertyStatus}
-                onChange={(e) => handleChange("propertyStatus", e.target.value)}
-              >
-                <option value="" disabled>
-                  Selecciona
-                </option>
-                {PROPERTY_STATUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <FieldError>{errors.propertyStatus}</FieldError>
             </Field>
           </div>
 

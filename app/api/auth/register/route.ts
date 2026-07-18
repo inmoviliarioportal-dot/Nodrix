@@ -18,14 +18,9 @@ type RegisterBody = {
   birthDate?: string;
   age?: number;
   phone?: string;
-  monthlyIncome?: number;
-  investmentType?: string;
-  propertyStatus?: string;
 };
 
 const VALID_GENDERS = ["femenino", "masculino", "prefiero_no_decir"];
-const VALID_INVESTMENT_TYPES = ["inversion", "vivienda_propia", "ambos"];
-const VALID_PROPERTY_STATUSES = ["en_verde", "en_blanco", "entrega_inmediata", "usado", "sin_definir"];
 
 const REQUIRED_FIELDS: (keyof RegisterBody)[] = [
   "email",
@@ -37,9 +32,6 @@ const REQUIRED_FIELDS: (keyof RegisterBody)[] = [
   "birthDate",
   "age",
   "phone",
-  "monthlyIncome",
-  "investmentType",
-  "propertyStatus",
 ];
 
 /**
@@ -49,7 +41,13 @@ const REQUIRED_FIELDS: (keyof RegisterBody)[] = [
  * pedía nombre/email/teléfono) — ver `database/migrations/004_customer_profile_fields.sql`.
  *
  * Body: { email, password, firstName, lastName, rut, gender, birthDate, age,
- *         phone, monthlyIncome, investmentType, propertyStatus }
+ *         phone }
+ *
+ * `monthlyIncome`/`investmentType`/`propertyStatus` ya NO se piden acá —
+ * se movieron al Wizard de perfilamiento (rangos/tarjetas, ver
+ * lib/financial-bands.ts y app/onboarding/wizard/page.tsx) para simplificar
+ * el registro. Esas columnas de `customers` quedan `NULL` hasta que
+ * POST /api/leads las complete tras el wizard.
  *
  * Creates the Supabase Auth user, then creates the matching `customers` row
  * (org_id fixed for the MVP) using the service role client — writes from a
@@ -91,33 +89,13 @@ export const POST = withErrorHandling(async (request: Request) => {
     birthDate,
     age,
     phone,
-    monthlyIncome,
-    investmentType,
-    propertyStatus,
   } = body as Required<RegisterBody>;
 
   if (!VALID_GENDERS.includes(gender)) {
     return apiError(`gender inválido. Valores permitidos: ${VALID_GENDERS.join(", ")}`, HTTP_STATUS.BAD_REQUEST, "INVALID_GENDER");
   }
-  if (!VALID_INVESTMENT_TYPES.includes(investmentType)) {
-    return apiError(
-      `investmentType inválido. Valores permitidos: ${VALID_INVESTMENT_TYPES.join(", ")}`,
-      HTTP_STATUS.BAD_REQUEST,
-      "INVALID_INVESTMENT_TYPE"
-    );
-  }
-  if (!VALID_PROPERTY_STATUSES.includes(propertyStatus)) {
-    return apiError(
-      `propertyStatus inválido. Valores permitidos: ${VALID_PROPERTY_STATUSES.join(", ")}`,
-      HTTP_STATUS.BAD_REQUEST,
-      "INVALID_PROPERTY_STATUS"
-    );
-  }
   if (typeof age !== "number" || age < 18 || age > 120) {
     return apiError("age debe ser un número entre 18 y 120", HTTP_STATUS.BAD_REQUEST, "INVALID_AGE");
-  }
-  if (typeof monthlyIncome !== "number" || monthlyIncome < 0) {
-    return apiError("monthlyIncome debe ser un número >= 0", HTTP_STATUS.BAD_REQUEST, "INVALID_MONTHLY_INCOME");
   }
   if (!isValidRut(rut)) {
     return apiError("RUT inválido (verifica el dígito verificador)", HTTP_STATUS.BAD_REQUEST, "INVALID_RUT");
@@ -183,9 +161,8 @@ export const POST = withErrorHandling(async (request: Request) => {
       gender,
       birth_date: birthDate,
       age,
-      monthly_income: monthlyIncome,
-      investment_type: investmentType,
-      property_status: propertyStatus,
+      // monthly_income/investment_type/property_status quedan NULL acá --
+      // se completan luego desde el wizard vía POST /api/leads.
     })
     .select()
     .single();

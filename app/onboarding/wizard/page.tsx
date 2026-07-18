@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Briefcase, PiggyBank, Check, X } from "lucide-react";
+import { Briefcase, PiggyBank, Wallet, Home, Check, X } from "lucide-react";
 import { SelectableCard } from "@/components/wizard/SelectableCard";
 import { WizardProgress } from "@/components/wizard/WizardProgress";
+import { INVESTMENT_TYPE_OPTIONS, PROPERTY_STATUS_OPTIONS } from "@/components/auth/schemas";
+import { SALARY_BANDS, SAVINGS_BANDS, DEBT_BANDS } from "@/lib/financial-bands";
 import {
   WIZARD_INITIAL_DATA,
   clearWizardProgress,
@@ -19,7 +21,7 @@ import {
  * IMPORTANTE: Coincide con INPUT_KEY esperada por processing/page.tsx. */
 export const WIZARD_PAYLOAD_STORAGE_KEY = "wizard-progress";
 
-const TOTAL_STEPS = 2;
+const TOTAL_STEPS = 3;
 
 const EMPLOYMENT_OPTIONS: { label: string; description: string; value: WizardEmploymentType }[] = [
   { label: "Indefinido", description: "Contrato indefinido", value: "indefinido" },
@@ -35,15 +37,17 @@ const YEARS_OPTIONS: { label: string; value: number }[] = [
   { label: "5 años o más", value: 6 },
 ];
 
-/** Datos del cliente ya recolectados en el registro extendido -- el wizard
- * NO vuelve a pedirlos, solo los reutiliza para armar el payload final de
- * POST /api/leads. Ver app/auth/register/page.tsx / migración 004. */
+/** Datos del cliente ya recolectados en el registro -- el wizard NO vuelve a
+ * pedirlos, solo los reutiliza para armar el payload final de POST /api/leads.
+ * Ver app/auth/register/page.tsx. Nota: `monthlyIncome` ya NO se pide en el
+ * registro (se movió a este wizard como `salaryBandId`, Paso 2), así que
+ * `RegisteredProfile` ya no incluye un salario -- se resuelve desde la banda
+ * elegida en `handleNext`. */
 interface RegisteredProfile {
   name: string;
   email: string;
   phone: string;
   rut: string | null;
-  monthlySalary: number | null;
 }
 
 export default function WizardPage() {
@@ -81,7 +85,6 @@ export default function WizardPage() {
           email: user?.email ?? customer?.email ?? "",
           phone: customer?.phone ?? "",
           rut: customer?.rut_ciphertext ?? null,
-          monthlySalary: customer?.monthly_income ?? null,
         });
       })
       .catch(() => setProfileError(true));
@@ -110,8 +113,14 @@ export default function WizardPage() {
       case 1:
         return data.employmentType !== null && data.employmentYears !== null;
       case 2:
-        if (data.savingsAmount === null || data.hasExistingDebt === null) return false;
-        if (data.hasExistingDebt && !data.monthlyDebtPayments) return false;
+        return (
+          data.salaryBandId !== null &&
+          data.investmentType !== null &&
+          data.propertyStatus !== null
+        );
+      case 3:
+        if (data.savingsBandId === null || data.hasExistingDebt === null) return false;
+        if (data.hasExistingDebt && !data.debtBandId) return false;
         return true;
       default:
         return false;
@@ -134,20 +143,32 @@ export default function WizardPage() {
     // Paso final: arma el payload EXACTO del contrato de POST /api/leads y lo
     // pasa a la pantalla de AI Processing vía sessionStorage. Este componente
     // NO llama a /api/leads directamente — eso lo hace /onboarding/processing.
-    // name/email/phone/rut/monthlySalary vienen del registro (no se piden de
-    // nuevo acá); solo employmentType/employmentYears/savings/deuda son datos
-    // nuevos recolectados en este wizard.
+    // name/email/phone/rut vienen del registro (no se piden de nuevo acá);
+    // salario/ahorro/deuda se resuelven desde el `representative` de la banda
+    // elegida (ver lib/financial-bands.ts) — el cliente eligió un rango, no
+    // tipeó un número, pero el motor de scoring (lib/scoring.ts) sigue
+    // esperando números.
+    const salaryRepresentative =
+      SALARY_BANDS.find((b) => b.id === data.salaryBandId)?.representative ?? null;
+    const savingsRepresentative =
+      SAVINGS_BANDS.find((b) => b.id === data.savingsBandId)?.representative ?? null;
+    const debtRepresentative = data.hasExistingDebt
+      ? (DEBT_BANDS.find((b) => b.id === data.debtBandId)?.representative ?? 0)
+      : 0;
+
     const payload = {
       name: profile.name,
       email: profile.email,
       phone: profile.phone,
       rut: profile.rut,
-      monthlySalary: profile.monthlySalary,
-      savingsAmount: data.savingsAmount,
+      monthlySalary: salaryRepresentative,
+      savingsAmount: savingsRepresentative,
       employmentType: data.employmentType,
       employmentYears: data.employmentYears,
       hasExistingDebt: data.hasExistingDebt,
-      monthlyDebtPayments: data.hasExistingDebt ? data.monthlyDebtPayments ?? 0 : 0,
+      monthlyDebtPayments: debtRepresentative,
+      investmentType: data.investmentType,
+      propertyStatus: data.propertyStatus,
     };
 
     try {
@@ -192,7 +213,8 @@ export default function WizardPage() {
               onChangeYears={(v) => update("employmentYears", v)}
             />
           )}
-          {step === 2 && <StepSavings data={data} onChange={update} />}
+          {step === 2 && <StepFinancialProfile data={data} onChange={update} />}
+          {step === 3 && <StepSavings data={data} onChange={update} />}
         </div>
 
         <div className="mt-10 flex items-center justify-between gap-4">
@@ -287,6 +309,84 @@ function StepEmployment({
   );
 }
 
+function StepFinancialProfile({
+  data,
+  onChange,
+}: {
+  data: WizardData;
+  onChange: <K extends keyof WizardData>(key: K, value: WizardData[K]) => void;
+}) {
+  return (
+    <section className="flex flex-col gap-8">
+      <header className="text-center">
+        <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
+          Tu perfil financiero
+        </h1>
+        <p className="mt-2 text-sm" style={{ color: "var(--text-tertiary)" }}>
+          Elige el rango que más se acerque a tu situación.
+        </p>
+      </header>
+
+      <div>
+        <h2
+          className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide"
+          style={{ color: "var(--text-secondary)" }}
+        >
+          <Wallet size={16} /> ¿Cuál es tu renta líquida mensual?
+        </h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {SALARY_BANDS.map((band) => (
+            <SelectableCard
+              key={band.id}
+              label={band.label}
+              selected={data.salaryBandId === band.id}
+              onClick={() => onChange("salaryBandId", band.id)}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h2
+          className="mb-3 text-sm font-semibold uppercase tracking-wide"
+          style={{ color: "var(--text-secondary)" }}
+        >
+          ¿Qué buscas?
+        </h2>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {INVESTMENT_TYPE_OPTIONS.map((opt) => (
+            <SelectableCard
+              key={opt.value}
+              label={opt.label}
+              selected={data.investmentType === opt.value}
+              onClick={() => onChange("investmentType", opt.value)}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h2
+          className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide"
+          style={{ color: "var(--text-secondary)" }}
+        >
+          <Home size={16} /> Estado del inmueble que buscas
+        </h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {PROPERTY_STATUS_OPTIONS.map((opt) => (
+            <SelectableCard
+              key={opt.value}
+              label={opt.label}
+              selected={data.propertyStatus === opt.value}
+              onClick={() => onChange("propertyStatus", opt.value)}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function StepSavings({
   data,
   onChange,
@@ -310,24 +410,18 @@ function StepSavings({
           className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide"
           style={{ color: "var(--text-secondary)" }}
         >
-          <PiggyBank size={16} /> Ahorro / pie disponible (CLP)
+          <PiggyBank size={16} /> ¿Cuánto ahorro/pie tienes disponible?
         </h2>
-        <input
-          type="number"
-          min={0}
-          inputMode="numeric"
-          placeholder="Ej: 12000000"
-          value={data.savingsAmount ?? ""}
-          onChange={(e) =>
-            onChange("savingsAmount", e.target.value === "" ? null : Number(e.target.value))
-          }
-          className="w-full rounded-xl border bg-transparent px-4 py-3 text-lg outline-none transition-colors duration-200"
-          style={{
-            borderColor: "var(--glass-border)",
-            color: "var(--text-primary)",
-            backgroundColor: "var(--surface-elevated)",
-          }}
-        />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {SAVINGS_BANDS.map((band) => (
+            <SelectableCard
+              key={band.id}
+              label={band.label}
+              selected={data.savingsBandId === band.id}
+              onClick={() => onChange("savingsBandId", band.id)}
+            />
+          ))}
+        </div>
       </div>
 
       <div>
@@ -350,30 +444,26 @@ function StepSavings({
             selected={data.hasExistingDebt === false}
             onClick={() => {
               onChange("hasExistingDebt", false);
-              onChange("monthlyDebtPayments", 0);
+              onChange("debtBandId", null);
             }}
           />
         </div>
         {data.hasExistingDebt && (
-          <input
-            type="number"
-            min={0}
-            inputMode="numeric"
-            placeholder="Monto de deuda mensual (CLP)"
-            value={data.monthlyDebtPayments ?? ""}
-            onChange={(e) =>
-              onChange(
-                "monthlyDebtPayments",
-                e.target.value === "" ? null : Number(e.target.value)
-              )
-            }
-            className="mt-3 w-full rounded-xl border bg-transparent px-4 py-3 text-lg outline-none transition-colors duration-200"
-            style={{
-              borderColor: "var(--glass-border)",
-              color: "var(--text-primary)",
-              backgroundColor: "var(--surface-elevated)",
-            }}
-          />
+          <div className="mt-3">
+            <h3 className="mb-3 text-sm" style={{ color: "var(--text-tertiary)" }}>
+              ¿Cuál es tu pago mensual de deudas?
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              {DEBT_BANDS.map((band) => (
+                <SelectableCard
+                  key={band.id}
+                  label={band.label}
+                  selected={data.debtBandId === band.id}
+                  onClick={() => onChange("debtBandId", band.id)}
+                />
+              ))}
+            </div>
+          </div>
         )}
       </div>
     </section>

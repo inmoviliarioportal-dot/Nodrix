@@ -75,6 +75,12 @@ export const POST = withErrorHandling(async (request: Request) => {
   const existing = await findCustomerByEmail(supabase, MVP_ORG_ID, normalizedEmail);
 
   if (existing) {
+    // El wizard ahora recolecta renta/tipo de inversión/estado del inmueble
+    // (movidos del registro, ver lib/financial-bands.ts) -- persistirlos acá
+    // en vez de en POST /api/auth/register, que ya no los pide. Best-effort:
+    // un error acá no debe bloquear la creación/dedup del lead.
+    await updateCustomerProfileFields(supabase, existing.id, financial);
+
     let latestApplication = await findLatestApplicationForCustomer(supabase, existing.id);
 
     // El customer puede existir sin ninguna application todavía (ej. se
@@ -144,6 +150,8 @@ export const POST = withErrorHandling(async (request: Request) => {
       HTTP_STATUS.INTERNAL_SERVER_ERROR
     );
   }
+
+  await updateCustomerProfileFields(supabase, (customer as CustomerRow).id, financial);
 
   const { data: application, error: applicationError } = await supabase
     .from("applications")
@@ -260,6 +268,46 @@ export async function maybeApplyScoring(
   }
 
   return updated;
+}
+
+const VALID_INVESTMENT_TYPES = ["inversion", "vivienda_propia", "ambos"];
+const VALID_PROPERTY_STATUSES = ["en_verde", "en_blanco", "entrega_inmediata", "usado", "sin_definir"];
+
+/**
+ * Persiste `investment_type`/`property_status`/`monthly_income` en `customers`
+ * cuando vienen en el body de POST /api/leads. Estos 3 campos se pedían antes
+ * en POST /api/auth/register; ahora se recolectan en el Wizard de
+ * perfilamiento (rangos/tarjetas, ver lib/financial-bands.ts) y llegan acá
+ * junto con el resto del perfil financiero. Best-effort: si el update falla o
+ * los campos no vienen, no bloquea la creación/dedup del lead (mismo patrón
+ * que `maybeApplyScoring`, que tampoco bloquea si falta el perfil completo).
+ */
+async function updateCustomerProfileFields(
+  supabase: AnySupabaseClient,
+  customerId: string,
+  financial: Record<string, unknown>
+): Promise<void> {
+  const update: Record<string, unknown> = {};
+
+  if (
+    typeof financial.investmentType === "string" &&
+    VALID_INVESTMENT_TYPES.includes(financial.investmentType)
+  ) {
+    update.investment_type = financial.investmentType;
+  }
+  if (
+    typeof financial.propertyStatus === "string" &&
+    VALID_PROPERTY_STATUSES.includes(financial.propertyStatus)
+  ) {
+    update.property_status = financial.propertyStatus;
+  }
+  if (typeof financial.monthlySalary === "number") {
+    update.monthly_income = financial.monthlySalary;
+  }
+
+  if (Object.keys(update).length === 0) return;
+
+  await supabase.from("customers").update(update).eq("id", customerId);
 }
 
 /**

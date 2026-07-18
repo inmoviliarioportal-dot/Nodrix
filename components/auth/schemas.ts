@@ -53,15 +53,9 @@ export const registerSchema = z.object({
     .min(8, "Ingresa un teléfono válido")
     .regex(/^[0-9+\s()-]+$/, "Ingresa un teléfono válido"),
   email: z.string().trim().email("Ingresa un correo válido"),
-  monthlyIncome: z.coerce
-    .number({ message: "Ingresa tu renta líquida mensual" })
-    .min(0, "La renta no puede ser negativa"),
-  investmentType: z.enum(["inversion", "vivienda_propia", "ambos"], {
-    message: "Selecciona una opción",
-  }),
-  propertyStatus: z.enum(["en_verde", "en_blanco", "entrega_inmediata", "usado", "sin_definir"], {
-    message: "Selecciona una opción",
-  }),
+  // monthlyIncome/investmentType/propertyStatus se movieron al Wizard de
+  // perfilamiento (rangos/tarjetas, ver lib/financial-bands.ts y
+  // app/onboarding/wizard/page.tsx) para simplificar el registro.
   password: z
     .string()
     .min(8, "La contraseña debe tener al menos 8 caracteres"),
