@@ -10,8 +10,8 @@ import { Timeline } from "@/components/Timeline"
 import { ScoringBadge, type ScoringCategory } from "@/components/ui/scoring-badge"
 import { Toaster } from "@/components/ui/sonner"
 
-import { AdvisorCard } from "@/components/dashboard/AdvisorCard"
 import { ComunaOffersCard } from "@/components/dashboard/ComunaOffersCard"
+import { WhatsAppBubble } from "@/components/dashboard/WhatsAppBubble"
 import { DocumentsCard } from "@/components/dashboard/DocumentsCard"
 import { DocumentUploadModal } from "@/components/dashboard/DocumentUploadModal"
 import { FinalProposalCard } from "@/components/dashboard/FinalProposalCard"
@@ -212,7 +212,6 @@ export default function DashboardPage() {
               onSelected={loadData}
               onQualificationChange={setInitialProposalQualifies}
             />
-            <AdvisorCard />
           </div>
         )}
 
@@ -238,7 +237,7 @@ export default function DashboardPage() {
                 <span>Duración estimada de esta etapa: {stageContent.estimatedDuration}</span>
               </div>
 
-              {stage === "SCORING_COMPLETADO" && (
+              {(stage === "SCORING_COMPLETADO" || stage === "DOCUMENTOS_PENDIENTES") && (
                 <Button
                   variant="outline"
                   className="w-fit"
@@ -304,11 +303,12 @@ export default function DashboardPage() {
               {["ENVIADO_A_BANCO", "ESCRITURACION_AGENDADA", "CIERRE"].includes(stage) && application && (
                 <FinalProposalCard applicationId={application.id} />
               )}
-              <AdvisorCard />
             </div>
           </div>
         )}
       </div>
+
+      <WhatsAppBubble />
 
       {application && (
         <DocumentUploadModal

@@ -98,14 +98,22 @@ export const POST = withErrorHandling(async (request: Request, context: { params
     return apiError("Solicitud no encontrada.", HTTP_STATUS.NOT_FOUND, "APPLICATION_NOT_FOUND");
   }
 
-  // 2. Solo editable mientras está en análisis de perfil, sin selección aún.
-  if (application.stage !== "SCORING_COMPLETADO") {
+  // 2. Editable en SCORING_COMPLETADO (sin selección aún) y también en
+  // DOCUMENTOS_PENDIENTES: un cliente puede haber avanzado ahí "solo
+  // probando" el wizard con datos que no son los reales todavía (la
+  // selección de propuesta ahora es automática al hacer clic en
+  // "Continuar", así que puede pasar sin que el cliente lo note). Una vez
+  // que hay documentos aprobados/pre-evaluación en curso, ya no se permite
+  // editar el perfil financiero desde acá.
+  const EDITABLE_STAGES = ["SCORING_COMPLETADO", "DOCUMENTOS_PENDIENTES"];
+  if (!EDITABLE_STAGES.includes(application.stage)) {
     return apiError(
-      "Solo puedes actualizar tus datos mientras tu solicitud está en Análisis de perfil.",
+      "Solo puedes actualizar tus datos mientras tu solicitud está en Análisis de perfil o Documentación.",
       HTTP_STATUS.BAD_REQUEST,
       "STAGE_NOT_EDITABLE"
     );
   }
+  const wasPastScoring = application.stage === "DOCUMENTOS_PENDIENTES";
 
   // 3. Recalcular scoring.
   const profile: CustomerFinancialProfile = {
@@ -120,6 +128,10 @@ export const POST = withErrorHandling(async (request: Request, context: { params
   const result = calculateScoring(profile, config);
 
   // 4. Actualizar application: nuevo scoring + reset de selección previa.
+  // Si venía de DOCUMENTOS_PENDIENTES (avanzó por la auto-selección de
+  // propuesta), lo devolvemos a SCORING_COMPLETADO para que vuelva a pasar
+  // por la pantalla de pre-evaluación con sus datos corregidos -- los
+  // documentos que ya haya subido quedan tal cual, no se borran.
   const { data: updatedApplication, error: updateError } = await (supabase.from("applications") as any)
     .update({
       scoring_category: result.category,
@@ -128,6 +140,7 @@ export const POST = withErrorHandling(async (request: Request, context: { params
       initial_proposal_band: null,
       initial_proposal_purpose: null,
       initial_proposal_selected_at: null,
+      ...(wasPastScoring ? { stage: "SCORING_COMPLETADO" } : {}),
     })
     .eq("id", id)
     .select("*")
@@ -164,13 +177,15 @@ export const POST = withErrorHandling(async (request: Request, context: { params
     await (supabase.from("guarantors") as any).delete().eq("application_id", id);
   }
 
-  // 7. Traza de auditoría (mismo stage, solo para dejar registro del cambio).
+  // 7. Traza de auditoría (registra si hubo retroceso de etapa).
   await supabase.from("application_stage_history").insert({
     application_id: id,
-    from_stage: "SCORING_COMPLETADO",
-    to_stage: "SCORING_COMPLETADO",
+    from_stage: application.stage,
+    to_stage: wasPastScoring ? "SCORING_COMPLETADO" : application.stage,
     actor_user_id: null,
-    note: "Cliente actualizó sus datos financieros y se recalculó su scoring.",
+    note: wasPastScoring
+      ? "Cliente actualizó sus datos financieros desde Documentación -- se recalculó el scoring y volvió a Análisis de perfil."
+      : "Cliente actualizó sus datos financieros y se recalculó su scoring.",
   });
 
   const { data: updatedCustomer } = await (supabase.from("customers") as any)
