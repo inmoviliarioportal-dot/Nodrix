@@ -127,6 +127,38 @@ export const POST = withErrorHandling(async (request: Request) => {
       // acá mismo. El aval solo aplica a una application recién creada, así
       // que se inserta acá igual que en la rama "customer nuevo" de abajo.
       await maybeInsertGuarantor(supabase, (newApplication as ApplicationRow).id, financial);
+    } else if (EDITABLE_LEAD_STAGES.includes(latestApplication.stage)) {
+      // BUG REAL detectado en producción: si el customer ya tenía una
+      // application (caso normal -- todo cliente se registra antes de
+      // llegar al wizard), este endpoint históricamente solo actualizaba
+      // `customers` y devolvía la application VIEJA sin recalcular nada --
+      // por más que el cliente cambiara sus datos "a favor" en un segundo
+      // paso por el wizard, seguía viendo el mismo resultado de scoring/UF
+      // de antes. Mientras la application siga en una etapa editable
+      // (Análisis de perfil o Documentación pendiente, antes de que el
+      // banco reciba algo), recalculamos con los datos nuevos -- mismo
+      // criterio que usa POST /api/applications/[id]/update-financial-profile.
+      const rescored = await maybeApplyScoring(
+        supabase,
+        latestApplication as { id: string; stage: string },
+        financial
+      );
+      if (rescored) {
+        await (supabase.from("applications") as any)
+          .update({
+            initial_proposal_band: null,
+            initial_proposal_purpose: null,
+            initial_proposal_selected_at: null,
+          })
+          .eq("id", latestApplication.id);
+        latestApplication = {
+          ...(rescored as ApplicationRow),
+          initial_proposal_band: null,
+          initial_proposal_purpose: null,
+          initial_proposal_selected_at: null,
+        } as ApplicationRow;
+        await maybeInsertGuarantor(supabase, latestApplication.id, financial);
+      }
     }
 
     return NextResponse.json(
@@ -192,18 +224,29 @@ export const POST = withErrorHandling(async (request: Request) => {
 const VALID_AVAL_RELATIONSHIPS = ["conyuge", "padre", "madre", "hijo", "hermano"];
 const VALID_AVAL_EMPLOYMENT_TYPES = ["indefinido", "plazo_fijo", "honorarios", "independiente"];
 
+/** Etapas en las que resubmitir el wizard (o editar desde el dashboard)
+ * todavía puede recalcular el scoring -- antes de que el banco reciba algo. */
+const EDITABLE_LEAD_STAGES = ["SCORING_COMPLETADO", "DOCUMENTOS_PENDIENTES"];
+
 /**
- * Inserta la fila de `guarantors` para una application RECIÉN creada, si el
- * payload trae `hasAval: true` con los 3 campos requeridos bien tipados.
+ * Sincroniza la fila de `guarantors` de una application con el payload
+ * (`hasAval: true/false`). Se usa tanto al crear una application nueva como
+ * al re-enviar el wizard para una ya existente (ver rama `existing` de
+ * arriba) -- por eso es upsert/delete, no solo insert: una resubmisión con
+ * `hasAval: true` no debe violar `idx_guarantors_one_per_application`, y una
+ * resubmisión con `hasAval: false` debe borrar un aval declarado antes.
  * Best-effort (mismo patrón que `updateCustomerProfileFields`): un error acá
- * no debe bloquear la creación del lead.
+ * no debe bloquear la creación/actualización del lead.
  */
 async function maybeInsertGuarantor(
   supabase: AnySupabaseClient,
   applicationId: string,
   financial: Record<string, unknown>
 ): Promise<void> {
-  if (financial.hasAval !== true) return;
+  if (financial.hasAval !== true) {
+    await (supabase.from("guarantors") as any).delete().eq("application_id", applicationId);
+    return;
+  }
 
   const { avalRelationship, avalMonthlySalary, avalEmploymentType } = financial;
   if (
@@ -216,13 +259,16 @@ async function maybeInsertGuarantor(
     return;
   }
 
-  await supabase.from("guarantors").insert({
-    org_id: MVP_ORG_ID,
-    application_id: applicationId,
-    relationship: avalRelationship,
-    monthly_income: avalMonthlySalary,
-    employment_type: avalEmploymentType,
-  });
+  await (supabase.from("guarantors") as any).upsert(
+    {
+      org_id: MVP_ORG_ID,
+      application_id: applicationId,
+      relationship: avalRelationship,
+      monthly_income: avalMonthlySalary,
+      employment_type: avalEmploymentType,
+    },
+    { onConflict: "application_id" }
+  );
 }
 
 /**
