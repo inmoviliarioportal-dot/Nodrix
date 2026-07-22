@@ -5,8 +5,11 @@ import { useRouter } from "next/navigation"
 
 import { InitialProposalCard } from "@/components/dashboard/InitialProposalCard"
 import { PropertyPreferencesCard } from "@/components/dashboard/PropertyPreferencesCard"
+import { AvatarPresenter } from "@/components/avatar/AvatarPresenter"
 
 const OUTPUT_KEY = "onboarding-result"
+
+type Step = "initial-proposal" | "property-preferences" | "closing-avatar"
 
 /**
  * Paso del onboarding INMEDIATAMENTE después de que la pantalla de
@@ -15,12 +18,18 @@ const OUTPUT_KEY = "onboarding-result"
  * a su panel. Reutiliza el mismo `InitialProposalCard` que se muestra como
  * fallback en el dashboard (si el cliente sale de acá sin elegir y vuelve
  * después, lo ve ahí igual).
+ *
+ * Tras elegir la propuesta inicial, TODOS los purposes (inversión,
+ * vivienda_propia, ambos) pasan por preferencias de propiedad + selección
+ * de propuesta de 1/2/3 departamentos -- "cuántos departamentos" es una
+ * decisión de tamaño de inversión que también aplica a inversionistas
+ * puros, no solo a quienes buscan vivienda propia.
  */
 export default function InitialProposalPage() {
   const router = useRouter()
   const [applicationId, setApplicationId] = React.useState<string | null>(null)
   const [notFound, setNotFound] = React.useState(false)
-  const [showPropertyPreferences, setShowPropertyPreferences] = React.useState(false)
+  const [step, setStep] = React.useState<Step>("initial-proposal")
   const [purpose, setPurpose] = React.useState<"inversion" | "vivienda_propia" | "ambos" | null>(null)
 
   React.useEffect(() => {
@@ -92,6 +101,17 @@ export default function InitialProposalPage() {
     )
   }
 
+  if (step === "closing-avatar") {
+    return (
+      <AvatarPresenter
+        heading="¡Felicitaciones!"
+        script="¡Excelente! Lograste completar nuestro Wizard Inteligente. Ahora necesitamos que cargues tus documentos para poder agendar tu visita con el asesor asignado, y así puedas ver los proyectos que te presentamos."
+        continueLabel="Ir a mi panel"
+        onDone={() => router.push("/dashboard")}
+      />
+    )
+  }
+
   return (
     <main className="bg-deep-ambient flex min-h-screen flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-3xl">
@@ -101,18 +121,22 @@ export default function InitialProposalPage() {
             Antes de subir tus documentos, elige tu propuesta inicial.
           </p>
         </header>
-        {showPropertyPreferences && purpose ? (
-          <PropertyPreferencesCard purpose={purpose} onContinue={() => router.push("/dashboard")} />
+        {step === "property-preferences" && purpose ? (
+          <PropertyPreferencesCard
+            purpose={purpose}
+            applicationId={applicationId}
+            onAccepted={() => setStep("closing-avatar")}
+          />
         ) : (
           <InitialProposalCard
             applicationId={applicationId}
             onSelected={(registeredPurpose) => {
-              if (registeredPurpose === "vivienda_propia" || registeredPurpose === "ambos") {
-                setPurpose(registeredPurpose)
-                setShowPropertyPreferences(true)
-                return
-              }
-              router.push("/dashboard")
+              const normalized =
+                registeredPurpose === "vivienda_propia" || registeredPurpose === "ambos"
+                  ? registeredPurpose
+                  : "inversion"
+              setPurpose(normalized)
+              setStep("property-preferences")
             }}
           />
         )}

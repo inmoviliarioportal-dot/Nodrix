@@ -14,6 +14,7 @@ type PropertyBody = {
   available?: boolean;
   images?: string[];
   floorPlanUrl?: string | null;
+  videoUrl?: string | null;
 };
 
 /** PATCH /api/admin/properties/{id} — edita una propiedad. Requiere admin/gerencia. */
@@ -45,6 +46,7 @@ export const PATCH = withErrorHandling(async (request: Request, context: { param
   if (body.available !== undefined) update.available = body.available;
   if (body.images !== undefined) update.images = body.images;
   if (body.floorPlanUrl !== undefined) update.floor_plan_url = body.floorPlanUrl;
+  if (body.videoUrl !== undefined) update.video_url = body.videoUrl;
 
   if (Object.keys(update).length === 0) {
     return apiError("Nada para actualizar", HTTP_STATUS.BAD_REQUEST, "EMPTY_UPDATE");

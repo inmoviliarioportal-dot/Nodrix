@@ -6,7 +6,10 @@ import { Home, Building2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { SelectableCard } from "@/components/wizard/SelectableCard"
-import { PropertyRecommendations, type PropertyRecommendation } from "@/components/dashboard/PropertyRecommendations"
+import {
+  PropertyRecommendations,
+  type PropertyProposal,
+} from "@/components/dashboard/PropertyRecommendations"
 
 type PropertyType = "casa" | "departamento"
 type Purpose = "inversion" | "vivienda_propia" | "ambos"
@@ -16,18 +19,35 @@ const BATHROOM_OPTIONS = [1, 2, 3] as const
 
 /**
  * Formulario de preferencias de vivienda (tipo, dormitorios, baños, comuna)
- * que se muestra tras elegir la propuesta inicial, solo para clientes
- * vivienda_propia/ambos (ver app/onboarding/initial-proposal/page.tsx).
- * Al enviar, consulta POST /api/properties/recommendations y muestra el
- * resultado con `PropertyRecommendations`.
+ * que se muestra tras elegir la propuesta inicial -- ahora aplica a TODOS
+ * los purposes (inversión, vivienda_propia, ambos): elegir entre 1/2/3
+ * departamentos es una decisión de tamaño de inversión que también aplica a
+ * inversionistas puros. Para inversión pura se omite la pregunta de "tipo de
+ * propiedad" (no aplica bien conceptualmente), pero se sigue pidiendo comuna.
+ *
+ * Al enviar, consulta POST /api/properties/recommendations (devuelve 3
+ * propuestas seleccionables) y, al aceptar una, llama
+ * POST /api/applications/[id]/accept-property-proposal antes de avisar al
+ * padre vía `onAccepted`.
  */
-function PropertyPreferencesCard({ purpose, onContinue }: { purpose: Purpose; onContinue: () => void }) {
+function PropertyPreferencesCard({
+  purpose,
+  applicationId,
+  onAccepted,
+}: {
+  purpose: Purpose
+  applicationId: string
+  onAccepted: () => void
+}) {
   const [propertyType, setPropertyType] = React.useState<PropertyType | null>(null)
   const [bedrooms, setBedrooms] = React.useState<number | null>(null)
   const [bathrooms, setBathrooms] = React.useState<number | null>(null)
   const [comuna, setComuna] = React.useState("")
   const [isSubmitting, setIsSubmitting] = React.useState(false)
-  const [recommendations, setRecommendations] = React.useState<PropertyRecommendation[] | null>(null)
+  const [isAccepting, setIsAccepting] = React.useState(false)
+  const [proposals, setProposals] = React.useState<PropertyProposal[] | null>(null)
+
+  const showPropertyTypeQuestion = purpose !== "inversion"
 
   async function handleSubmit() {
     if (!comuna.trim()) {
@@ -53,21 +73,36 @@ function PropertyPreferencesCard({ purpose, onContinue }: { purpose: Purpose; on
         return
       }
       const data = await res.json()
-      setRecommendations(data?.recommendations ?? [])
+      setProposals(data?.proposals ?? [])
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  if (recommendations) {
-    return (
-      <div className="flex flex-col gap-4">
-        <PropertyRecommendations recommendations={recommendations} />
-        <Button onClick={onContinue} className="self-center">
-          Continuar a mi panel
-        </Button>
-      </div>
-    )
+  async function handleAccept(proposal: PropertyProposal) {
+    setIsAccepting(true)
+    try {
+      const res = await fetch(`/api/applications/${applicationId}/accept-property-proposal`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          departmentCount: proposal.departmentCount,
+          propertyIds: proposal.properties.map((p) => p.id),
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        toast.error(data?.error ?? "No se pudo aceptar la propuesta.")
+        return
+      }
+      onAccepted()
+    } finally {
+      setIsAccepting(false)
+    }
+  }
+
+  if (proposals) {
+    return <PropertyRecommendations proposals={proposals} onAccept={handleAccept} isSubmitting={isAccepting} />
   }
 
   return (
@@ -81,23 +116,25 @@ function PropertyPreferencesCard({ purpose, onContinue }: { purpose: Purpose; on
         </p>
       </div>
 
-      <div>
-        <p className="mb-2 text-xs font-medium text-text-tertiary">Tipo de propiedad</p>
-        <div className="grid grid-cols-2 gap-3">
-          <SelectableCard
-            label="Casa"
-            icon={Home}
-            selected={propertyType === "casa"}
-            onClick={() => setPropertyType("casa")}
-          />
-          <SelectableCard
-            label="Departamento"
-            icon={Building2}
-            selected={propertyType === "departamento"}
-            onClick={() => setPropertyType("departamento")}
-          />
+      {showPropertyTypeQuestion && (
+        <div>
+          <p className="mb-2 text-xs font-medium text-text-tertiary">Tipo de propiedad</p>
+          <div className="grid grid-cols-2 gap-3">
+            <SelectableCard
+              label="Casa"
+              icon={Home}
+              selected={propertyType === "casa"}
+              onClick={() => setPropertyType("casa")}
+            />
+            <SelectableCard
+              label="Departamento"
+              icon={Building2}
+              selected={propertyType === "departamento"}
+              onClick={() => setPropertyType("departamento")}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       <div>
         <p className="mb-2 text-xs font-medium text-text-tertiary">Dormitorios</p>
@@ -151,7 +188,7 @@ function PropertyPreferencesCard({ purpose, onContinue }: { purpose: Purpose; on
       </div>
 
       <Button disabled={isSubmitting} onClick={handleSubmit} className="self-center">
-        {isSubmitting ? "Buscando..." : "Ver recomendaciones"}
+        {isSubmitting ? "Buscando..." : "Ver propuestas"}
       </Button>
     </div>
   )

@@ -38,6 +38,7 @@ type PropertyBody = {
   available?: boolean;
   images?: string[];
   floorPlanUrl?: string | null;
+  videoUrl?: string | null;
 };
 
 function validate(body: PropertyBody): string | null {
@@ -73,6 +74,7 @@ export const POST = withErrorHandling(async (request: Request) => {
       available: body.available ?? true,
       images: body.images ?? [],
       floor_plan_url: body.floorPlanUrl ?? null,
+      video_url: body.videoUrl ?? null,
     })
     .select("*")
     .single();

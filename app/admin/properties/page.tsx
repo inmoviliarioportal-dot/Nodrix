@@ -19,6 +19,7 @@ interface PropertyRow {
   available: boolean
   images: string[] | null
   floor_plan_url: string | null
+  video_url: string | null
 }
 
 const PURPOSE_OPTIONS = [
@@ -44,6 +45,7 @@ const EMPTY_FORM = {
   purpose: "ambos",
   imagesText: "",
   floorPlanUrl: "",
+  videoUrl: "",
 }
 
 /**
@@ -87,6 +89,7 @@ export default function AdminPropertiesPage() {
       purpose: property.purpose ?? "ambos",
       imagesText: (property.images ?? []).join("\n"),
       floorPlanUrl: property.floor_plan_url ?? "",
+      videoUrl: property.video_url ?? "",
     })
   }
 
@@ -141,6 +144,7 @@ export default function AdminPropertiesPage() {
           purpose: form.purpose,
           images,
           floorPlanUrl: form.floorPlanUrl || null,
+          videoUrl: form.videoUrl || null,
         }),
       })
       if (!res.ok) {
@@ -252,6 +256,17 @@ export default function AdminPropertiesPage() {
               value={form.floorPlanUrl}
               onChange={(e) => setForm((f) => ({ ...f, floorPlanUrl: e.target.value }))}
               placeholder="https://.../plano.jpg"
+            />
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor="videoUrl">URL del video (opcional)</FieldLabel>
+            <Input
+              id="videoUrl"
+              className="bg-surface-elevated border-glass-border"
+              value={form.videoUrl}
+              onChange={(e) => setForm((f) => ({ ...f, videoUrl: e.target.value }))}
+              placeholder="https://.../video.mp4"
             />
           </Field>
 
