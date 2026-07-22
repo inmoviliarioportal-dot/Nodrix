@@ -40,6 +40,29 @@ export const STAGE_LABELS: Record<string, string> = {
  * componentes/agentes pueden depender de ese mapa técnico. Este mapa es
  * exclusivo de la capa de presentación del dashboard.
  */
+/**
+ * Orden de despliegue de la línea de tiempo que ve el CLIENTE (distinto del
+ * orden real de `APPLICATION_STAGES`, que sigue rigiendo el backend/gating
+ * de documentos, transiciones automáticas, etc. -- no lo toques). Cambios
+ * pedidos: se oculta "Aprobado previo" (sigue existiendo como stage real,
+ * solo no se muestra en esta timeline), y "Visita a la propiedad" se
+ * muestra antes que "Documentación", ya que ambos pasos pueden avanzar en
+ * paralelo en la práctica. Esto es puramente visual: si el cliente todavía
+ * no tuvo su visita real, ese paso puede aparecer "completado" antes de
+ * tiempo si su `stage` real ya avanzó más allá en el orden de backend --
+ * aceptado como trade-off pedido explícitamente por el negocio.
+ */
+export const CLIENT_TIMELINE_STAGES: ApplicationStage[] = [
+  "RECEPCIONADA",
+  "SCORING_COMPLETADO",
+  "VISITA_COMPLETADA",
+  "DOCUMENTOS_PENDIENTES",
+  "DOCUMENTOS_APROBADOS",
+  "ENVIADO_A_BANCO",
+  "ESCRITURACION_AGENDADA",
+  "CIERRE",
+];
+
 export const STAGE_MARKETING_LABELS: Record<string, string> = {
   RECEPCIONADA: "Revisión inicial",
   SCORING_COMPLETADO: "Análisis de perfil",

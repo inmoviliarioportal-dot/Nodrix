@@ -27,6 +27,7 @@ import { Clock } from "lucide-react"
 import { STAGE_CLIENT_CONTENT } from "@/components/dashboard/stageContent"
 import {
   APPLICATION_STAGES,
+  CLIENT_TIMELINE_STAGES,
   STAGE_LABELS,
   STAGE_MARKETING_LABELS,
   type ApplicationStage,
@@ -168,7 +169,7 @@ export default function DashboardPage() {
               <Timeline
                 orientation="vertical"
                 currentStage=""
-                stages={[...APPLICATION_STAGES]}
+                stages={CLIENT_TIMELINE_STAGES}
                 labels={STAGE_MARKETING_LABELS}
               />
             </div>
@@ -224,7 +225,7 @@ export default function DashboardPage() {
               <Timeline
                 orientation="vertical"
                 currentStage={stage}
-                stages={[...APPLICATION_STAGES]}
+                stages={CLIENT_TIMELINE_STAGES}
                 labels={STAGE_MARKETING_LABELS}
               />
             </div>

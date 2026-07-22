@@ -42,6 +42,9 @@ export interface PropertyRecommendation {
   bathrooms: number | null;
   propertyType: string | null;
   image: string | null;
+  /** Todas las imágenes del proyecto/inmueble (no solo la miniatura) -- para
+   * la galería flotante que el cliente puede abrir antes de aceptar. */
+  images: string[];
   videoUrl: string | null;
 }
 
@@ -145,6 +148,7 @@ export const POST = withErrorHandling(async (request: Request) => {
       bathrooms: r.bathrooms,
       propertyType: r.property_type,
       image: r.images?.[0] ?? null,
+      images: r.images ?? [],
       videoUrl: r.video_url ?? null,
     };
   }

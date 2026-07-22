@@ -1,10 +1,11 @@
 "use client"
 
 import * as React from "react"
-import { MapPin, BedDouble, Bath, Home, Check } from "lucide-react"
+import { MapPin, BedDouble, Bath, Home, Check, Images } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { PropertyGalleryModal } from "@/components/dashboard/PropertyGalleryModal"
 
 export interface PropertyRecommendation {
   id: string
@@ -16,6 +17,7 @@ export interface PropertyRecommendation {
   bathrooms: number | null
   propertyType: string | null
   image: string | null
+  images: string[]
   videoUrl: string | null
 }
 
@@ -47,6 +49,7 @@ function PropertyRecommendations({
   isSubmitting?: boolean
 }) {
   const [selected, setSelected] = React.useState<1 | 2 | 3 | null>(null)
+  const [galleryProperty, setGalleryProperty] = React.useState<PropertyRecommendation | null>(null)
 
   const hasAnyProperty = proposals.some((p) => p.properties.length > 0)
 
@@ -111,15 +114,32 @@ function PropertyRecommendations({
                     className="flex flex-col overflow-hidden rounded-xl border border-glass-border bg-surface-elevated"
                   >
                     {property.image && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={property.image}
-                        alt={`Imagen de ${property.name}`}
-                        className="h-28 w-full object-cover"
-                      />
-                    )}
-                    {property.videoUrl && (
-                      <video controls className="h-28 w-full object-cover" src={property.videoUrl} />
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setGalleryProperty(property)
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.stopPropagation()
+                            setGalleryProperty(property)
+                          }
+                        }}
+                        className="group relative block cursor-pointer"
+                        aria-label={`Ver galería de ${property.name}`}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={property.image}
+                          alt={`Imagen de ${property.name}`}
+                          className="h-28 w-full object-cover"
+                        />
+                        <span className="absolute inset-0 flex items-center justify-center gap-1 bg-black/0 text-[11px] font-medium text-white opacity-0 transition-all duration-200 group-hover:bg-black/40 group-hover:opacity-100">
+                          <Images className="size-3.5" /> Ver galería
+                        </span>
+                      </span>
                     )}
                     <div className="flex flex-col gap-1.5 p-3">
                       <p className="text-xs font-medium text-text-primary">{property.name}</p>
@@ -164,6 +184,14 @@ function PropertyRecommendations({
       >
         {isSubmitting ? "Guardando..." : "Aceptar esta propuesta"}
       </Button>
+
+      <PropertyGalleryModal
+        open={galleryProperty !== null}
+        onOpenChange={(open) => !open && setGalleryProperty(null)}
+        propertyName={galleryProperty?.name ?? ""}
+        images={galleryProperty?.images ?? []}
+        videoUrl={galleryProperty?.videoUrl ?? null}
+      />
     </div>
   )
 }
