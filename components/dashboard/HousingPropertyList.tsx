@@ -15,21 +15,29 @@ import type { PropertyRecommendation } from "@/components/dashboard/PropertyReco
 function HousingPropertyList({
   properties,
   onAccept,
+  onSkip,
   isSubmitting,
 }: {
   properties: PropertyRecommendation[]
   onAccept: (property: PropertyRecommendation) => void
+  /** Deja continuar el flujo aunque no haya elegido (o no exista) ninguna
+   * propiedad de vivienda -- el cliente no debe quedar bloqueado sin salida
+   * si el inventario disponible no calza con sus preferencias. */
+  onSkip: () => void
   isSubmitting?: boolean
 }) {
   const [selectedId, setSelectedId] = React.useState<string | null>(null)
 
   if (properties.length === 0) {
     return (
-      <div className="glass-card rounded-2xl p-6">
+      <div className="glass-card flex flex-col items-center gap-4 rounded-2xl p-6 text-center">
         <p className="text-sm text-text-tertiary">
           No encontramos propiedades que coincidan con tus preferencias por ahora. Tu asesor te contactará con
           alternativas.
         </p>
+        <Button variant="outline" onClick={onSkip}>
+          Continuar sin seleccionar por ahora
+        </Button>
       </div>
     )
   }

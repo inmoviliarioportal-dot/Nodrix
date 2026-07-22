@@ -151,6 +151,14 @@ function PropertyPreferencesCard({
     }
   }
 
+  /** Cuando no hay ninguna propiedad de vivienda que calce con las
+   * preferencias, el cliente igual debe poder seguir adelante -- el asesor
+   * hace seguimiento manual después. No llama al endpoint de aceptación,
+   * simplemente avanza (queda `accepted_housing_property_id` en null). */
+  function handleSkipHousing() {
+    onAccepted()
+  }
+
   if (mode === "investment") {
     if (!proposals) {
       return (
@@ -170,6 +178,7 @@ function PropertyPreferencesCard({
       <HousingPropertyList
         properties={housingProperties}
         onAccept={handleAcceptHousingProperty}
+        onSkip={handleSkipHousing}
         isSubmitting={isAccepting}
       />
     )
