@@ -41,14 +41,20 @@ type ScheduleVisitBody = {
   scheduledAt?: string;
 };
 
+/** Etapas en las que el cliente puede agendar su propia visita. Se agregó
+ * DOCUMENTOS_PENDIENTES para que pueda agendar la visita a las propiedades
+ * que ya eligió (ver /api/applications/[id]/selected-properties) EN
+ * PARALELO a la subida de documentos, sin tener que esperar a llegar a
+ * "Aprobado previo" -- ese caso sigue funcionando igual (oferta agregada
+ * por comuna) para quien llega ahí sin haber agendado antes. */
+const SCHEDULABLE_STAGES = ["DOCUMENTOS_PENDIENTES", "PRE_EVALUACION_COMPLETADA"];
+
 /**
  * POST /api/visits
  *
  * El CLIENTE agenda su propia visita (no requiere permiso de "Visitas" --
  * ese permiso es para el seguimiento del staff). Body:
- * `{ applicationId, comuna, scheduledAt }`. Reglas:
- * - La application debe estar en PRE_EVALUACION_COMPLETADA (recién ahí se
- *   le ofrecen valores por comuna al cliente, ver /api/properties/offers).
+ * `{ applicationId, comuna, scheduledAt }`.
  * - No se pide un `propertyId` puntual -- se elige automáticamente una
  *   property disponible de esa comuna como referencia interna (la visita
  *   sigue apuntando a un proyecto real para la logística del asesor), pero
@@ -78,9 +84,9 @@ export const POST = withErrorHandling(async (request: Request) => {
   if (!application) {
     return apiError("Solicitud no encontrada", HTTP_STATUS.NOT_FOUND, "APPLICATION_NOT_FOUND");
   }
-  if (application.stage !== "PRE_EVALUACION_COMPLETADA") {
+  if (!SCHEDULABLE_STAGES.includes(application.stage)) {
     return apiError(
-      "Solo puedes agendar una visita cuando tu solicitud está en 'Aprobado previo'.",
+      "Todavía no puedes agendar una visita para esta solicitud.",
       HTTP_STATUS.BAD_REQUEST,
       "INVALID_STAGE"
     );

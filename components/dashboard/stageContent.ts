@@ -49,7 +49,8 @@ export const STAGE_CLIENT_CONTENT: Record<ApplicationStage, StageClientContent> 
   DOCUMENTOS_PENDIENTES: {
     alert: {
       tone: "warning",
-      message: "Necesitamos que subas tus documentos para continuar con tu solicitud.",
+      message:
+        "Necesitamos que subas tus documentos y que agendes tu visita a las propiedades con tu asesor asignado -- puedes hacer ambas cosas al mismo tiempo, no es necesario esperar una para la otra.",
     },
     videoTitle: "Qué documentos necesitas y por qué",
     showUploadCta: true,

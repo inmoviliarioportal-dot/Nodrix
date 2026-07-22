@@ -20,6 +20,7 @@ import { InitialProposalReminder } from "@/components/dashboard/InitialProposalR
 import { NextStepCard } from "@/components/dashboard/NextStepCard"
 import { PreEvaluationCard } from "@/components/dashboard/PreEvaluationCard"
 import { ScoringCard } from "@/components/dashboard/ScoringCard"
+import { ScheduleVisitCard } from "@/components/dashboard/ScheduleVisitCard"
 import { StageAlert } from "@/components/dashboard/StageAlert"
 import { HookVideo } from "@/components/dashboard/HookVideo"
 import { StageProgressBar } from "@/components/dashboard/StageProgressBar"
@@ -290,6 +291,12 @@ export default function DashboardPage() {
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <ScoringCard scoring={scoring} />
                     <DocumentsCard documents={documents} onUploadClick={() => setUploadOpen(true)} />
+                    {/* Agendar visita en paralelo a la subida de documentos --
+                        no hay que esperar a "Aprobado previo" para conocer
+                        las propiedades que el cliente ya eligió. */}
+                    {stage === "DOCUMENTOS_PENDIENTES" && application && (
+                      <ScheduleVisitCard applicationId={application.id} />
+                    )}
                     <PreEvaluationCard
                       minUf={application?.pre_evaluation_min_uf}
                       maxUf={application?.pre_evaluation_max_uf}
