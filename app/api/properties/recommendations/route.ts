@@ -8,7 +8,9 @@ type PropertyType = "casa" | "departamento";
 type DepartmentCount = 1 | 2 | 3;
 
 interface RecommendationsBody {
-  comuna: string;
+  // Opcional cuando purpose === "inversion": ese flujo va directo a las 3
+  // propuestas de 1/2/3 departamentos sin pedir preferencias al cliente.
+  comuna?: string;
   propertyType?: PropertyType;
   bedrooms?: number;
   bathrooms?: number;
@@ -76,8 +78,13 @@ export const POST = withErrorHandling(async (request: Request) => {
   if (!auth.authorized) return auth.response;
 
   const body = (await request.json().catch(() => null)) as RecommendationsBody | null;
-  if (!body?.comuna || !body?.purpose) {
-    return apiError("comuna y purpose son requeridos", HTTP_STATUS.BAD_REQUEST, "INVALID_BODY");
+  if (!body?.purpose) {
+    return apiError("purpose es requerido", HTTP_STATUS.BAD_REQUEST, "INVALID_BODY");
+  }
+  // comuna es requerida salvo para inversión pura (esa propuesta no filtra
+  // por preferencias de vivienda -- ver PropertyPreferencesCard).
+  if (!body.comuna && body.purpose !== "inversion") {
+    return apiError("comuna es requerida", HTTP_STATUS.BAD_REQUEST, "INVALID_BODY");
   }
 
   const supabase = createSupabaseServiceRoleClient() as any;
@@ -99,7 +106,9 @@ export const POST = withErrorHandling(async (request: Request) => {
   const purposeMatches = (rows: PropertyRow[]) =>
     rows.filter((r) => r.purpose === body.purpose || r.purpose === "ambos" || body.purpose === "ambos");
 
-  const inComuna = allRows.filter((r) => r.comuna?.toLowerCase() === body.comuna.toLowerCase());
+  const inComuna = body.comuna
+    ? allRows.filter((r) => r.comuna?.toLowerCase() === body.comuna!.toLowerCase())
+    : allRows;
 
   // Etapas de relajación: comuna+purpose+filtros estrictos -> ... -> sin
   // comuna (último recurso, solo si en la comuna elegida no hay nada).

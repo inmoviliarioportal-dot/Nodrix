@@ -24,6 +24,7 @@ export default async function AdminLayout({
     { href: "/backoffice/visits", label: "Visitas" },
     { href: "/admin/assignments", label: "Asignar asesor" },
     { href: "/admin/properties", label: "Propiedades" },
+    { href: "/admin/regions", label: "Regiones" },
     { href: "/admin/users/new", label: "Crear usuario" },
     { href: "/admin/roles", label: "Roles" },
   ]

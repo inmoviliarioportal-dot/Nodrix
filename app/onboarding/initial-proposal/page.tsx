@@ -9,7 +9,11 @@ import { AvatarPresenter } from "@/components/avatar/AvatarPresenter"
 
 const OUTPUT_KEY = "onboarding-result"
 
-type Step = "initial-proposal" | "property-preferences" | "closing-avatar"
+// Pasos del flujo tras elegir la propuesta inicial. "ambos" recorre
+// investment-proposal -> housing-preferences EN SECUENCIA antes del cierre;
+// "inversion" solo pasa por investment-proposal; "vivienda_propia" solo por
+// housing-preferences.
+type Step = "initial-proposal" | "investment-proposal" | "housing-preferences" | "closing-avatar"
 
 /**
  * Paso del onboarding INMEDIATAMENTE después de que la pantalla de
@@ -19,11 +23,15 @@ type Step = "initial-proposal" | "property-preferences" | "closing-avatar"
  * fallback en el dashboard (si el cliente sale de acá sin elegir y vuelve
  * después, lo ve ahí igual).
  *
- * Tras elegir la propuesta inicial, TODOS los purposes (inversión,
- * vivienda_propia, ambos) pasan por preferencias de propiedad + selección
- * de propuesta de 1/2/3 departamentos -- "cuántos departamentos" es una
- * decisión de tamaño de inversión que también aplica a inversionistas
- * puros, no solo a quienes buscan vivienda propia.
+ * Tras elegir la propuesta inicial, el flujo se bifurca según `purpose`:
+ * - "inversion": va directo a la propuesta de 1/2/3 departamentos (sin
+ *   preferencias de vivienda -- ese enfoque distinto queda para una
+ *   iteración futura).
+ * - "vivienda_propia": pide preferencias (tipo/dormitorios/baños/comuna) y
+ *   elige UNA propiedad individual.
+ * - "ambos": primero la propuesta de inversión (como "inversion"), y
+ *   ENSEGUIDA (sin pasar por el dashboard) las preferencias + propiedad de
+ *   vivienda propia. Solo tras aceptar AMBAS se muestra el cierre.
  */
 export default function InitialProposalPage() {
   const router = useRouter()
@@ -121,10 +129,22 @@ export default function InitialProposalPage() {
             Antes de subir tus documentos, elige tu propuesta inicial.
           </p>
         </header>
-        {step === "property-preferences" && purpose ? (
+        {step === "investment-proposal" && purpose ? (
           <PropertyPreferencesCard
             purpose={purpose}
             applicationId={applicationId}
+            mode="investment"
+            onAccepted={() => {
+              // "ambos" encadena directo a preferencias de vivienda; el
+              // resto (inversión pura) ya terminó y va al cierre.
+              setStep(purpose === "ambos" ? "housing-preferences" : "closing-avatar")
+            }}
+          />
+        ) : step === "housing-preferences" && purpose ? (
+          <PropertyPreferencesCard
+            purpose={purpose}
+            applicationId={applicationId}
+            mode="housing"
             onAccepted={() => setStep("closing-avatar")}
           />
         ) : (
@@ -136,7 +156,8 @@ export default function InitialProposalPage() {
                   ? registeredPurpose
                   : "inversion"
               setPurpose(normalized)
-              setStep("property-preferences")
+              // "vivienda_propia" no pasa por la propuesta de inversión.
+              setStep(normalized === "vivienda_propia" ? "housing-preferences" : "investment-proposal")
             }}
           />
         )}

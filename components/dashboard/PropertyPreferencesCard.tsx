@@ -6,52 +6,83 @@ import { Home, Building2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { SelectableCard } from "@/components/wizard/SelectableCard"
+import { RegionComunaSelect } from "@/components/wizard/RegionComunaSelect"
 import {
   PropertyRecommendations,
   type PropertyProposal,
+  type PropertyRecommendation,
 } from "@/components/dashboard/PropertyRecommendations"
+import { HousingPropertyList } from "@/components/dashboard/HousingPropertyList"
 
 type PropertyType = "casa" | "departamento"
 type Purpose = "inversion" | "vivienda_propia" | "ambos"
+type Mode = "investment" | "housing"
 
 const BEDROOM_OPTIONS = [1, 2, 3, 4] as const
 const BATHROOM_OPTIONS = [1, 2, 3] as const
 
 /**
- * Formulario de preferencias de vivienda (tipo, dormitorios, baños, comuna)
- * que se muestra tras elegir la propuesta inicial -- ahora aplica a TODOS
- * los purposes (inversión, vivienda_propia, ambos): elegir entre 1/2/3
- * departamentos es una decisión de tamaño de inversión que también aplica a
- * inversionistas puros. Para inversión pura se omite la pregunta de "tipo de
- * propiedad" (no aplica bien conceptualmente), pero se sigue pidiendo comuna.
+ * Tarjeta de propuesta de propiedades, con dos modos completamente
+ * distintos según el `purpose` del cliente (ver app/onboarding/initial-proposal/page.tsx):
  *
- * Al enviar, consulta POST /api/properties/recommendations (devuelve 3
- * propuestas seleccionables) y, al aceptar una, llama
- * POST /api/applications/[id]/accept-property-proposal antes de avisar al
- * padre vía `onAccepted`.
+ * - mode="investment": SIN formulario de preferencias -- va directo a pedir
+ *   las 3 propuestas de 1/2/3 departamentos (misma lógica ya armada para
+ *   inversión). Se usa para purpose "inversion" y como PRIMER paso de
+ *   "ambos". El enfoque de preferencias para la pata de inversión pura
+ *   queda pendiente para una iteración futura (instrucción del usuario).
+ * - mode="housing": muestra el formulario de preferencias (tipo, dormitorios,
+ *   baños, región+comuna) y, al enviar, una lista de propiedades
+ *   INDIVIDUALES (no bundles) para elegir una sola. Se usa para purpose
+ *   "vivienda_propia" y como SEGUNDO paso de "ambos".
  */
 function PropertyPreferencesCard({
   purpose,
   applicationId,
+  mode,
   onAccepted,
 }: {
   purpose: Purpose
   applicationId: string
+  mode: Mode
   onAccepted: () => void
 }) {
   const [propertyType, setPropertyType] = React.useState<PropertyType | null>(null)
   const [bedrooms, setBedrooms] = React.useState<number | null>(null)
   const [bathrooms, setBathrooms] = React.useState<number | null>(null)
-  const [comuna, setComuna] = React.useState("")
+  const [comuna, setComuna] = React.useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [isAccepting, setIsAccepting] = React.useState(false)
   const [proposals, setProposals] = React.useState<PropertyProposal[] | null>(null)
+  const [housingProperties, setHousingProperties] = React.useState<PropertyRecommendation[] | null>(null)
 
-  const showPropertyTypeQuestion = purpose !== "inversion"
+  const requestedInvestmentProposals = React.useRef(false)
 
-  async function handleSubmit() {
-    if (!comuna.trim()) {
-      toast.error("Ingresa una comuna para buscar propiedades.")
+  // mode="investment" no pide preferencias -- dispara la búsqueda apenas se
+  // monta, una sola vez.
+  React.useEffect(() => {
+    if (mode !== "investment" || requestedInvestmentProposals.current) return
+    requestedInvestmentProposals.current = true
+    setIsSubmitting(true)
+    fetch("/api/properties/recommendations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ purpose: "inversion" }),
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const data = await res.json().catch(() => null)
+          toast.error(data?.error ?? "No se pudieron buscar propiedades.")
+          return
+        }
+        const data = await res.json()
+        setProposals(data?.proposals ?? [])
+      })
+      .finally(() => setIsSubmitting(false))
+  }, [mode])
+
+  async function handleHousingSubmit() {
+    if (!comuna) {
+      toast.error("Selecciona una comuna para buscar propiedades.")
       return
     }
     setIsSubmitting(true)
@@ -60,8 +91,8 @@ function PropertyPreferencesCard({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          comuna: comuna.trim(),
-          purpose,
+          comuna,
+          purpose: "vivienda_propia",
           propertyType: propertyType ?? undefined,
           bedrooms: bedrooms ?? undefined,
           bathrooms: bathrooms ?? undefined,
@@ -73,13 +104,13 @@ function PropertyPreferencesCard({
         return
       }
       const data = await res.json()
-      setProposals(data?.proposals ?? [])
+      setHousingProperties(data?.recommendations ?? [])
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  async function handleAccept(proposal: PropertyProposal) {
+  async function handleAcceptInvestmentProposal(proposal: PropertyProposal) {
     setIsAccepting(true)
     try {
       const res = await fetch(`/api/applications/${applicationId}/accept-property-proposal`, {
@@ -101,40 +132,77 @@ function PropertyPreferencesCard({
     }
   }
 
-  if (proposals) {
-    return <PropertyRecommendations proposals={proposals} onAccept={handleAccept} isSubmitting={isAccepting} />
+  async function handleAcceptHousingProperty(property: PropertyRecommendation) {
+    setIsAccepting(true)
+    try {
+      const res = await fetch(`/api/applications/${applicationId}/accept-housing-property`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ propertyId: property.id }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        toast.error(data?.error ?? "No se pudo aceptar la propiedad.")
+        return
+      }
+      onAccepted()
+    } finally {
+      setIsAccepting(false)
+    }
+  }
+
+  if (mode === "investment") {
+    if (!proposals) {
+      return (
+        <div className="glass-card flex flex-col items-center gap-3 rounded-2xl p-6">
+          <p className="text-sm text-text-tertiary">Buscando propuestas de inversión...</p>
+        </div>
+      )
+    }
+    return (
+      <PropertyRecommendations proposals={proposals} onAccept={handleAcceptInvestmentProposal} isSubmitting={isAccepting} />
+    )
+  }
+
+  // mode === "housing"
+  if (housingProperties) {
+    return (
+      <HousingPropertyList
+        properties={housingProperties}
+        onAccept={handleAcceptHousingProperty}
+        isSubmitting={isAccepting}
+      />
+    )
   }
 
   return (
     <div className="glass-card flex flex-col gap-5 rounded-2xl p-6">
       <div>
         <h2 className="font-heading text-sm font-semibold uppercase tracking-wide text-text-tertiary">
-          Cuéntanos qué buscas
+          Cuéntanos qué buscas para tu vivienda
         </h2>
         <p className="mt-1 text-sm text-text-secondary">
           Con estas preferencias te mostramos propiedades específicas que podrían interesarte.
         </p>
       </div>
 
-      {showPropertyTypeQuestion && (
-        <div>
-          <p className="mb-2 text-xs font-medium text-text-tertiary">Tipo de propiedad</p>
-          <div className="grid grid-cols-2 gap-3">
-            <SelectableCard
-              label="Casa"
-              icon={Home}
-              selected={propertyType === "casa"}
-              onClick={() => setPropertyType("casa")}
-            />
-            <SelectableCard
-              label="Departamento"
-              icon={Building2}
-              selected={propertyType === "departamento"}
-              onClick={() => setPropertyType("departamento")}
-            />
-          </div>
+      <div>
+        <p className="mb-2 text-xs font-medium text-text-tertiary">Tipo de propiedad</p>
+        <div className="grid grid-cols-2 gap-3">
+          <SelectableCard
+            label="Casa"
+            icon={Home}
+            selected={propertyType === "casa"}
+            onClick={() => setPropertyType("casa")}
+          />
+          <SelectableCard
+            label="Departamento"
+            icon={Building2}
+            selected={propertyType === "departamento"}
+            onClick={() => setPropertyType("departamento")}
+          />
         </div>
-      )}
+      </div>
 
       <div>
         <p className="mb-2 text-xs font-medium text-text-tertiary">Dormitorios</p>
@@ -178,17 +246,11 @@ function PropertyPreferencesCard({
 
       <div>
         <p className="mb-2 text-xs font-medium text-text-tertiary">Comuna</p>
-        <input
-          type="text"
-          value={comuna}
-          onChange={(e) => setComuna(e.target.value)}
-          placeholder="Ej: Ñuñoa"
-          className="h-10 w-full rounded-lg border border-glass-border bg-deep px-3 text-sm text-text-primary outline-none"
-        />
+        <RegionComunaSelect value={comuna} onChange={setComuna} />
       </div>
 
-      <Button disabled={isSubmitting} onClick={handleSubmit} className="self-center">
-        {isSubmitting ? "Buscando..." : "Ver propuestas"}
+      <Button disabled={isSubmitting} onClick={handleHousingSubmit} className="self-center">
+        {isSubmitting ? "Buscando..." : "Ver propiedades"}
       </Button>
     </div>
   )
