@@ -251,7 +251,7 @@ test.describe("Release 3 — Full flow: lead -> cierre", () => {
         employmentType: "indefinido",
         employmentYears: 5,
         hasExistingDebt: false,
-        monthlyDebtPayments: 0,
+        totalDebtBalance: 0,
         investmentType: user.investmentType,
         propertyStatus: user.propertyStatus,
       },

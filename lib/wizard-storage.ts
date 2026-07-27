@@ -15,7 +15,11 @@ export const WIZARD_STORAGE_KEY = "wizard-progress";
 // v4: se agregan los campos de aval/codeudor (Paso 3) -- progreso v3 se
 // descarta igual que en el bump anterior, no vale la pena migrar un wizard a
 // medio llenar.
-const WIZARD_STORAGE_VERSION = 4;
+// v5: `debtBandId` (cuota mensual de deuda) pasa a `totalDebtBalanceBandId`
+// (saldo TOTAL de deuda de corto plazo) -- lo pide la banca para el
+// parámetro de Leverage (ver lib/uf-preevaluation.ts). Progreso v4 se
+// descarta igual que en los bumps anteriores.
+const WIZARD_STORAGE_VERSION = 5;
 
 /** Mismos 4 valores EXACTOS que `CustomerFinancialProfile.employmentType` en lib/scoring.ts */
 export type WizardEmploymentType =
@@ -46,7 +50,8 @@ export interface WizardData {
   // Paso 3
   savingsBandId: string | null;
   hasExistingDebt: boolean | null;
-  debtBandId: string | null;
+  /** Saldo TOTAL de deuda de corto plazo (no la cuota mensual) -- ver DEBT_BALANCE_BANDS. */
+  totalDebtBalanceBandId: string | null;
   // Paso 3 -- aval/codeudor. Los bancos chilenos típicamente solo aceptan
   // parentescos cercanos como aval hipotecario (cónyuge, padre, madre, hijo,
   // hermano) -- ver WizardAvalRelationship.
@@ -70,7 +75,7 @@ export const WIZARD_INITIAL_DATA: WizardData = {
   propertyStatus: null,
   savingsBandId: null,
   hasExistingDebt: null,
-  debtBandId: null,
+  totalDebtBalanceBandId: null,
   hasAval: null,
   avalRelationship: null,
   avalSalaryBandId: null,

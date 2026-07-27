@@ -6,7 +6,7 @@
  * pide elegir un RANGO como tarjeta seleccionable. Cada banda tiene un valor
  * `representative` — el número que efectivamente alimenta el motor de scoring
  * determinístico (`lib/scoring.ts`, que espera `monthlySalary`/`savingsAmount`/
- * `monthlyDebtPayments` como números, no bandas) en vez de que el cliente
+ * `totalDebtBalance` como números, no bandas) en vez de que el cliente
  * tenga que tipear un monto exacto.
  */
 
@@ -36,10 +36,18 @@ export const SAVINGS_BANDS: FinancialBand[] = [
   { id: "s6", label: "Más de $20.000.000", representative: 25_000_000 },
 ];
 
-/** Pago mensual de deudas vigentes (CLP). Alimenta `CustomerFinancialProfile.monthlyDebtPayments`. */
-export const DEBT_BANDS: FinancialBand[] = [
-  { id: "d1", label: "Menos de $100.000", representative: 50_000 },
-  { id: "d2", label: "$100.000 - $300.000", representative: 200_000 },
-  { id: "d3", label: "$300.000 - $600.000", representative: 450_000 },
-  { id: "d4", label: "Más de $600.000", representative: 750_000 },
+/**
+ * Saldo TOTAL de deuda de corto plazo vigente (CLP) — no la cuota mensual.
+ * Alimenta `CustomerFinancialProfile.totalDebtBalance`. Se pide el saldo total
+ * (en vez de la cuota mensual) porque es el dato que la banca usa para el
+ * parámetro de Leverage (deuda corto plazo / ingresos), y de aquí se deriva
+ * también una cuota mensual estimada para el parámetro de Carga Financiera
+ * (ver `lib/uf-preevaluation.ts` y `lib/scoring.ts`).
+ */
+export const DEBT_BALANCE_BANDS: FinancialBand[] = [
+  { id: "d1", label: "Menos de $2.000.000", representative: 1_000_000 },
+  { id: "d2", label: "$2.000.000 - $5.000.000", representative: 3_500_000 },
+  { id: "d3", label: "$5.000.000 - $10.000.000", representative: 7_500_000 },
+  { id: "d4", label: "$10.000.000 - $20.000.000", representative: 15_000_000 },
+  { id: "d5", label: "Más de $20.000.000", representative: 25_000_000 },
 ];

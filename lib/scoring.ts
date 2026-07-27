@@ -28,7 +28,7 @@ export interface CustomerFinancialProfile {
   employmentType: "indefinido" | "plazo_fijo" | "honorarios" | "independiente";
   employmentYears: number;
   hasExistingDebt: boolean;
-  monthlyDebtPayments: number; // CLP
+  totalDebtBalance: number; // CLP, saldo total de deuda de corto plazo (no la cuota mensual)
 }
 
 export type ScoringCategory = "BRONCE" | "PLATA" | "ORO" | "PLATINO" | "BLACK";
@@ -176,23 +176,35 @@ function scoreEstabilidadLaboral(
 }
 
 /**
- * CARGA FINANCIERA (peso 20): ratio dividendo/renta = deuda mensual existente
- * / salario mensual. Mientras más bajo el ratio, mejor el puntaje (menos
- * comprometido está el ingreso). Sin deuda existente = puntaje máximo.
+ * Deuda de corto plazo se asume amortizada en un plazo típico de 12 meses
+ * (de ahí "corto plazo") para derivar una cuota mensual estimada a partir
+ * del saldo total declarado -- el cliente ya no digita la cuota mensual
+ * directamente (ver `lib/financial-bands.ts` DEBT_BALANCE_BANDS), así que
+ * este es el único punto donde se deriva. Se reutiliza el mismo supuesto en
+ * `lib/uf-preevaluation.ts`.
+ */
+export const SHORT_TERM_DEBT_AMORTIZATION_MONTHS = 12;
+
+/**
+ * CARGA FINANCIERA (peso 20): ratio cuotas/renta = cuota mensual estimada de
+ * la deuda existente (saldo total / 12) / salario mensual. Mientras más bajo
+ * el ratio, mejor el puntaje (menos comprometido está el ingreso). Sin deuda
+ * existente = puntaje máximo.
  */
 function scoreCargaFinanciera(
   hasExistingDebt: boolean,
-  monthlyDebtPayments: number,
+  totalDebtBalance: number,
   monthlySalary: number,
   weight: number
 ): number {
-  if (!hasExistingDebt || monthlyDebtPayments <= 0) return weight * 1.0;
+  if (!hasExistingDebt || totalDebtBalance <= 0) return weight * 1.0;
 
   // Si no hay salario válido para calcular el ratio pero sí hay deuda, es el
   // peor escenario posible (riesgo máximo, no hay forma de pagar).
   if (!Number.isFinite(monthlySalary) || monthlySalary <= 0) return 0;
 
-  const ratio = monthlyDebtPayments / monthlySalary;
+  const estimatedMonthlyDebtPayment = totalDebtBalance / SHORT_TERM_DEBT_AMORTIZATION_MONTHS;
+  const ratio = estimatedMonthlyDebtPayment / monthlySalary;
 
   if (ratio <= 0.1) return weight * 0.9;
   if (ratio <= 0.25) return weight * 0.7;
@@ -262,7 +274,7 @@ export function calculateScoring(
   );
   const cargaPoints = scoreCargaFinanciera(
     profile.hasExistingDebt,
-    profile.monthlyDebtPayments,
+    profile.totalDebtBalance,
     profile.monthlySalary,
     weights.CARGA_FINANCIERA
   );

@@ -21,7 +21,7 @@ import type { AnySupabaseClient } from "@/lib/leads";
  *   employmentType?: "indefinido" | "plazo_fijo" | "honorarios" | "independiente",
  *   employmentYears?: number,
  *   hasExistingDebt?: boolean,
- *   monthlyDebtPayments?: number,
+ *   totalDebtBalance?: number,
  * }
  * ```
  * If ALL financial fields are present, `calculateScoring()` runs immediately

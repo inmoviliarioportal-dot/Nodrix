@@ -23,7 +23,7 @@ function isValidProfile(value: unknown): value is CustomerFinancialProfile {
     (EMPLOYMENT_TYPES as readonly string[]).includes(p.employmentType) &&
     typeof p.employmentYears === "number" &&
     typeof p.hasExistingDebt === "boolean" &&
-    typeof p.monthlyDebtPayments === "number"
+    typeof p.totalDebtBalance === "number"
   );
 }
 

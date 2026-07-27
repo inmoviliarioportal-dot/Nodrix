@@ -34,7 +34,7 @@ import { notifyStageChange } from "@/lib/notifications";
  *   employmentType?: "indefinido" | "plazo_fijo" | "honorarios" | "independiente",
  *   employmentYears?: number,
  *   hasExistingDebt?: boolean,
- *   monthlyDebtPayments?: number, // defaults to 0 when omitted
+ *   totalDebtBalance?: number, // saldo total de deuda de corto plazo (CLP), defaults to 0 when omitted
  * }
  * ```
  *
@@ -330,6 +330,7 @@ export async function maybeApplyScoring(
       // calcular el score, lo que dejaba la pre-evaluación automática
       // (DOCUMENTOS_APROBADOS -> PRE_EVALUACION_COMPLETADA) sin datos reales.
       savings_amount: profile.savingsAmount,
+      total_debt_balance: profile.hasExistingDebt ? profile.totalDebtBalance : 0,
       stage: "SCORING_COMPLETADO",
     })
     .eq("id", application.id)
@@ -423,8 +424,8 @@ export function extractFinancialProfile(
     return null;
   }
 
-  const monthlyDebtPayments =
-    typeof input.monthlyDebtPayments === "number" ? input.monthlyDebtPayments : 0;
+  const totalDebtBalance =
+    typeof input.totalDebtBalance === "number" ? input.totalDebtBalance : 0;
 
   return {
     monthlySalary,
@@ -432,6 +433,6 @@ export function extractFinancialProfile(
     employmentType: employmentType as CustomerFinancialProfile["employmentType"],
     employmentYears,
     hasExistingDebt,
-    monthlyDebtPayments,
+    totalDebtBalance,
   };
 }

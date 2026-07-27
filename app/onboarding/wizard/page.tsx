@@ -6,7 +6,7 @@ import { Briefcase, PiggyBank, Wallet, Home, Check, X, Users } from "lucide-reac
 import { SelectableCard } from "@/components/wizard/SelectableCard";
 import { WizardProgress } from "@/components/wizard/WizardProgress";
 import { INVESTMENT_TYPE_OPTIONS, PROPERTY_STATUS_OPTIONS } from "@/components/auth/schemas";
-import { SALARY_BANDS, SAVINGS_BANDS, DEBT_BANDS, type FinancialBand } from "@/lib/financial-bands";
+import { SALARY_BANDS, SAVINGS_BANDS, DEBT_BALANCE_BANDS, type FinancialBand } from "@/lib/financial-bands";
 import {
   WIZARD_INITIAL_DATA,
   clearWizardProgress,
@@ -193,7 +193,7 @@ function WizardPageInner() {
         );
       case 3:
         if (data.savingsBandId === null || data.hasExistingDebt === null) return false;
-        if (data.hasExistingDebt && !data.debtBandId) return false;
+        if (data.hasExistingDebt && !data.totalDebtBalanceBandId) return false;
         if (data.hasAval === null) return false;
         if (data.hasAval && (!data.avalRelationship || !data.avalSalaryBandId || !data.avalEmploymentType)) {
           return false;
@@ -226,7 +226,7 @@ function WizardPageInner() {
     const savingsRepresentative =
       SAVINGS_BANDS.find((b) => b.id === data.savingsBandId)?.representative ?? null;
     const debtRepresentative = data.hasExistingDebt
-      ? (DEBT_BANDS.find((b) => b.id === data.debtBandId)?.representative ?? 0)
+      ? (DEBT_BALANCE_BANDS.find((b) => b.id === data.totalDebtBalanceBandId)?.representative ?? 0)
       : 0;
     const avalSalaryRepresentative = data.hasAval
       ? (SALARY_BANDS.find((b) => b.id === data.avalSalaryBandId)?.representative ?? null)
@@ -253,7 +253,7 @@ function WizardPageInner() {
             monthlySalary: salaryRepresentative,
             savingsAmount: savingsRepresentative,
             hasExistingDebt: data.hasExistingDebt,
-            monthlyDebtPayments: debtRepresentative,
+            totalDebtBalance: debtRepresentative,
             investmentType: data.investmentType,
             propertyStatus: data.propertyStatus,
             hasAval: data.hasAval,
@@ -288,7 +288,7 @@ function WizardPageInner() {
       employmentType: data.employmentType,
       employmentYears: data.employmentYears,
       hasExistingDebt: data.hasExistingDebt,
-      monthlyDebtPayments: debtRepresentative,
+      totalDebtBalance: debtRepresentative,
       investmentType: data.investmentType,
       propertyStatus: data.propertyStatus,
       hasAval: data.hasAval,
@@ -570,22 +570,22 @@ function StepSavings({
             selected={data.hasExistingDebt === false}
             onClick={() => {
               onChange("hasExistingDebt", false);
-              onChange("debtBandId", null);
+              onChange("totalDebtBalanceBandId", null);
             }}
           />
         </div>
         {data.hasExistingDebt && (
           <div className="mt-3">
             <h3 className="mb-3 text-sm" style={{ color: "var(--text-tertiary)" }}>
-              ¿Cuál es tu pago mensual de deudas?
+              ¿Cuál es el saldo TOTAL de tus deudas vigentes?
             </h3>
             <div className="grid grid-cols-2 gap-3">
-              {DEBT_BANDS.map((band) => (
+              {DEBT_BALANCE_BANDS.map((band) => (
                 <SelectableCard
                   key={band.id}
                   label={band.label}
-                  selected={data.debtBandId === band.id}
-                  onClick={() => onChange("debtBandId", band.id)}
+                  selected={data.totalDebtBalanceBandId === band.id}
+                  onClick={() => onChange("totalDebtBalanceBandId", band.id)}
                 />
               ))}
             </div>

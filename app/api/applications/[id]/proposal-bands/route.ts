@@ -25,7 +25,9 @@ export const GET = withErrorHandling(async (_request: Request, context: { params
   const supabase = createSupabaseServiceRoleClient() as unknown as AnySupabaseClient;
 
   const { data: application } = await (supabase.from("applications") as any)
-    .select("id, stage, scoring_score, customer_id, savings_amount, initial_proposal_band, initial_proposal_purpose")
+    .select(
+      "id, stage, scoring_score, customer_id, savings_amount, total_debt_balance, initial_proposal_band, initial_proposal_purpose"
+    )
     .eq("id", id)
     .eq("org_id", MVP_ORG_ID)
     .maybeSingle();
@@ -53,12 +55,9 @@ export const GET = withErrorHandling(async (_request: Request, context: { params
   // de departamentos comprometidos) -- se usa como referencia conservadora
   // para el haircut de la pre-evaluación en UF.
   const mostLikelyBand = bands.find((b) => b.band === "1") ?? bands[0];
-  // NOTA: `monthly_debt_payments` no se persiste hoy en ninguna tabla (solo
-  // se usa en memoria al calcular el scoring inicial) -- se asume 0 acá.
-  // Si en el futuro se persiste, reemplazar este valor fijo.
   const ufPreEvaluation = calculateUFPreEvaluation({
     monthlySalaryCLP: customer?.monthly_income ?? 0,
-    monthlyDebtPaymentsCLP: 0,
+    totalDebtBalanceCLP: application.total_debt_balance ?? 0,
     savingsAmountCLP: application.savings_amount ?? 0,
     approvalProbability: mostLikelyBand?.approvalProbability ?? 0,
     avalMonthlySalaryCLP: guarantor?.monthly_income ?? undefined,

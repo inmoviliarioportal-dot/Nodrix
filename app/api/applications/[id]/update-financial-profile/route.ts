@@ -16,7 +16,7 @@ type Body = {
   monthlySalary?: number;
   savingsAmount?: number;
   hasExistingDebt?: boolean;
-  monthlyDebtPayments?: number;
+  totalDebtBalance?: number;
   investmentType?: string;
   propertyStatus?: string;
   hasAval?: boolean;
@@ -122,7 +122,7 @@ export const POST = withErrorHandling(async (request: Request, context: { params
     employmentType: body.employmentType as CustomerFinancialProfile["employmentType"],
     employmentYears: body.employmentYears,
     hasExistingDebt: body.hasExistingDebt,
-    monthlyDebtPayments: typeof body.monthlyDebtPayments === "number" ? body.monthlyDebtPayments : 0,
+    totalDebtBalance: typeof body.totalDebtBalance === "number" ? body.totalDebtBalance : 0,
   };
   const config = await loadActiveScoringConfig(MVP_ORG_ID, supabase as any);
   const result = calculateScoring(profile, config);
@@ -137,6 +137,7 @@ export const POST = withErrorHandling(async (request: Request, context: { params
       scoring_category: result.category,
       scoring_score: result.score,
       savings_amount: profile.savingsAmount,
+      total_debt_balance: profile.hasExistingDebt ? profile.totalDebtBalance : 0,
       initial_proposal_band: null,
       initial_proposal_purpose: null,
       initial_proposal_selected_at: null,

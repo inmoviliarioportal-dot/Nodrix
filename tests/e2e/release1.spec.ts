@@ -166,7 +166,7 @@ test.describe("Release 1 — Flujo completo", () => {
         employmentType: "indefinido",
         employmentYears: 4,
         hasExistingDebt: false,
-        monthlyDebtPayments: 0,
+        totalDebtBalance: 0,
         investmentType: user.investmentType,
         propertyStatus: user.propertyStatus,
       },

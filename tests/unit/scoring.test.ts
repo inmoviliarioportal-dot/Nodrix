@@ -14,7 +14,7 @@ function profile(overrides: Partial<CustomerFinancialProfile> = {}): CustomerFin
     employmentType: "indefinido",
     employmentYears: 3,
     hasExistingDebt: false,
-    monthlyDebtPayments: 0,
+    totalDebtBalance: 0,
     ...overrides,
   };
 }
@@ -68,7 +68,7 @@ describe("scoring engine — un caso por categoría", () => {
       employmentType: "independiente",
       employmentYears: 0,
       hasExistingDebt: true,
-      monthlyDebtPayments: 300_000,
+      totalDebtBalance: 3_600_000,
     });
 
     expect(result.category).toBe("BRONCE");
@@ -83,7 +83,7 @@ describe("scoring engine — un caso por categoría", () => {
       employmentType: "honorarios",
       employmentYears: 1,
       hasExistingDebt: true,
-      monthlyDebtPayments: 200_000,
+      totalDebtBalance: 2_400_000,
     });
 
     expect(result.category).toBe("PLATA");
@@ -98,7 +98,7 @@ describe("scoring engine — un caso por categoría", () => {
       employmentType: "plazo_fijo",
       employmentYears: 2,
       hasExistingDebt: true,
-      monthlyDebtPayments: 100_000,
+      totalDebtBalance: 1_200_000,
     });
 
     expect(result.category).toBe("ORO");
@@ -113,7 +113,7 @@ describe("scoring engine — un caso por categoría", () => {
       employmentType: "indefinido",
       employmentYears: 4,
       hasExistingDebt: false,
-      monthlyDebtPayments: 0,
+      totalDebtBalance: 0,
     });
 
     expect(result.category).toBe("PLATINO");
@@ -128,7 +128,7 @@ describe("scoring engine — un caso por categoría", () => {
       employmentType: "indefinido",
       employmentYears: 6,
       hasExistingDebt: false,
-      monthlyDebtPayments: 0,
+      totalDebtBalance: 0,
     });
 
     expect(result.category).toBe("BLACK");
@@ -151,7 +151,7 @@ describe("scoring engine — edge cases", () => {
       profile({
         monthlySalary: 1_000_000,
         hasExistingDebt: true,
-        monthlyDebtPayments: 900_000,
+        totalDebtBalance: 10_800_000,
       })
     );
     const cargaFactor = result.factorsApplied.find((f) => f.factor === "Carga financiera")!;
@@ -163,7 +163,7 @@ describe("scoring engine — edge cases", () => {
       profile({
         monthlySalary: 0,
         hasExistingDebt: true,
-        monthlyDebtPayments: 100_000,
+        totalDebtBalance: 1_200_000,
       })
     );
     const cargaFactor = result.factorsApplied.find((f) => f.factor === "Carga financiera")!;
@@ -182,7 +182,7 @@ describe("scoring engine — edge cases", () => {
   });
 
   it("sin deuda existente el factor de carga financiera obtiene el puntaje máximo", () => {
-    const result = calculateScoring(profile({ hasExistingDebt: false, monthlyDebtPayments: 0 }));
+    const result = calculateScoring(profile({ hasExistingDebt: false, totalDebtBalance: 0 }));
     const cargaFactor = result.factorsApplied.find((f) => f.factor === "Carga financiera")!;
     expect(cargaFactor.points).toBe(FACTOR_WEIGHTS.CARGA_FINANCIERA);
   });
