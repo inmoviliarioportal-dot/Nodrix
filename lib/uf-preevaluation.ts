@@ -10,6 +10,8 @@
  * bancaria real -- ver `disclaimer` en el resultado.
  */
 
+import { MIN_QUALIFYING_TOTAL_INCOME_CLP } from "./income-types";
+
 /**
  * Valor aproximado de la UF en pesos chilenos. Placeholder documentado para
  * el MVP -- en producción real esto debería venir de una API de valor UF
@@ -82,6 +84,15 @@ export interface UFPreEvaluationInput {
    * antes (sin aval).
    */
   avalMonthlySalaryCLP?: number;
+  /**
+   * Tope de Leverage (múltiplo de ingreso) a aplicar en vez del tramo por
+   * renta -- viene de `evaluateIncomeSources` (lib/income-types.ts) cuando
+   * el ingreso del cliente NO es 100% sueldo fijo (boleta/pensión/alquiler/
+   * sociedad tienen un tope duro de 6x que nunca sube, a diferencia del
+   * tramo general que puede llegar a 12x). Si se omite, se usa el tramo por
+   * renta tal cual (comportamiento idéntico al anterior, sueldo fijo puro).
+   */
+  maxLeverageMultipleOverride?: number;
 }
 
 export interface UFPreEvaluationResult {
@@ -98,6 +109,13 @@ export interface UFPreEvaluationResult {
    * la Carga Financiera y la RRD.
    */
   disqualifiedByLeverage: boolean;
+  /**
+   * `true` si el ingreso efectivo total (post-haircuts, ver
+   * `lib/income-types.ts`) no alcanza `MIN_QUALIFYING_TOTAL_INCOME_CLP` --
+   * gate independiente de todo lo demás: sin este mínimo no se evalúa
+   * ninguna compra.
+   */
+  disqualifiedByMinimumIncome: boolean;
 }
 
 const DISCLAIMER =
@@ -129,8 +147,16 @@ export function calculateUFPreEvaluation(input: UFPreEvaluationInput): UFPreEval
   // gate de calificación: si se excede, el cliente no califica sin importar
   // los otros dos parámetros.
   const leverageTier = tierFor(LEVERAGE_TIERS, effectiveIncomeCLP);
+  // El override (tipos de ingreso distintos a sueldo fijo puro) nunca puede
+  // SUBIR el tope del tramo por renta, solo bajarlo (más estricto).
+  const effectiveMaxLeverageMultiple =
+    typeof input.maxLeverageMultipleOverride === "number"
+      ? Math.min(leverageTier.maxMultiple, input.maxLeverageMultipleOverride)
+      : leverageTier.maxMultiple;
   const disqualifiedByLeverage =
-    effectiveIncomeCLP > 0 && totalDebtBalanceCLP > effectiveIncomeCLP * leverageTier.maxMultiple;
+    effectiveIncomeCLP > 0 && totalDebtBalanceCLP > effectiveIncomeCLP * effectiveMaxLeverageMultiple;
+
+  const disqualifiedByMinimumIncome = effectiveIncomeCLP < MIN_QUALIFYING_TOTAL_INCOME_CLP;
 
   // Cuota mensual estimada de la deuda existente (saldo total / 12 meses,
   // mismo supuesto de "corto plazo" que lib/scoring.ts).
@@ -146,9 +172,10 @@ export function calculateUFPreEvaluation(input: UFPreEvaluationInput): UFPreEval
   const cargaFinancieraCapCLP =
     effectiveIncomeCLP * cargaFinancieraTier.maxRatio - existingMonthlyDebtEstimateCLP;
 
-  const maxMonthlyInstallmentCLP = disqualifiedByLeverage
-    ? 0
-    : safeNonNegative(Math.min(rrdCapCLP, cargaFinancieraCapCLP));
+  const maxMonthlyInstallmentCLP =
+    disqualifiedByLeverage || disqualifiedByMinimumIncome
+      ? 0
+      : safeNonNegative(Math.min(rrdCapCLP, cargaFinancieraCapCLP));
 
   const monthlyRate = ANNUAL_INTEREST_RATE / 12;
   const numPayments = LOAN_TERM_YEARS * 12;
@@ -170,5 +197,6 @@ export function calculateUFPreEvaluation(input: UFPreEvaluationInput): UFPreEval
     estimatedPropertyValueUF: maxLoanUF + pieUF,
     disclaimer: DISCLAIMER,
     disqualifiedByLeverage,
+    disqualifiedByMinimumIncome,
   };
 }
