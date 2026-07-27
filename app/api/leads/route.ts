@@ -3,6 +3,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { apiError, requireAuth, withErrorHandling, HTTP_STATUS } from "@/app/api/_shared";
 import { calculateScoring, loadActiveScoringConfig } from "@/lib/scoring";
 import type { CustomerFinancialProfile } from "@/lib/scoring";
+import { evaluateIncomeSources, type IncomeSource, type IncomeType } from "@/lib/income-types";
 import {
   findCustomerByEmail,
   findLatestApplicationForCustomer,
@@ -29,7 +30,8 @@ import { notifyStageChange } from "@/lib/notifications";
  *
  *   // Optional financial profile — if ALL of these are present, scoring is
  *   // calculated immediately and stored on the created application:
- *   monthlySalary?: number,
+ *   incomeSources?: IncomeSource[], // ingreso mixto (ver lib/income-types.ts) -- preferido
+ *   monthlySalary?: number,         // legado: usado solo si incomeSources no viene
  *   savingsAmount?: number,
  *   employmentType?: "indefinido" | "plazo_fijo" | "honorarios" | "independiente",
  *   employmentYears?: number,
@@ -321,6 +323,12 @@ export async function maybeApplyScoring(
   const config = await loadActiveScoringConfig(MVP_ORG_ID, supabase as any);
   const result = calculateScoring(profile, config);
 
+  // Fuentes de ingreso crudas (si vienen del wizard nuevo) -- se persisten
+  // tal cual para que GET /api/applications/[id]/proposal-bands pueda
+  // recalcular el tope de Leverage específico por tipo de ingreso más
+  // adelante (ver lib/income-types.ts) sin volver a pedirle datos al cliente.
+  const incomeSources = parseIncomeSources(financial.incomeSources);
+
   const { data: updated, error } = await supabase
     .from("applications")
     .update({
@@ -331,6 +339,7 @@ export async function maybeApplyScoring(
       // (DOCUMENTOS_APROBADOS -> PRE_EVALUACION_COMPLETADA) sin datos reales.
       savings_amount: profile.savingsAmount,
       total_debt_balance: profile.hasExistingDebt ? profile.totalDebtBalance : 0,
+      income_sources: incomeSources,
       stage: "SCORING_COMPLETADO",
     })
     .eq("id", application.id)
@@ -392,13 +401,61 @@ export async function updateCustomerProfileFields(
   ) {
     update.property_status = financial.propertyStatus;
   }
-  if (typeof financial.monthlySalary === "number") {
-    update.monthly_income = financial.monthlySalary;
+  const resolvedMonthlySalary = resolveEffectiveMonthlySalary(financial);
+  if (typeof resolvedMonthlySalary === "number") {
+    update.monthly_income = resolvedMonthlySalary;
   }
 
   if (Object.keys(update).length === 0) return;
 
   await supabase.from("customers").update(update).eq("id", customerId);
+}
+
+const VALID_INCOME_TYPES: IncomeType[] = ["sueldo_fijo", "boleta", "pension", "alquiler", "sociedad"];
+
+/**
+ * Valida y normaliza el body.incomeSources del wizard (ingreso mixto, ver
+ * lib/income-types.ts). Devuelve `null` si no viene, viene vacío, o algún
+ * elemento no es válido -- se trata como "no hay ingreso mixto declarado",
+ * dejando que `extractFinancialProfile` intente el fallback legado
+ * (`monthlySalary` plano, usado por integraciones antiguas / backoffice).
+ */
+export function parseIncomeSources(raw: unknown): IncomeSource[] | null {
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+
+  const sources: IncomeSource[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") return null;
+    const it = item as Record<string, unknown>;
+
+    if (typeof it.type !== "string" || !VALID_INCOME_TYPES.includes(it.type as IncomeType)) return null;
+    if (typeof it.monthlyAmountCLP !== "number") return null;
+
+    const source: IncomeSource = { type: it.type as IncomeType, monthlyAmountCLP: it.monthlyAmountCLP };
+    if (typeof it.hasSignificantBonusIncome === "boolean") source.hasSignificantBonusIncome = it.hasSignificantBonusIncome;
+    if (typeof it.isVariableBoleta === "boolean") source.isVariableBoleta = it.isVariableBoleta;
+    if (typeof it.ageYears === "number") source.ageYears = it.ageYears;
+    if (typeof it.rentalContractMonths === "number") source.rentalContractMonths = it.rentalContractMonths;
+    if (typeof it.companyHasLiquidity === "boolean") source.companyHasLiquidity = it.companyHasLiquidity;
+    sources.push(source);
+  }
+  return sources;
+}
+
+/**
+ * Resuelve el ingreso mensual efectivo a usar en el scoring: si el body trae
+ * `incomeSources` válidos (wizard nuevo, ingreso mixto), se usa el ingreso
+ * efectivo ya con haircuts aplicados (`evaluateIncomeSources`). Si no, cae
+ * al campo legado `monthlySalary` (integraciones antiguas / recalculo manual
+ * desde backoffice vía POST /api/scoring/calculate, que sigue mandando el
+ * perfil plano de siempre).
+ */
+function resolveEffectiveMonthlySalary(input: Record<string, unknown>): number | null {
+  const incomeSources = parseIncomeSources(input.incomeSources);
+  if (incomeSources) {
+    return evaluateIncomeSources(incomeSources).effectiveMonthlyIncomeCLP;
+  }
+  return typeof input.monthlySalary === "number" ? input.monthlySalary : null;
 }
 
 /**
@@ -409,12 +466,14 @@ export async function updateCustomerProfileFields(
 export function extractFinancialProfile(
   input: Record<string, unknown>
 ): CustomerFinancialProfile | null {
-  const { monthlySalary, savingsAmount, employmentType, employmentYears, hasExistingDebt } = input;
+  const { savingsAmount, employmentType, employmentYears, hasExistingDebt } = input;
 
   const validEmploymentTypes = ["indefinido", "plazo_fijo", "honorarios", "independiente"];
 
+  const monthlySalary = resolveEffectiveMonthlySalary(input);
+
   if (
-    typeof monthlySalary !== "number" ||
+    monthlySalary === null ||
     typeof savingsAmount !== "number" ||
     typeof employmentType !== "string" ||
     !validEmploymentTypes.includes(employmentType) ||

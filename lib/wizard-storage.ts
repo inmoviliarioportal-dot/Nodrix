@@ -19,7 +19,11 @@ export const WIZARD_STORAGE_KEY = "wizard-progress";
 // (saldo TOTAL de deuda de corto plazo) -- lo pide la banca para el
 // parámetro de Leverage (ver lib/uf-preevaluation.ts). Progreso v4 se
 // descarta igual que en los bumps anteriores.
-const WIZARD_STORAGE_VERSION = 5;
+// v6: `salaryBandId` (un solo sueldo) pasa a `incomeSources` (uno o más
+// tipos de ingreso mixtos: sueldo fijo/boleta/pensión/alquiler/sociedad,
+// ver lib/income-types.ts). Progreso v5 se descarta igual que en los bumps
+// anteriores.
+const WIZARD_STORAGE_VERSION = 6;
 
 /** Mismos 4 valores EXACTOS que `CustomerFinancialProfile.employmentType` en lib/scoring.ts */
 export type WizardEmploymentType =
@@ -27,6 +31,40 @@ export type WizardEmploymentType =
   | "plazo_fijo"
   | "honorarios"
   | "independiente";
+
+/** Mismos 5 valores EXACTOS que `IncomeType` en lib/income-types.ts */
+export type WizardIncomeType = "sueldo_fijo" | "boleta" | "pension" | "alquiler" | "sociedad";
+
+/**
+ * Una fuente de ingreso declarada en el wizard -- el cliente puede declarar
+ * más de una (ingreso mixto). `amountBandId` resuelve a un monto CLP vía
+ * `lib/financial-bands.ts` (se reutiliza SALARY_BANDS como rango genérico
+ * para todos los tipos). Los campos específicos por tipo solo aplican al
+ * tipo correspondiente (ver lib/income-types.ts para el detalle de cada uno).
+ */
+export interface WizardIncomeSourceEntry {
+  type: WizardIncomeType;
+  amountBandId: string | null;
+  /** sueldo_fijo: ingreso mayoritariamente por bonos (no por sueldo base). */
+  hasSignificantBonusIncome: boolean | null;
+  /** boleta: ingreso que varía durante el año (vs. monto fijo mensual). */
+  isVariableBoleta: boolean | null;
+  /** alquiler: duración declarada del contrato de arriendo, en meses. */
+  rentalContractMonths: number | null;
+  /** sociedad: la empresa acredita liquidez / cierres positivos (SII 104/105). */
+  companyHasLiquidity: boolean | null;
+}
+
+export function emptyIncomeSourceEntry(type: WizardIncomeType): WizardIncomeSourceEntry {
+  return {
+    type,
+    amountBandId: null,
+    hasSignificantBonusIncome: null,
+    isVariableBoleta: null,
+    rentalContractMonths: null,
+    companyHasLiquidity: null,
+  };
+}
 
 /** Mismos 3 valores EXACTOS que antes validaba POST /api/auth/register (ver components/auth/schemas.ts) */
 export type WizardInvestmentType = "inversion" | "vivienda_propia" | "ambos";
@@ -44,7 +82,7 @@ export interface WizardData {
   employmentType: WizardEmploymentType | null;
   employmentYears: number | null;
   // Paso 2
-  salaryBandId: string | null;
+  incomeSources: WizardIncomeSourceEntry[];
   investmentType: WizardInvestmentType | null;
   propertyStatus: WizardPropertyStatus | null;
   // Paso 3
@@ -70,7 +108,7 @@ export interface WizardProgress {
 export const WIZARD_INITIAL_DATA: WizardData = {
   employmentType: null,
   employmentYears: null,
-  salaryBandId: null,
+  incomeSources: [],
   investmentType: null,
   propertyStatus: null,
   savingsBandId: null,

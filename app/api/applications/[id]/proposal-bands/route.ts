@@ -4,6 +4,7 @@ import { apiError, requireAuth, withErrorHandling, HTTP_STATUS } from "@/app/api
 import { MVP_ORG_ID } from "@/app/api/auth/_constants";
 import { calculateProposalBands } from "@/lib/proposal-risk";
 import { calculateUFPreEvaluation } from "@/lib/uf-preevaluation";
+import { evaluateIncomeSources, type IncomeSource } from "@/lib/income-types";
 import type { AnySupabaseClient } from "@/lib/leads";
 
 /**
@@ -26,7 +27,7 @@ export const GET = withErrorHandling(async (_request: Request, context: { params
 
   const { data: application } = await (supabase.from("applications") as any)
     .select(
-      "id, stage, scoring_score, customer_id, savings_amount, total_debt_balance, initial_proposal_band, initial_proposal_purpose"
+      "id, stage, scoring_score, customer_id, savings_amount, total_debt_balance, income_sources, initial_proposal_band, initial_proposal_purpose"
     )
     .eq("id", id)
     .eq("org_id", MVP_ORG_ID)
@@ -55,12 +56,27 @@ export const GET = withErrorHandling(async (_request: Request, context: { params
   // de departamentos comprometidos) -- se usa como referencia conservadora
   // para el haircut de la pre-evaluación en UF.
   const mostLikelyBand = bands.find((b) => b.band === "1") ?? bands[0];
+
+  // Si el cliente declaró ingreso mixto (wizard nuevo -- ver
+  // lib/income-types.ts), el tope de Leverage puede ser más estricto que el
+  // tramo general (ej. boleta/pensión/alquiler/sociedad topan en 6x, nunca
+  // en 12x). `customer.monthly_income` ya viene con los haircuts aplicados
+  // (se persiste así en updateCustomerProfileFields), así que acá solo se
+  // necesita el tope de Leverage, no recalcular el ingreso.
+  const incomeSources = Array.isArray(application.income_sources)
+    ? (application.income_sources as IncomeSource[])
+    : null;
+  const maxLeverageMultipleOverride = incomeSources
+    ? (evaluateIncomeSources(incomeSources).maxLeverageMultiple ?? undefined)
+    : undefined;
+
   const ufPreEvaluation = calculateUFPreEvaluation({
     monthlySalaryCLP: customer?.monthly_income ?? 0,
     totalDebtBalanceCLP: application.total_debt_balance ?? 0,
     savingsAmountCLP: application.savings_amount ?? 0,
     approvalProbability: mostLikelyBand?.approvalProbability ?? 0,
     avalMonthlySalaryCLP: guarantor?.monthly_income ?? undefined,
+    maxLeverageMultipleOverride,
   });
 
   return NextResponse.json({

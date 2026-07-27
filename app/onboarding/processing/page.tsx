@@ -153,7 +153,7 @@ export default function ProcessingPage() {
         email: (payload?.email as string) ?? "",
         phone: payload?.phone,
         rut: payload?.rut,
-        monthlySalary: payload?.monthlySalary,
+        incomeSources: payload?.incomeSources,
         savingsAmount: payload?.savingsAmount,
         employmentType: payload?.employmentType,
         employmentYears: payload?.employmentYears,

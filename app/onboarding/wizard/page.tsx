@@ -12,9 +12,28 @@ import {
   clearWizardProgress,
   loadWizardProgress,
   saveWizardProgress,
+  emptyIncomeSourceEntry,
   type WizardData,
   type WizardEmploymentType,
+  type WizardIncomeType,
+  type WizardIncomeSourceEntry,
 } from "@/lib/wizard-storage";
+import type { IncomeSource } from "@/lib/income-types";
+
+/** Los 5 tipos de ingreso que evalúa la banca -- ver lib/income-types.ts. */
+const INCOME_TYPE_OPTIONS: { label: string; value: WizardIncomeType }[] = [
+  { label: "Sueldo fijo (recibo de sueldo)", value: "sueldo_fijo" },
+  { label: "Boleta de honorarios", value: "boleta" },
+  { label: "Jubilación / Pensión", value: "pension" },
+  { label: "Alquiler de propiedades", value: "alquiler" },
+  { label: "Sociedad / Compañía (dividendos)", value: "sociedad" },
+];
+
+const RENTAL_CONTRACT_OPTIONS: { label: string; value: number }[] = [
+  { label: "Menos de 6 meses", value: 3 },
+  { label: "6 a 11 meses", value: 6 },
+  { label: "12 meses o más", value: 12 },
+];
 
 /** Parentescos que los bancos chilenos típicamente aceptan como aval/codeudor
  * válido para un crédito hipotecario -- se limita a estos 5, sin "otro"
@@ -45,6 +64,38 @@ function closestBandId(bands: FinancialBand[], value: number | null | undefined)
   return best?.id ?? null;
 }
 
+/**
+ * Reconstruye las fuentes de ingreso del wizard (modo edición) a partir del
+ * `income_sources` crudo persistido en la application (ver migración
+ * 021_application_income_sources.sql). Si la application es de antes de
+ * este cambio (columna null) hace un mejor esfuerzo con un solo sueldo fijo
+ * a partir de `customers.monthly_income`, que es lo único que existía antes.
+ */
+function prefillIncomeSources(
+  rawIncomeSources: unknown,
+  monthlyIncome: number | null | undefined
+): WizardIncomeSourceEntry[] | null {
+  if (Array.isArray(rawIncomeSources) && rawIncomeSources.length > 0) {
+    return rawIncomeSources.map((raw) => {
+      const r = raw as Partial<IncomeSource> & Record<string, unknown>;
+      const entry = emptyIncomeSourceEntry((r.type as WizardIncomeType) ?? "sueldo_fijo");
+      entry.amountBandId = closestBandId(SALARY_BANDS, r.monthlyAmountCLP as number);
+      entry.hasSignificantBonusIncome = (r.hasSignificantBonusIncome as boolean) ?? null;
+      entry.isVariableBoleta = (r.isVariableBoleta as boolean) ?? null;
+      entry.rentalContractMonths = (r.rentalContractMonths as number) ?? null;
+      entry.companyHasLiquidity = (r.companyHasLiquidity as boolean) ?? null;
+      return entry;
+    });
+  }
+  if (typeof monthlyIncome === "number") {
+    const entry = emptyIncomeSourceEntry("sueldo_fijo");
+    entry.amountBandId = closestBandId(SALARY_BANDS, monthlyIncome);
+    entry.hasSignificantBonusIncome = false;
+    return [entry];
+  }
+  return null;
+}
+
 /** Clave sessionStorage usada para pasar el payload completo del lead a
  * /onboarding/processing (pantalla de AI Processing, otro agente).
  * IMPORTANTE: Coincide con INPUT_KEY esperada por processing/page.tsx. */
@@ -69,14 +120,18 @@ const YEARS_OPTIONS: { label: string; value: number }[] = [
 /** Datos del cliente ya recolectados en el registro -- el wizard NO vuelve a
  * pedirlos, solo los reutiliza para armar el payload final de POST /api/leads.
  * Ver app/auth/register/page.tsx. Nota: `monthlyIncome` ya NO se pide en el
- * registro (se movió a este wizard como `salaryBandId`, Paso 2), así que
- * `RegisteredProfile` ya no incluye un salario -- se resuelve desde la banda
- * elegida en `handleNext`. */
+ * registro (se movió a este wizard como `incomeSources`, Paso 2 -- ver
+ * lib/income-types.ts), así que `RegisteredProfile` ya no incluye un
+ * salario -- se resuelve desde las bandas elegidas en `handleNext`. */
 interface RegisteredProfile {
   name: string;
   email: string;
   phone: string;
   rut: string | null;
+  /** Ya calculada en el registro (customers.age) -- se reutiliza para el
+   * tramo etario de ingresos por pensión (lib/income-types.ts), no se
+   * vuelve a preguntar en el wizard. */
+  age: number | null;
 }
 
 export default function WizardPage() {
@@ -130,6 +185,7 @@ function WizardPageInner() {
           email: user?.email ?? customer?.email ?? "",
           phone: customer?.phone ?? "",
           rut: customer?.rut_ciphertext ?? null,
+          age: typeof customer?.age === "number" ? customer.age : null,
         });
 
         if (isEditMode && customer?.id) {
@@ -145,7 +201,7 @@ function WizardPageInner() {
                 setApplicationId(app.id);
                 setData((prev) => ({
                   ...prev,
-                  salaryBandId: closestBandId(SALARY_BANDS, customer.monthly_income) ?? prev.salaryBandId,
+                  incomeSources: prefillIncomeSources(app.income_sources, customer.monthly_income) ?? prev.incomeSources,
                   investmentType: customer.investment_type ?? prev.investmentType,
                   propertyStatus: customer.property_status ?? prev.propertyStatus,
                   savingsBandId: closestBandId(SAVINGS_BANDS, app.savings_amount) ?? prev.savingsBandId,
@@ -185,12 +241,18 @@ function WizardPageInner() {
     switch (step) {
       case 1:
         return data.employmentType !== null && data.employmentYears !== null;
-      case 2:
-        return (
-          data.salaryBandId !== null &&
-          data.investmentType !== null &&
-          data.propertyStatus !== null
-        );
+      case 2: {
+        if (data.incomeSources.length === 0) return false;
+        if (data.investmentType === null || data.propertyStatus === null) return false;
+        return data.incomeSources.every((entry) => {
+          if (!entry.amountBandId) return false;
+          if (entry.type === "sueldo_fijo") return entry.hasSignificantBonusIncome !== null;
+          if (entry.type === "boleta") return entry.isVariableBoleta !== null;
+          if (entry.type === "alquiler") return entry.rentalContractMonths !== null;
+          if (entry.type === "sociedad") return entry.companyHasLiquidity !== null;
+          return true; // pension: no requiere campo extra (usa la edad ya registrada)
+        });
+      }
       case 3:
         if (data.savingsBandId === null || data.hasExistingDebt === null) return false;
         if (data.hasExistingDebt && !data.totalDebtBalanceBandId) return false;
@@ -221,8 +283,19 @@ function WizardPageInner() {
     // cliente eligió un rango, no tipeó un número, pero el motor de scoring
     // (lib/scoring.ts) y el endpoint de actualización siguen esperando
     // números (ver lib/financial-bands.ts).
-    const salaryRepresentative =
-      SALARY_BANDS.find((b) => b.id === data.salaryBandId)?.representative ?? null;
+    // Cada fuente de ingreso declarada (mixto) se resuelve a un IncomeSource
+    // real -- ver lib/income-types.ts. La edad para pensión viene del
+    // registro (profile.age), no se vuelve a preguntar.
+    const incomeSources: IncomeSource[] = data.incomeSources.map((entry) => {
+      const amount = SALARY_BANDS.find((b) => b.id === entry.amountBandId)?.representative ?? 0;
+      const source: IncomeSource = { type: entry.type, monthlyAmountCLP: amount };
+      if (entry.type === "sueldo_fijo") source.hasSignificantBonusIncome = entry.hasSignificantBonusIncome ?? false;
+      if (entry.type === "boleta") source.isVariableBoleta = entry.isVariableBoleta ?? false;
+      if (entry.type === "pension") source.ageYears = profile?.age ?? undefined;
+      if (entry.type === "alquiler") source.rentalContractMonths = entry.rentalContractMonths ?? 0;
+      if (entry.type === "sociedad") source.companyHasLiquidity = entry.companyHasLiquidity ?? false;
+      return source;
+    });
     const savingsRepresentative =
       SAVINGS_BANDS.find((b) => b.id === data.savingsBandId)?.representative ?? null;
     const debtRepresentative = data.hasExistingDebt
@@ -250,7 +323,7 @@ function WizardPageInner() {
           body: JSON.stringify({
             employmentType: data.employmentType,
             employmentYears: data.employmentYears,
-            monthlySalary: salaryRepresentative,
+            incomeSources,
             savingsAmount: savingsRepresentative,
             hasExistingDebt: data.hasExistingDebt,
             totalDebtBalance: debtRepresentative,
@@ -283,7 +356,7 @@ function WizardPageInner() {
       email: profile.email,
       phone: profile.phone,
       rut: profile.rut,
-      monthlySalary: salaryRepresentative,
+      incomeSources,
       savingsAmount: savingsRepresentative,
       employmentType: data.employmentType,
       employmentYears: data.employmentYears,
@@ -435,6 +508,174 @@ function StepEmployment({
   );
 }
 
+/**
+ * Selección de tipo(s) de ingreso (mixto -- se puede elegir más de uno) más
+ * las preguntas específicas de cada tipo (ver lib/income-types.ts para el
+ * detalle de negocio de cada haircut). Reemplaza la antigua pregunta única
+ * "¿cuál es tu renta líquida mensual?".
+ */
+function IncomeSourcesSection({
+  data,
+  onChange,
+}: {
+  data: WizardData;
+  onChange: <K extends keyof WizardData>(key: K, value: WizardData[K]) => void;
+}) {
+  function toggleType(type: WizardIncomeType) {
+    const exists = data.incomeSources.some((e) => e.type === type);
+    if (exists) {
+      onChange(
+        "incomeSources",
+        data.incomeSources.filter((e) => e.type !== type)
+      );
+    } else {
+      onChange("incomeSources", [...data.incomeSources, emptyIncomeSourceEntry(type)]);
+    }
+  }
+
+  function updateEntry(type: WizardIncomeType, patch: Partial<WizardIncomeSourceEntry>) {
+    onChange(
+      "incomeSources",
+      data.incomeSources.map((e) => (e.type === type ? { ...e, ...patch } : e))
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div>
+        <h2
+          className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide"
+          style={{ color: "var(--text-secondary)" }}
+        >
+          <Wallet size={16} /> ¿Cuáles son tus fuentes de ingreso?
+        </h2>
+        <p className="mb-3 text-xs" style={{ color: "var(--text-tertiary)" }}>
+          Puedes elegir más de una si tienes ingresos mixtos.
+        </p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {INCOME_TYPE_OPTIONS.map((opt) => (
+            <SelectableCard
+              key={opt.value}
+              label={opt.label}
+              selected={data.incomeSources.some((e) => e.type === opt.value)}
+              onClick={() => toggleType(opt.value)}
+            />
+          ))}
+        </div>
+      </div>
+
+      {data.incomeSources.map((entry) => {
+        const typeLabel = INCOME_TYPE_OPTIONS.find((o) => o.value === entry.type)?.label ?? entry.type;
+        return (
+          <div key={entry.type} className="rounded-xl border p-4" style={{ borderColor: "var(--glass-border)" }}>
+            <h3 className="mb-3 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+              {typeLabel}
+            </h3>
+
+            <p className="mb-2 text-xs" style={{ color: "var(--text-tertiary)" }}>
+              ¿Cuál es el monto mensual de este ingreso?
+            </p>
+            <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {SALARY_BANDS.map((band) => (
+                <SelectableCard
+                  key={band.id}
+                  label={band.label}
+                  selected={entry.amountBandId === band.id}
+                  onClick={() => updateEntry(entry.type, { amountBandId: band.id })}
+                />
+              ))}
+            </div>
+
+            {entry.type === "sueldo_fijo" && (
+              <>
+                <p className="mb-2 text-xs" style={{ color: "var(--text-tertiary)" }}>
+                  ¿La mayor parte de este ingreso viene de bonos (y no de tu sueldo base)?
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <SelectableCard
+                    label="Sí"
+                    icon={Check}
+                    selected={entry.hasSignificantBonusIncome === true}
+                    onClick={() => updateEntry(entry.type, { hasSignificantBonusIncome: true })}
+                  />
+                  <SelectableCard
+                    label="No"
+                    icon={X}
+                    selected={entry.hasSignificantBonusIncome === false}
+                    onClick={() => updateEntry(entry.type, { hasSignificantBonusIncome: false })}
+                  />
+                </div>
+              </>
+            )}
+
+            {entry.type === "boleta" && (
+              <>
+                <p className="mb-2 text-xs" style={{ color: "var(--text-tertiary)" }}>
+                  ¿Este ingreso varía durante el año (en vez de ser un monto fijo cada mes)?
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <SelectableCard
+                    label="Sí, varía"
+                    icon={Check}
+                    selected={entry.isVariableBoleta === true}
+                    onClick={() => updateEntry(entry.type, { isVariableBoleta: true })}
+                  />
+                  <SelectableCard
+                    label="No, es fijo"
+                    icon={X}
+                    selected={entry.isVariableBoleta === false}
+                    onClick={() => updateEntry(entry.type, { isVariableBoleta: false })}
+                  />
+                </div>
+              </>
+            )}
+
+            {entry.type === "alquiler" && (
+              <>
+                <p className="mb-2 text-xs" style={{ color: "var(--text-tertiary)" }}>
+                  ¿Cuál es la duración de tu contrato de arriendo vigente?
+                </p>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  {RENTAL_CONTRACT_OPTIONS.map((opt) => (
+                    <SelectableCard
+                      key={opt.value}
+                      label={opt.label}
+                      selected={entry.rentalContractMonths === opt.value}
+                      onClick={() => updateEntry(entry.type, { rentalContractMonths: opt.value })}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+
+            {entry.type === "sociedad" && (
+              <>
+                <p className="mb-2 text-xs" style={{ color: "var(--text-tertiary)" }}>
+                  ¿La empresa acredita liquidez o cierres positivos (última declaración SII)?
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <SelectableCard
+                    label="Sí"
+                    icon={Check}
+                    selected={entry.companyHasLiquidity === true}
+                    onClick={() => updateEntry(entry.type, { companyHasLiquidity: true })}
+                  />
+                  <SelectableCard
+                    label="No"
+                    icon={X}
+                    selected={entry.companyHasLiquidity === false}
+                    onClick={() => updateEntry(entry.type, { companyHasLiquidity: false })}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function StepFinancialProfile({
   data,
   onChange,
@@ -453,24 +694,7 @@ function StepFinancialProfile({
         </p>
       </header>
 
-      <div>
-        <h2
-          className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide"
-          style={{ color: "var(--text-secondary)" }}
-        >
-          <Wallet size={16} /> ¿Cuál es tu renta líquida mensual?
-        </h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {SALARY_BANDS.map((band) => (
-            <SelectableCard
-              key={band.id}
-              label={band.label}
-              selected={data.salaryBandId === band.id}
-              onClick={() => onChange("salaryBandId", band.id)}
-            />
-          ))}
-        </div>
-      </div>
+      <IncomeSourcesSection data={data} onChange={onChange} />
 
       <div>
         <h2

@@ -4,8 +4,9 @@ import { apiError, requireAuth, withErrorHandling, HTTP_STATUS } from "@/app/api
 import { MVP_ORG_ID } from "@/app/api/auth/_constants";
 import { calculateScoring, loadActiveScoringConfig } from "@/lib/scoring";
 import type { CustomerFinancialProfile } from "@/lib/scoring";
+import { evaluateIncomeSources, type IncomeSource } from "@/lib/income-types";
 import { normalizeEmail, type AnySupabaseClient } from "@/lib/leads";
-import { updateCustomerProfileFields } from "@/app/api/leads/route";
+import { updateCustomerProfileFields, parseIncomeSources } from "@/app/api/leads/route";
 
 const VALID_EMPLOYMENT_TYPES = ["indefinido", "plazo_fijo", "honorarios", "independiente"];
 const VALID_RELATIONSHIPS = ["conyuge", "padre", "madre", "hijo", "hermano"];
@@ -13,6 +14,8 @@ const VALID_RELATIONSHIPS = ["conyuge", "padre", "madre", "hijo", "hermano"];
 type Body = {
   employmentType?: string;
   employmentYears?: number;
+  incomeSources?: IncomeSource[];
+  /** Legado: usado solo si `incomeSources` no viene (integraciones antiguas). */
   monthlySalary?: number;
   savingsAmount?: number;
   hasExistingDebt?: boolean;
@@ -42,9 +45,16 @@ export const POST = withErrorHandling(async (request: Request, context: { params
   const { id } = await context.params;
   const body = (await request.json().catch(() => null)) as Body | null;
 
+  // Preferir `incomeSources` (wizard nuevo, ingreso mixto -- ver
+  // lib/income-types.ts); si no viene, caer al `monthlySalary` legado.
+  const parsedIncomeSources = body ? parseIncomeSources(body.incomeSources) : null;
+  const effectiveMonthlySalary = parsedIncomeSources
+    ? evaluateIncomeSources(parsedIncomeSources).effectiveMonthlyIncomeCLP
+    : (body?.monthlySalary ?? null);
+
   if (
     !body ||
-    typeof body.monthlySalary !== "number" ||
+    effectiveMonthlySalary === null ||
     typeof body.savingsAmount !== "number" ||
     typeof body.employmentType !== "string" ||
     !VALID_EMPLOYMENT_TYPES.includes(body.employmentType) ||
@@ -117,7 +127,7 @@ export const POST = withErrorHandling(async (request: Request, context: { params
 
   // 3. Recalcular scoring.
   const profile: CustomerFinancialProfile = {
-    monthlySalary: body.monthlySalary,
+    monthlySalary: effectiveMonthlySalary,
     savingsAmount: body.savingsAmount,
     employmentType: body.employmentType as CustomerFinancialProfile["employmentType"],
     employmentYears: body.employmentYears,
@@ -138,6 +148,7 @@ export const POST = withErrorHandling(async (request: Request, context: { params
       scoring_score: result.score,
       savings_amount: profile.savingsAmount,
       total_debt_balance: profile.hasExistingDebt ? profile.totalDebtBalance : 0,
+      income_sources: parsedIncomeSources,
       initial_proposal_band: null,
       initial_proposal_purpose: null,
       initial_proposal_selected_at: null,
@@ -159,6 +170,7 @@ export const POST = withErrorHandling(async (request: Request, context: { params
     investmentType: body.investmentType,
     propertyStatus: body.propertyStatus,
     monthlySalary: body.monthlySalary,
+    incomeSources: body.incomeSources,
   });
 
   // 6. Upsert/borrado de aval.
