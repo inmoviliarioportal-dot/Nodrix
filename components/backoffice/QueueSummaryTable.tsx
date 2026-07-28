@@ -69,7 +69,7 @@ function QueueSummaryTable({ applications, onDrilldown }: QueueSummaryTableProps
   }
 
   return (
-    <div className="glass-card overflow-x-auto rounded-2xl p-4">
+    <div className="glass-surface overflow-x-auto rounded-2xl border border-glass-border p-4">
       <table className="w-full min-w-[720px] border-collapse text-sm">
         <thead>
           <tr className="border-b border-glass-border text-left text-xs font-medium uppercase tracking-wide text-text-tertiary">

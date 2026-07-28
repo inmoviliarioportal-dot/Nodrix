@@ -60,7 +60,7 @@ function CheckDropdown<T extends string>({
     <details ref={detailsRef} className="group relative">
       <summary
         className={cn(
-          "flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-lg border border-glass-border bg-glass px-2.5 text-sm text-text-secondary transition-colors duration-200 select-none hover:text-text-primary [&::-webkit-details-marker]:hidden",
+          "flex h-8 min-h-[2.75rem] cursor-pointer list-none items-center gap-1.5 rounded-full border border-glass-border bg-glass px-3 text-xs font-medium text-text-secondary transition-colors duration-200 select-none hover:text-text-primary [&::-webkit-details-marker]:hidden",
           selected.length > 0 && "border-neon-cyan/50 text-text-primary"
         )}
       >
@@ -123,7 +123,7 @@ function FilterBar({ filters, onChange, onClear, resultCount }: FilterBarProps) 
             onChange({ ...filters, categories: toggleValue(filters.categories, value) })
           }
         />
-        <div className="flex items-center gap-1 rounded-lg border border-glass-border bg-glass p-0.5">
+        <div className="flex items-center gap-1 rounded-full border border-glass-border bg-glass p-1">
           {daysBuckets.map((bucket) => (
             <button
               key={bucket}
@@ -135,7 +135,7 @@ function FilterBar({ filters, onChange, onClear, resultCount }: FilterBarProps) 
                 })
               }
               className={cn(
-                "h-7 rounded-md px-2.5 text-xs font-medium text-text-secondary transition-colors duration-200 hover:text-text-primary",
+                "min-h-9 rounded-full px-3 text-xs font-medium text-text-secondary transition-colors duration-200 hover:text-text-primary",
                 filters.daysBucket === bucket && "bg-neon-cyan/15 text-neon-cyan"
               )}
             >
@@ -145,12 +145,12 @@ function FilterBar({ filters, onChange, onClear, resultCount }: FilterBarProps) 
         </div>
 
         <div className="relative ml-auto w-full max-w-xs sm:w-64">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-text-tertiary" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-text-tertiary" />
           <Input
             value={filters.search}
             onChange={(e) => onChange({ ...filters, search: e.target.value })}
             placeholder="Buscar por nombre o email..."
-            className="h-8 border-glass-border bg-glass pl-8 text-text-primary placeholder:text-text-tertiary"
+            className="h-9 min-h-9 rounded-full border-glass-border bg-glass pl-9 text-text-primary placeholder:text-text-tertiary"
           />
         </div>
 
@@ -160,7 +160,7 @@ function FilterBar({ filters, onChange, onClear, resultCount }: FilterBarProps) 
             variant="ghost"
             size="sm"
             onClick={onClear}
-            className="gap-1 text-text-tertiary hover:text-text-primary"
+            className="min-h-9 gap-1 text-text-tertiary hover:text-text-primary"
           >
             <X className="size-3.5" />
             Limpiar filtros

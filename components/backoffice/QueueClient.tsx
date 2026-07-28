@@ -184,13 +184,15 @@ export function QueueClient() {
               Cola de solicitudes en curso, priorizadas por stage y tiempo de espera.
             </p>
           </div>
-          <div className="flex gap-1 rounded-lg border border-glass-border bg-glass p-1">
+          <div className="flex gap-1 rounded-lg border border-glass-border bg-surface p-1">
             <button
               type="button"
               onClick={() => setView("tabla")}
               className={cn(
-                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                view === "tabla" ? "bg-neon-cyan/10 text-neon-cyan" : "text-text-tertiary hover:text-text-primary"
+                "flex min-h-[2.75rem] items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-200",
+                view === "tabla"
+                  ? "bg-neon-cyan text-deep"
+                  : "text-text-tertiary hover:text-text-primary"
               )}
             >
               <TableIcon className="size-3.5" />
@@ -200,8 +202,10 @@ export function QueueClient() {
               type="button"
               onClick={() => setView("tarjetas")}
               className={cn(
-                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                view === "tarjetas" ? "bg-neon-cyan/10 text-neon-cyan" : "text-text-tertiary hover:text-text-primary"
+                "flex min-h-[2.75rem] items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-200",
+                view === "tarjetas"
+                  ? "bg-neon-cyan text-deep"
+                  : "text-text-tertiary hover:text-text-primary"
               )}
             >
               <LayoutGridIcon className="size-3.5" />
