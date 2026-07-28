@@ -40,16 +40,14 @@ export default function AdminDashboardPage() {
             </Link>
           </div>
 
-          <ApplicationsSummary />
-
           <KpiCards />
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <ConversionFunnel />
-            </div>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
+            <ConversionFunnel />
             <ScoringDistribution />
           </div>
+
+          <ApplicationsSummary />
 
           <ConversionTimeline />
 

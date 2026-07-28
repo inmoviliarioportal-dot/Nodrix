@@ -1,50 +1,43 @@
 import { MOCK_FUNNEL } from "@/components/admin/types"
 
 /**
- * Funnel de conversión — barras escalonadas (stepped bars) por los 9 estados
- * del pipeline. Sin librería externa: ancho proporcional al conteo, con
- * gradiente cian → púrpura → verde a medida que avanza el pipeline.
+ * Funnel de conversión — barras horizontales de progreso, una por etapa del
+ * pipeline. Label + conteo arriba de cada barra, ancho proporcional al
+ * conteo relativo a la primera etapa. Acento único (cyan), sin degradé
+ * multicolor compitiendo con el resto del dashboard.
  */
 export function ConversionFunnel() {
   const maxCount = MOCK_FUNNEL[0]?.count ?? 1
-  const colors = ["#22D3EE", "#38C9E8", "#5EC0EA", "#84AFEA", "#A78BFA", "#8FA8E8", "#6FBFB0", "#4FC79A", "#34D399"]
 
   return (
-    <div className="glass-card rounded-2xl p-5">
-      <h3 className="text-sm font-semibold text-text-primary">Funnel de conversión</h3>
-      <p className="text-xs text-text-tertiary">9 estados del pipeline — leads y % de drop-off</p>
+    <div className="glass-surface rounded-2xl p-5">
+      <h2 className="text-xs font-bold uppercase tracking-wide text-text-tertiary">
+        Funnel de conversión
+      </h2>
 
-      <div className="mt-5 flex flex-col gap-2.5">
-        {MOCK_FUNNEL.map((stage, i) => {
-          const widthPct = Math.max(8, (stage.count / maxCount) * 100)
-          const prev = MOCK_FUNNEL[i - 1]
-          const dropOff = prev ? (((prev.count - stage.count) / prev.count) * 100).toFixed(1) : null
+      <div className="mt-3.5 flex flex-col gap-2.5">
+        {MOCK_FUNNEL.map((stage) => {
+          const widthPct = Math.max(4, (stage.count / maxCount) * 100)
 
           return (
-            <div key={stage.stage} className="flex items-center gap-3">
-              <span className="w-40 shrink-0 truncate text-xs text-text-secondary" title={stage.label}>
-                {stage.label}
-              </span>
-              <div className="relative h-7 flex-1 rounded-md bg-surface-elevated">
-                <div
-                  className="flex h-7 items-center rounded-md px-2 transition-all duration-300"
-                  style={{
-                    width: `${widthPct}%`,
-                    backgroundColor: colors[i % colors.length],
-                    opacity: 0.85,
-                  }}
+            <div key={stage.stage}>
+              <div className="mb-1 flex items-center justify-between text-xs text-text-secondary">
+                <span className="truncate" title={stage.label}>
+                  {stage.label}
+                </span>
+                <span
+                  className="font-semibold text-text-primary"
+                  style={{ fontVariantNumeric: "tabular-nums" }}
                 >
-                  <span
-                    className="text-xs font-semibold text-dark-primary"
-                    style={{ fontVariantNumeric: "tabular-nums" }}
-                  >
-                    {stage.count}
-                  </span>
-                </div>
+                  {stage.count}
+                </span>
               </div>
-              <span className="w-16 shrink-0 text-right text-xs text-text-tertiary" style={{ fontVariantNumeric: "tabular-nums" }}>
-                {dropOff ? `-${dropOff}%` : "—"}
-              </span>
+              <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
+                <div
+                  className="h-full rounded-full bg-neon-cyan transition-all duration-300"
+                  style={{ width: `${widthPct}%` }}
+                />
+              </div>
             </div>
           )
         })}

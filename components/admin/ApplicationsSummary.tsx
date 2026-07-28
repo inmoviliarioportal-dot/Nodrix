@@ -34,10 +34,10 @@ interface SummaryData {
 }
 
 /**
- * "Solicitudes en curso" — tabla con datos REALES (no mock, a diferencia
- * del resto del dashboard) agrupados por estado y por categoría de scoring.
- * Cada número es clickeable: lleva a /backoffice/queue ya filtrado por ese
- * estado/categoría (drilldown), en vez de tener que buscarlo manualmente.
+ * "Solicitudes en curso" — datos REALES (no mock, a diferencia del resto del
+ * dashboard) agrupados por estado y por categoría de scoring. Cada número es
+ * clickeable: lleva a /backoffice/queue ya filtrado por ese estado/categoría
+ * (drilldown), en vez de tener que buscarlo manualmente.
  */
 function ApplicationsSummary() {
   const [data, setData] = React.useState<SummaryData | null>(null)
@@ -51,10 +51,10 @@ function ApplicationsSummary() {
   }, [])
 
   return (
-    <div className="glass-card rounded-2xl p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="font-heading text-sm font-semibold uppercase tracking-wide text-text-tertiary">
-          Solicitudes en curso
+    <div className="glass-surface rounded-2xl p-5">
+      <div className="mb-3.5 flex items-center justify-between">
+        <h2 className="text-xs font-bold uppercase tracking-wide text-text-tertiary">
+          Solicitudes en curso, por estado
         </h2>
         {data && (
           <span className="text-xs text-text-tertiary">
@@ -69,46 +69,41 @@ function ApplicationsSummary() {
         <p className="text-sm text-error">No se pudo cargar el resumen.</p>
       ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <div>
-            <h3 className="mb-2 text-xs font-medium text-text-tertiary">Por estado</h3>
-            <table className="w-full border-collapse text-sm">
-              <tbody>
-                {STAGE_ORDER.map((stage) => (
-                  <tr key={stage} className="border-b border-glass-border/50">
-                    <td className="py-1.5 text-text-secondary">{STAGE_LABELS[stage] ?? stage}</td>
-                    <td className="py-1.5 text-right">
-                      <Link
-                        href={`/backoffice/queue?stage=${stage}`}
-                        className="font-semibold text-neon-cyan hover:underline"
-                      >
-                        {data.byStage[stage] ?? 0}
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="flex flex-col">
+            {STAGE_ORDER.map((stage) => (
+              <div
+                key={stage}
+                className="flex items-center justify-between border-b border-white/[0.06] py-2.5 last:border-0"
+              >
+                <span className="text-[12.5px] text-text-secondary">{STAGE_LABELS[stage] ?? stage}</span>
+                <Link
+                  href={`/backoffice/queue?stage=${stage}`}
+                  className="text-[12.5px] font-bold text-neon-cyan hover:underline"
+                >
+                  {data.byStage[stage] ?? 0}
+                </Link>
+              </div>
+            ))}
           </div>
 
-          <div>
-            <h3 className="mb-2 text-xs font-medium text-text-tertiary">Por scoring</h3>
-            <table className="w-full border-collapse text-sm">
-              <tbody>
-                {CATEGORY_ORDER.map((category) => (
-                  <tr key={category} className="border-b border-glass-border/50">
-                    <td className={`py-1.5 font-medium ${CATEGORY_COLOR[category]}`}>{category}</td>
-                    <td className="py-1.5 text-right">
-                      <Link
-                        href={`/backoffice/queue?category=${category}`}
-                        className="font-semibold text-neon-cyan hover:underline"
-                      >
-                        {data.byCategory[category] ?? 0}
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="flex flex-col">
+            <h3 className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
+              Por scoring
+            </h3>
+            {CATEGORY_ORDER.map((category) => (
+              <div
+                key={category}
+                className="flex items-center justify-between border-b border-white/[0.06] py-2.5 last:border-0"
+              >
+                <span className={`text-[12.5px] font-semibold ${CATEGORY_COLOR[category]}`}>{category}</span>
+                <Link
+                  href={`/backoffice/queue?category=${category}`}
+                  className="text-[12.5px] font-bold text-neon-cyan hover:underline"
+                >
+                  {data.byCategory[category] ?? 0}
+                </Link>
+              </div>
+            ))}
           </div>
         </div>
       )}

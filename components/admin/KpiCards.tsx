@@ -7,37 +7,11 @@ interface KpiCardDef {
   value: string
   hint: string
   icon: React.ComponentType<{ className?: string }>
-  glow: "cyan" | "purple" | "green" | "gold"
+  accent: "cyan" | "purple" | "green" | "gold"
 }
 
-function glowClass(glow: KpiCardDef["glow"]) {
-  switch (glow) {
-    case "cyan":
-      return "glow-cyan"
-    case "purple":
-      return "glow-purple"
-    case "green":
-      return "glow-green"
-    default:
-      return "shadow-[0_0_24px_0_rgba(212,175,55,0.35)]"
-  }
-}
-
-function textGlowClass(glow: KpiCardDef["glow"]) {
-  switch (glow) {
-    case "cyan":
-      return "text-glow-cyan"
-    case "purple":
-      return "text-glow-purple"
-    case "green":
-      return "text-glow-green"
-    default:
-      return "[text-shadow:0_0_16px_rgba(212,175,55,0.35)]"
-  }
-}
-
-function iconColorClass(glow: KpiCardDef["glow"]) {
-  switch (glow) {
+function accentClass(accent: KpiCardDef["accent"]) {
+  switch (accent) {
     case "cyan":
       return "text-neon-cyan"
     case "purple":
@@ -49,7 +23,11 @@ function iconColorClass(glow: KpiCardDef["glow"]) {
   }
 }
 
-/** Top 4 KPI cards del Admin Dashboard — acento gold/neón, data mock. */
+/**
+ * Top 4 KPI cards del Admin Dashboard — cards compactas y neutras
+ * (`glass-surface`), con UN solo acento de color por card aplicado solo al
+ * icono y al número (sin glow, sin colorear la card completa).
+ */
 export function KpiCards() {
   const cards: KpiCardDef[] = [
     {
@@ -57,51 +35,48 @@ export function KpiCards() {
       value: MOCK_KPI_SUMMARY.totalLeadsThisMonth.toLocaleString("es-CL"),
       hint: "Total capturados en el periodo",
       icon: TrendingUpIcon,
-      glow: "cyan",
+      accent: "cyan",
     },
     {
       label: "Tasa de conversión",
       value: `${MOCK_KPI_SUMMARY.conversionRate.toFixed(1)}%`,
       hint: "Recepcionada → Cierre",
       icon: PercentIcon,
-      glow: "purple",
+      accent: "purple",
     },
     {
       label: "Días promedio a cierre",
       value: `${MOCK_KPI_SUMMARY.avgDaysToClose}`,
       hint: "Desde recepción hasta cierre",
       icon: ClockIcon,
-      glow: "green",
+      accent: "green",
     },
     {
       label: "Ingresos este mes",
       value: formatCLP(MOCK_KPI_SUMMARY.revenueThisMonth),
       hint: "Comisiones estimadas (mock)",
       icon: WalletIcon,
-      glow: "gold",
+      accent: "gold",
     },
   ]
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
       {cards.map((card) => {
         const Icon = card.icon
         return (
-          <div
-            key={card.label}
-            className={`glass-card rounded-2xl p-5 transition-transform duration-200 hover:-translate-y-0.5 ${glowClass(card.glow)}`}
-          >
+          <div key={card.label} className="glass-surface rounded-2xl p-5">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-text-secondary">{card.label}</span>
-              <Icon className={`size-5 ${iconColorClass(card.glow)}`} />
+              <span className="text-[12.5px] font-semibold text-text-secondary">{card.label}</span>
+              <Icon className={`size-[17px] shrink-0 ${accentClass(card.accent)}`} aria-hidden="true" />
             </div>
             <p
-              className={`mt-3 font-variant-numeric-tabular text-3xl font-semibold tracking-tight text-text-primary lg:text-4xl ${textGlowClass(card.glow)}`}
+              className="mt-3 text-[26px] font-bold leading-none tracking-tight text-text-primary"
               style={{ fontVariantNumeric: "tabular-nums" }}
             >
               {card.value}
             </p>
-            <p className="mt-1 text-xs text-text-tertiary">{card.hint}</p>
+            <p className="mt-2 text-[11.5px] text-text-tertiary">{card.hint}</p>
           </div>
         )
       })}
