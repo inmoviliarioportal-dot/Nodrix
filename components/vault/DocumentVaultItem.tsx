@@ -3,11 +3,9 @@
 import * as React from "react"
 import { toast } from "sonner"
 import {
-  CheckCircle2Icon,
-  ClockIcon,
-  FileIcon,
-  AlertTriangleIcon,
+  FileTextIcon,
   UploadCloudIcon,
+  EyeIcon,
   Loader2Icon,
 } from "lucide-react"
 
@@ -104,54 +102,42 @@ function DocumentVaultItem({
 
   const canUpload = !status || status === "rechazado"
   const isApproved = status === "aprobado"
-  const isPending = status === "pendiente" || status === "en_revision"
+  const isInReview = status === "en_revision"
+  const isRejected = status === "rechazado"
+  const isPending = status === "pendiente"
+  const canView = (isApproved || isInReview) && Boolean(document?.url)
+
+  /** Pill de estado: colores por semántica (verde=aprobado, cyan=en revisión, neutro=pendiente, error=rechazado). */
+  const statusPillClass = isApproved
+    ? "border-neon-green/40 bg-neon-green/10 text-neon-green"
+    : isInReview
+      ? "border-neon-cyan/40 bg-neon-cyan/10 text-neon-cyan"
+      : isRejected
+        ? "border-status-error/40 bg-status-error/10 text-status-error"
+        : "border-border bg-surface-elevated text-text-tertiary"
 
   return (
-    <div
-      className={cn(
-        "glass-card flex flex-col gap-3 rounded-xl p-4 transition-colors duration-200",
-        isApproved && "glow-green"
-      )}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div
-            className={cn(
-              "flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-surface-elevated",
-              isApproved && "border-neon-green/40"
-            )}
-          >
-            {isApproved ? (
-              <CheckCircle2Icon className="size-5 text-neon-green" />
-            ) : status === "rechazado" ? (
-              <AlertTriangleIcon className="size-5 text-status-error" />
-            ) : isPending ? (
-              <ClockIcon className="size-5 text-status-warning" />
-            ) : (
-              <FileIcon className="size-5 text-text-tertiary" />
-            )}
+    <div className="glass-card flex flex-col gap-2.5 rounded-xl p-3.5 transition-colors duration-200">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-surface-elevated">
+            <FileTextIcon className="size-4 text-text-tertiary" />
           </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-text-primary">{typeLabel}</span>
-            {status && (
-              <span
-                className={cn(
-                  "text-xs",
-                  isApproved && "text-neon-green",
-                  status === "rechazado" && "text-status-error",
-                  isPending && "text-status-warning"
-                )}
-              >
-                {DOCUMENT_STATUS_LABELS[status] ?? status}
-              </span>
-            )}
-          </div>
+          <span className="truncate text-sm font-semibold text-text-primary">{typeLabel}</span>
         </div>
+        <span
+          className={cn(
+            "shrink-0 rounded-full border px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wide",
+            statusPillClass
+          )}
+        >
+          {status ? (DOCUMENT_STATUS_LABELS[status] ?? status) : "Sin subir"}
+        </span>
       </div>
 
-      {status === "rechazado" && (
+      {isRejected && (
         <div className="flex flex-col gap-1 text-xs text-status-error">
-          <p>Este documento fue rechazado. Vuelve a subirlo con la información correcta.</p>
+          <p>Rechazado. Vuelve a subirlo con la información correcta.</p>
           {document?.extracted_data?.validation?.reasons?.map((reason, index) => (
             <p key={index} className="text-text-tertiary">
               • {reason}
@@ -162,17 +148,26 @@ function DocumentVaultItem({
 
       {clientError && <p className="text-xs text-status-error">{clientError}</p>}
 
-      <div className="mt-1">
-        {isApproved ? (
-          <span className="text-xs text-text-tertiary">Documento aprobado, no requiere acción.</span>
-        ) : (
+      <div className="flex items-center gap-2">
+        {canView && (
+          <a
+            href={document?.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-text-primary transition-colors duration-200 hover:border-neon-cyan hover:text-neon-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan"
+          >
+            <EyeIcon className="size-4" />
+            Ver documento
+          </a>
+        )}
+        {!isApproved && (
           <button
             type="button"
             disabled={isSubmitting}
             onClick={() => inputRef.current?.click()}
             className={cn(
-              "inline-flex w-full items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-primary transition-colors duration-200 hover:border-neon-cyan hover:text-neon-cyan disabled:cursor-not-allowed disabled:opacity-50",
-              isPending && "border-status-warning/40"
+              "inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-text-primary transition-colors duration-200 hover:border-neon-cyan hover:text-neon-cyan disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan",
+              isInReview && "border-neon-cyan/40"
             )}
           >
             {isSubmitting ? (
@@ -182,11 +177,11 @@ function DocumentVaultItem({
             )}
             {isSubmitting
               ? "Subiendo..."
-              : status === "rechazado"
+              : isRejected
                 ? "Volver a subir"
-                : isPending
+                : isInReview || isPending
                   ? "Reemplazar archivo"
-                  : "Subir"}
+                  : "Subir documento"}
           </button>
         )}
         <input
@@ -194,7 +189,7 @@ function DocumentVaultItem({
           type="file"
           accept=".pdf,.jpg,.jpeg,.png,.webp"
           className="hidden"
-          disabled={!canUpload && !isPending}
+          disabled={!canUpload && !isPending && !isInReview}
           onChange={(e) => handleFileSelected(e.target.files?.[0] ?? null)}
         />
       </div>

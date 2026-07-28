@@ -89,25 +89,25 @@ export default function DashboardDocumentsPage() {
   return (
     <Layout>
       <Toaster />
-      <div className="flex flex-col gap-6">
-        <div className="glass-surface flex flex-col gap-3 rounded-xl p-6">
-          <h1 className="text-2xl font-semibold tracking-tight text-text-primary">
-            Bóveda Documental
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
+        <div className="glass-surface flex flex-col gap-1 rounded-2xl p-6">
+          <h1 className="text-xl font-bold tracking-tight text-text-primary">
+            Bóveda documental
           </h1>
-          <p className="text-sm text-text-secondary">
+          <p className="mb-3 text-[13px] text-text-secondary">
             Sube los documentos requeridos para avanzar en tu solicitud. Cada archivo se
             revisa individualmente por tu asesor.
           </p>
 
           {!loading && application && (
-            <div className="mt-2 flex flex-col gap-1.5">
-              <div className="flex items-center justify-between text-xs text-text-tertiary">
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between text-xs text-text-secondary">
                 <span>
                   {approvedCount}/{totalCount} documentos aprobados
                 </span>
-                <span className="tabular-nums">{progressPct}%</span>
+                <span className="tabular-nums font-semibold text-text-primary">{progressPct}%</span>
               </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-surface-elevated">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-elevated">
                 <div
                   className="h-full rounded-full bg-neon-green transition-[width] duration-300 ease-out"
                   style={{ width: `${progressPct}%` }}
@@ -128,7 +128,7 @@ export default function DashboardDocumentsPage() {
         )}
 
         {!loading && application && (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             {DOCUMENT_TYPES.map((docType) => (
               <DocumentVaultItem
                 key={docType.value}
