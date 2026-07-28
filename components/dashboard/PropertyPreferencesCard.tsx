@@ -7,11 +7,7 @@ import { Home, Building2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SelectableCard } from "@/components/wizard/SelectableCard"
 import { RegionComunaSelect } from "@/components/wizard/RegionComunaSelect"
-import {
-  PropertyRecommendations,
-  type PropertyProposal,
-  type PropertyRecommendation,
-} from "@/components/dashboard/PropertyRecommendations"
+import { PropertyCarousel, type PropertyRecommendation } from "@/components/dashboard/PropertyCarousel"
 import { HousingPropertyList } from "@/components/dashboard/HousingPropertyList"
 
 type PropertyType = "casa" | "departamento"
@@ -25,11 +21,11 @@ const BATHROOM_OPTIONS = [1, 2, 3] as const
  * Tarjeta de propuesta de propiedades, con dos modos completamente
  * distintos según el `purpose` del cliente (ver app/onboarding/initial-proposal/page.tsx):
  *
- * - mode="investment": SIN formulario de preferencias -- va directo a pedir
- *   las 3 propuestas de 1/2/3 departamentos (misma lógica ya armada para
- *   inversión). Se usa para purpose "inversion" y como PRIMER paso de
- *   "ambos". El enfoque de preferencias para la pata de inversión pura
- *   queda pendiente para una iteración futura (instrucción del usuario).
+ * - mode="investment": SIN formulario de preferencias -- va directo a mostrar
+ *   un carrusel de hasta 8 propiedades (las más adecuadas según la
+ *   pre-evaluación en UF), donde el cliente elige libremente cuántas quiere
+ *   (ver PropertyCarousel.tsx). Se usa para purpose "inversion" y como
+ *   PRIMER paso de "ambos".
  * - mode="housing": muestra el formulario de preferencias (tipo, dormitorios,
  *   baños, región+comuna) y, al enviar, una lista de propiedades
  *   INDIVIDUALES (no bundles) para elegir una sola. Se usa para purpose
@@ -52,22 +48,29 @@ function PropertyPreferencesCard({
   const [comuna, setComuna] = React.useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [isAccepting, setIsAccepting] = React.useState(false)
-  const [proposals, setProposals] = React.useState<PropertyProposal[] | null>(null)
+  const [carousel, setCarousel] = React.useState<PropertyRecommendation[] | null>(null)
   const [housingProperties, setHousingProperties] = React.useState<PropertyRecommendation[] | null>(null)
 
-  const requestedInvestmentProposals = React.useRef(false)
+  const requestedCarousel = React.useRef(false)
 
   // mode="investment" no pide preferencias -- dispara la búsqueda apenas se
-  // monta, una sola vez.
+  // monta, una sola vez. Primero busca el presupuesto en UF ya calculado
+  // (pre-evaluación) para que el carrusel muestre las propiedades más
+  // cercanas al precio que el cliente realmente puede pagar.
   React.useEffect(() => {
-    if (mode !== "investment" || requestedInvestmentProposals.current) return
-    requestedInvestmentProposals.current = true
+    if (mode !== "investment" || requestedCarousel.current) return
+    requestedCarousel.current = true
     setIsSubmitting(true)
-    fetch("/api/properties/recommendations", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ purpose: "inversion" }),
-    })
+    fetch(`/api/applications/${applicationId}/proposal-bands`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((bandsData) => {
+        const budgetUf = bandsData?.ufPreEvaluation?.estimatedPropertyValueUF as number | undefined
+        return fetch("/api/properties/recommendations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ purpose: "inversion", budgetUf }),
+        })
+      })
       .then(async (res) => {
         if (!res.ok) {
           const data = await res.json().catch(() => null)
@@ -75,10 +78,10 @@ function PropertyPreferencesCard({
           return
         }
         const data = await res.json()
-        setProposals(data?.proposals ?? [])
+        setCarousel(data?.carousel ?? [])
       })
       .finally(() => setIsSubmitting(false))
-  }, [mode])
+  }, [mode, applicationId])
 
   async function handleHousingSubmit() {
     if (!comuna) {
@@ -110,15 +113,15 @@ function PropertyPreferencesCard({
     }
   }
 
-  async function handleAcceptInvestmentProposal(proposal: PropertyProposal) {
+  async function handleAcceptInvestmentSelection(selected: PropertyRecommendation[]) {
     setIsAccepting(true)
     try {
       const res = await fetch(`/api/applications/${applicationId}/accept-property-proposal`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          departmentCount: proposal.departmentCount,
-          propertyIds: proposal.properties.map((p) => p.id),
+          departmentCount: selected.length,
+          propertyIds: selected.map((p) => p.id),
         }),
       })
       if (!res.ok) {
@@ -160,15 +163,15 @@ function PropertyPreferencesCard({
   }
 
   if (mode === "investment") {
-    if (!proposals) {
+    if (!carousel) {
       return (
         <div className="glass-card flex flex-col items-center gap-3 rounded-2xl p-6">
-          <p className="text-sm text-text-tertiary">Buscando propuestas de inversión...</p>
+          <p className="text-sm text-text-tertiary">Buscando las propiedades más adecuadas para ti...</p>
         </div>
       )
     }
     return (
-      <PropertyRecommendations proposals={proposals} onAccept={handleAcceptInvestmentProposal} isSubmitting={isAccepting} />
+      <PropertyCarousel properties={carousel} onAccept={handleAcceptInvestmentSelection} isSubmitting={isAccepting} />
     )
   }
 

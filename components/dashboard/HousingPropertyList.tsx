@@ -5,13 +5,13 @@ import { MapPin, BedDouble, Bath, Home, Check, Images } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import type { PropertyRecommendation } from "@/components/dashboard/PropertyRecommendations"
+import type { PropertyRecommendation } from "@/components/dashboard/PropertyCarousel"
 import { PropertyGalleryModal } from "@/components/dashboard/PropertyGalleryModal"
 
 /**
  * Lista de propiedades INDIVIDUALES para el flujo de vivienda propia -- a
- * diferencia de PropertyRecommendations (bundles de 1/2/3 departamentos
- * para inversión), acá el cliente elige UN solo inmueble para vivir.
+ * diferencia de PropertyCarousel (selección múltiple para inversión), acá
+ * el cliente elige UN solo inmueble para vivir.
  */
 function HousingPropertyList({
   properties,

@@ -9,16 +9,21 @@ type Body = {
   propertyIds?: string[];
 };
 
-const VALID_DEPARTMENT_COUNTS = [1, 2, 3];
+/** Máximo de propiedades seleccionables -- coincide con CAROUSEL_SIZE en
+ * app/api/properties/recommendations/route.ts. */
+const MAX_SELECTABLE_PROPERTIES = 8;
 
 /**
  * POST /api/applications/[id]/accept-property-proposal
  *
- * Persiste cuál de las 3 propuestas (1/2/3 departamentos) eligió el cliente
- * tras verlas en /onboarding/initial-proposal, junto con las propiedades
- * concretas incluidas. No cambia de etapa (la solicitud ya avanzó a
- * DOCUMENTOS_PENDIENTES en select-initial-proposal) -- solo agrega
- * trazabilidad.
+ * Persiste qué propiedades de inversión eligió el cliente del carrusel de
+ * hasta 8 (ver PropertyCarousel.tsx) tras verlas en
+ * /onboarding/initial-proposal -- el cliente elige libremente cuántas
+ * quiere (1, 2, 4, 6...), no hay "bundles" fijos de 1/2/3 departamentos.
+ * `departmentCount` se mantiene como el conteo de propiedades elegidas
+ * (nombre heredado del modelo anterior, sigue siendo útil como métrica).
+ * No cambia de etapa (la solicitud ya avanzó a DOCUMENTOS_PENDIENTES en
+ * select-initial-proposal) -- solo agrega trazabilidad.
  */
 export const POST = withErrorHandling(async (request: Request, context: { params: Promise<{ id: string }> }) => {
   const auth = await requireAuth();
@@ -30,13 +35,14 @@ export const POST = withErrorHandling(async (request: Request, context: { params
   if (
     !body ||
     typeof body.departmentCount !== "number" ||
-    !VALID_DEPARTMENT_COUNTS.includes(body.departmentCount) ||
     !Array.isArray(body.propertyIds) ||
     body.propertyIds.length === 0 ||
+    body.propertyIds.length > MAX_SELECTABLE_PROPERTIES ||
+    body.departmentCount !== body.propertyIds.length ||
     !body.propertyIds.every((pid) => typeof pid === "string")
   ) {
     return apiError(
-      "Cuerpo de la solicitud inválido: se requiere departmentCount (1|2|3) y propertyIds.",
+      `Cuerpo de la solicitud inválido: se requiere departmentCount igual a la cantidad de propertyIds (máximo ${MAX_SELECTABLE_PROPERTIES}).`,
       HTTP_STATUS.BAD_REQUEST,
       "INVALID_BODY"
     );

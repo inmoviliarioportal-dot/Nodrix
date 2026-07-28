@@ -8,13 +8,20 @@ type PropertyType = "casa" | "departamento";
 type DepartmentCount = 1 | 2 | 3;
 
 interface RecommendationsBody {
-  // Opcional cuando purpose === "inversion": ese flujo va directo a las 3
-  // propuestas de 1/2/3 departamentos sin pedir preferencias al cliente.
+  // Opcional cuando purpose === "inversion": ese flujo va directo al
+  // carrusel de propiedades sin pedir preferencias al cliente.
   comuna?: string;
   propertyType?: PropertyType;
   bedrooms?: number;
   bathrooms?: number;
   purpose: Purpose;
+  /**
+   * Presupuesto estimado en UF (viene de `ufPreEvaluation.estimatedPropertyValueUF`,
+   * ver lib/uf-preevaluation.ts) -- solo se usa cuando purpose === "inversion",
+   * para ordenar el carrusel por cercanía de precio al presupuesto real del
+   * cliente en vez de solo por fecha de creación.
+   */
+  budgetUf?: number;
 }
 
 interface PropertyRow {
@@ -53,28 +60,27 @@ export interface PropertyProposal {
   properties: PropertyRecommendation[];
 }
 
-const DEPARTMENT_COUNTS: DepartmentCount[] = [1, 2, 3];
+/** Cantidad de propiedades mostradas en el carrusel de inversión. */
+const CAROUSEL_SIZE = 8;
 
 /**
  * POST /api/properties/recommendations
  *
  * A diferencia de GET /api/properties/offers (rangos agregados por comuna
  * para la etapa "aprobado previo"), este endpoint devuelve propiedades
- * CONCRETAS agrupadas en 3 "propuestas" seleccionables (1, 2 o 3
- * departamentos) -- se usa en el paso de preferencias de vivienda que ahora
- * aplica a TODOS los purposes (inversión, vivienda_propia, ambos).
+ * CONCRETAS:
  *
- * Filtro estricto (comuna + purpose + propertyType/bedrooms/bathrooms si
- * vienen) con fallback progresivo: si no hay suficiente inventario, se
- * relaja quitando primero bathrooms, luego bedrooms, luego propertyType, y
- * como último recurso también la comuna -- para NUNCA dejar una propuesta
- * vacía si existe al menos 1 propiedad disponible en todo el sistema.
- *
- * Cada propuesta necesita N propiedades DISTINTAS idealmente, pero si el
- * inventario real disponible es menor a N, se permite repetir propiedades
- * entre propuestas (o dentro de la misma) para poder mostrar siempre algo
- * concreto -- el inventario de un MVP inmobiliario chico normalmente no
- * alcanza para 1+2+3 = 6 propiedades únicas por comuna.
+ * - purpose === "inversion": un CARRUSEL de hasta 8 propiedades DISTINTAS
+ *   (campo `carousel`), ordenadas por cercanía de precio al presupuesto
+ *   estimado (`budgetUf`, viene de la pre-evaluación en UF) si se provee, o
+ *   por más recientes si no. El cliente elige libremente cuántas quiere (no
+ *   hay "bundles" de 1/2/3 departamentos -- ver PropertyCarousel.tsx).
+ * - purpose === "vivienda_propia" | "ambos": lista plana de propiedades
+ *   (campo `recommendations`) filtradas por comuna + preferencias (tipo,
+ *   dormitorios, baños), con fallback progresivo: si no hay suficiente
+ *   inventario, se relaja quitando primero baños, luego dormitorios, luego
+ *   tipo, y como último recurso también la comuna -- para nunca dejar una
+ *   lista vacía si existe al menos 1 propiedad disponible en el sistema.
  */
 export const POST = withErrorHandling(async (request: Request) => {
   const auth = await requireAuth();
@@ -153,6 +159,31 @@ export const POST = withErrorHandling(async (request: Request) => {
     };
   }
 
+  if (body.purpose === "inversion") {
+    // Carrusel: hasta CAROUSEL_SIZE propiedades DISTINTAS, sin filtrar por
+    // comuna/preferencias (esa pata no las pide), ordenadas por cercanía al
+    // presupuesto real del cliente si viene `budgetUf`.
+    const candidates = purposeMatches(allRows);
+    const pool = candidates.length > 0 ? candidates : allRows; // nunca vacío si hay inventario
+    const sorted = [...pool].sort((a, b) => {
+      if (typeof body.budgetUf === "number") {
+        return Math.abs(a.price_uf - body.budgetUf) - Math.abs(b.price_uf - body.budgetUf);
+      }
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+
+    const carousel: PropertyRecommendation[] = [];
+    const seenIds = new Set<string>();
+    for (const row of sorted) {
+      if (seenIds.has(row.id)) continue;
+      seenIds.add(row.id);
+      carousel.push(toRecommendation(row));
+      if (carousel.length >= CAROUSEL_SIZE) break;
+    }
+
+    return NextResponse.json({ carousel });
+  }
+
   function buildProposal(count: DepartmentCount): PropertyProposal {
     // Piso: comuna + purpose. Si no hay suficientes propiedades en la
     // comuna, se cae al pool global (sin filtrar por comuna) como último
@@ -173,9 +204,10 @@ export const POST = withErrorHandling(async (request: Request) => {
     return { departmentCount: count, properties };
   }
 
-  const proposals = DEPARTMENT_COUNTS.map(buildProposal);
-
-  // Se mantiene `recommendations` (plano, propuesta de 1 depto) por si algún
-  // consumidor viejo del contrato anterior sigue leyendo ese campo.
-  return NextResponse.json({ proposals, recommendations: proposals[0]?.properties ?? [] });
+  // purpose === "vivienda_propia" | "ambos": lista plana filtrada por comuna
+  // + preferencias (ver PropertyPreferencesCard mode="housing"). Se
+  // construye una sola "propuesta" de 1 y se devuelve su lista de
+  // propiedades -- mismo mecanismo de relajación progresiva de pickPool.
+  const properties = buildProposal(1).properties;
+  return NextResponse.json({ recommendations: properties });
 });

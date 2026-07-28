@@ -151,12 +151,16 @@ function InitialProposalCard({
 
       {ufPreEvaluation && (
         <div className="rounded-xl border border-neon-cyan/30 bg-neon-cyan/5 p-4">
-          <p className="text-sm text-text-secondary">
-            Podrías optar a aproximadamente{" "}
-            <strong className="text-text-primary">{Math.round(ufPreEvaluation.estimatedPropertyValueUF)} UF</strong>{" "}
-            según tu perfil.
+          <p className="text-sm font-semibold text-text-primary">
+            ¡Excelente! Has completado tu pre-evaluación y queremos felicitarte.
           </p>
-          <p className="mt-1 text-xs text-text-tertiary">{ufPreEvaluation.disclaimer}</p>
+          <p className="mt-2 text-sm text-text-secondary">
+            Podrías optar a aproximadamente{" "}
+            <strong className="text-text-primary">{Math.round(ufPreEvaluation.estimatedPropertyValueUF)} UF</strong>.
+            Ahora te mostraremos las opciones disponibles según tu pre-evaluación: podrás seleccionar una o más
+            propiedades de la lista que te presentaremos a continuación.
+          </p>
+          <p className="mt-2 text-xs text-text-tertiary">{ufPreEvaluation.disclaimer}</p>
         </div>
       )}
 
