@@ -14,17 +14,17 @@ function PreEvaluationCard({ minUf, maxUf }: PreEvaluationCardProps) {
   const hasRange = typeof minUf === "number" && typeof maxUf === "number"
 
   return (
-    <Card className="glass-surface border-glass-border">
+    <Card size="sm" className="glass-surface gap-2.5 border-glass-border">
       <CardHeader>
-        <CardTitle>Pre-evaluación</CardTitle>
+        <CardTitle className="text-[13px] font-bold text-text-primary">Pre-evaluación</CardTitle>
       </CardHeader>
       <CardContent>
         {hasRange ? (
-          <p className="text-sm text-text-secondary">
+          <p className="text-[12.5px] leading-relaxed text-text-secondary">
             Rango estimado: {minUf.toLocaleString("es-CL")} — {maxUf!.toLocaleString("es-CL")} UF
           </p>
         ) : (
-          <p className="text-sm text-text-tertiary">Pendiente revisión.</p>
+          <p className="text-[12.5px] text-text-tertiary">Pendiente revisión.</p>
         )}
       </CardContent>
     </Card>

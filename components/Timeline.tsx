@@ -33,6 +33,13 @@ export interface TimelineProps extends React.ComponentProps<"ol"> {
    * marcado en verde una vez superado.
    */
   orientation?: "vertical" | "horizontal"
+  /**
+   * `"comfortable"` (default) — indicadores de 32px, usado en Backoffice/Admin.
+   * `"compact"` — indicadores de 24px y espaciado reducido, usado en la
+   * columna angosta del dashboard del cliente para que la línea de tiempo
+   * completa quepa sin scroll.
+   */
+  density?: "comfortable" | "compact"
 }
 
 function formatStageLabel(stage: string) {
@@ -47,30 +54,53 @@ function StepIndicator({
   isCompleted,
   isCurrent,
   index,
+  compact,
 }: {
   isCompleted: boolean
   isCurrent: boolean
   index: number
+  compact?: boolean
 }) {
+  const size = compact ? "size-6" : "size-8"
+  const dot = compact ? "size-2" : "size-2.5"
+  const checkSize = compact ? "size-3.5" : "size-5"
+  const numSize = compact ? "text-[10px]" : "text-xs"
+
   if (isCompleted) {
     return (
-      <span className="flex size-8 shrink-0 items-center justify-center rounded-full border border-neon-green/40 bg-neon-green/10 text-neon-green">
-        <CheckCircle2 className="size-5" aria-hidden />
+      <span
+        className={cn(
+          "flex shrink-0 items-center justify-center rounded-full border border-neon-green/40 bg-neon-green/10 text-neon-green",
+          size
+        )}
+      >
+        <CheckCircle2 className={checkSize} aria-hidden />
       </span>
     )
   }
   if (isCurrent) {
     return (
-      <span className="glow-cyan flex size-8 shrink-0 items-center justify-center rounded-full border border-neon-cyan bg-neon-cyan/10 text-neon-cyan">
-        <span className="relative flex size-2.5">
+      <span
+        className={cn(
+          "glow-cyan flex shrink-0 items-center justify-center rounded-full border border-neon-cyan bg-neon-cyan/10 text-neon-cyan",
+          size
+        )}
+      >
+        <span className={cn("relative flex", dot)}>
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-neon-cyan opacity-75 motion-reduce:hidden" />
-          <span className="relative inline-flex size-2.5 rounded-full bg-neon-cyan" />
+          <span className={cn("relative inline-flex rounded-full bg-neon-cyan", dot)} />
         </span>
       </span>
     )
   }
   return (
-    <span className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border bg-dark-tertiary text-xs font-semibold text-text-tertiary">
+    <span
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-full border border-border bg-dark-tertiary font-semibold text-text-tertiary",
+        size,
+        numSize
+      )}
+    >
       {index + 1}
     </span>
   )
@@ -92,10 +122,12 @@ function Timeline({
   stages = [...DEFAULT_TIMELINE_STAGES],
   labels,
   orientation = "vertical",
+  density = "comfortable",
   className,
   ...props
 }: TimelineProps) {
   const currentIndex = stages.indexOf(currentStage)
+  const compact = density === "compact"
 
   if (orientation === "horizontal") {
     return (
@@ -181,13 +213,14 @@ function Timeline({
             key={stage}
             data-slot="timeline-item"
             data-state={isCurrent ? "current" : isCompleted ? "completed" : "future"}
-            className="relative flex items-start gap-4 pb-8 last:pb-0"
+            className={cn("relative flex items-start gap-3", compact ? "pb-[22px] last:pb-0" : "gap-4 pb-8 last:pb-0")}
           >
             {/* Línea vertical conectora */}
             {!isLast && (
               <div
                 className={cn(
-                  "absolute left-[15px] top-8 h-[calc(100%-1rem)] w-px",
+                  "absolute w-px",
+                  compact ? "left-[11px] top-6 h-[calc(100%-4px)]" : "left-[15px] top-8 h-[calc(100%-1rem)]",
                   isCompleted ? "bg-neon-green/50" : "bg-border"
                 )}
                 aria-hidden
@@ -195,13 +228,14 @@ function Timeline({
             )}
 
             <div className="relative z-10 flex shrink-0 items-center justify-center">
-              <StepIndicator isCompleted={isCompleted} isCurrent={isCurrent} index={index} />
+              <StepIndicator isCompleted={isCompleted} isCurrent={isCurrent} index={index} compact={compact} />
             </div>
 
-            <div className="flex min-w-0 flex-col justify-center pt-1.5">
+            <div className={cn("flex min-w-0 flex-col justify-center", compact ? "pt-0.5" : "pt-1.5")}>
               <span
                 className={cn(
-                  "text-sm font-medium leading-tight",
+                  "font-medium leading-tight",
+                  compact ? "text-[13.5px]" : "text-sm",
                   isCurrent && "text-neon-cyan",
                   isCompleted && "text-text-primary",
                   isFuture && "text-text-tertiary"
@@ -209,7 +243,9 @@ function Timeline({
               >
                 {label}
               </span>
-              {isCurrent && <span className="text-xs text-text-tertiary">En progreso</span>}
+              {isCurrent && (
+                <span className={cn("text-text-tertiary", compact ? "text-[11px]" : "text-xs")}>En progreso</span>
+              )}
             </div>
           </li>
         )

@@ -15,20 +15,20 @@ function ScoringCard({ scoring }: ScoringCardProps) {
   const hasScoring = !!scoring && isScoringCategory(scoring.category)
 
   return (
-    <Card className="glass-surface border-glass-border">
+    <Card size="sm" className="glass-surface gap-2.5 border-glass-border">
       <CardHeader>
-        <CardTitle className="flex items-center justify-between gap-2">
+        <CardTitle className="flex items-center justify-between gap-2 text-[13px] font-bold text-text-primary">
           Scoring
           {hasScoring && <ScoringBadge category={scoring!.category} />}
         </CardTitle>
       </CardHeader>
       <CardContent>
         {hasScoring ? (
-          <p className="whitespace-pre-line text-sm text-text-secondary">
+          <p className="line-clamp-3 whitespace-pre-line text-[12.5px] leading-relaxed text-text-secondary">
             {scoring!.explanation}
           </p>
         ) : (
-          <p className="text-sm text-text-tertiary">Pendiente de evaluación.</p>
+          <p className="text-[12.5px] text-text-tertiary">Pendiente de evaluación.</p>
         )}
       </CardContent>
     </Card>

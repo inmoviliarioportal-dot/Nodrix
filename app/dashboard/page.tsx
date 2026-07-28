@@ -133,14 +133,14 @@ export default function DashboardPage() {
   return (
     <Layout>
       <Toaster />
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-5">
         <div className="glass-card rounded-2xl p-6">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-col gap-1">
-              <span className="text-xs font-medium uppercase tracking-wide text-text-tertiary">
-                Estado de mi proceso
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-wide text-text-tertiary">
+                Estado de tu proceso
               </span>
-              <span className="text-2xl font-semibold text-text-primary">
+              <span className="text-2xl font-bold tracking-tight text-text-primary">
                 {stageLabel}
               </span>
             </div>
@@ -150,7 +150,7 @@ export default function DashboardPage() {
           </div>
 
           {!loading && (
-            <div className="mt-4">
+            <div className="mt-5">
               <StageProgressBar completedSteps={completedSteps} totalSteps={APPLICATION_STAGES.length} />
             </div>
           )}
@@ -162,13 +162,14 @@ export default function DashboardPage() {
         </div>
 
         {!loading && !application && (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,360px)_1fr]">
-            <div className="glass-card rounded-2xl p-6">
-              <h2 className="mb-6 text-sm font-semibold uppercase tracking-wide text-text-tertiary">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(240px,300px)_1fr]">
+            <div className="rounded-2xl border border-glass-border bg-surface p-[22px] lg:self-start">
+              <h2 className="mb-4 text-xs font-bold uppercase tracking-wide text-text-tertiary">
                 Tu recorrido
               </h2>
               <Timeline
                 orientation="vertical"
+                density="compact"
                 currentStage=""
                 stages={CLIENT_TIMELINE_STAGES}
                 labels={STAGE_MARKETING_LABELS}
@@ -181,9 +182,9 @@ export default function DashboardPage() {
                 message="Aún no has comenzado tu evaluación. Completa el formulario de perfilamiento para ver tu solicitud avanzar por estas etapas."
               />
 
-              <div className="glass-card glow-cyan flex flex-col items-start gap-3 rounded-2xl border border-neon-cyan/40 p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="glow-cyan flex flex-col items-start gap-3.5 rounded-2xl border border-neon-cyan/40 bg-neon-cyan/[0.06] p-5 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-col gap-1">
-                  <p className="text-sm font-semibold text-text-primary">Comienza tu evaluación</p>
+                  <p className="text-sm font-bold text-text-primary">Comienza tu evaluación</p>
                   <p className="text-xs text-text-secondary">
                     Responde algunas preguntas y descubre tu categoría de inversión al instante.
                   </p>
@@ -218,13 +219,14 @@ export default function DashboardPage() {
         )}
 
         {!loading && application && !(stage === "SCORING_COMPLETADO" && initialProposalQualifies === false) && (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,360px)_1fr]">
-            <div className="glass-card rounded-2xl p-6">
-              <h2 className="mb-6 text-sm font-semibold uppercase tracking-wide text-text-tertiary">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(240px,300px)_1fr]">
+            <div className="rounded-2xl border border-glass-border bg-surface p-[22px] lg:self-start">
+              <h2 className="mb-4 text-xs font-bold uppercase tracking-wide text-text-tertiary">
                 Línea de tiempo
               </h2>
               <Timeline
                 orientation="vertical"
+                density="compact"
                 currentStage={stage}
                 stages={CLIENT_TIMELINE_STAGES}
                 labels={STAGE_MARKETING_LABELS}
@@ -249,10 +251,13 @@ export default function DashboardPage() {
                 </Button>
               )}
 
+              {/* Un solo CTA prominente por etapa cuando aplica -- el resto de
+                  las acciones (agendar visita, actualizar datos) van como
+                  botones secundarios dentro de sus propias cards. */}
               {stageContent.showUploadCta && (
-                <div className="glass-card glow-cyan flex flex-col items-start gap-3 rounded-2xl border border-neon-cyan/40 p-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="glow-cyan flex flex-col items-start gap-3.5 rounded-2xl border border-neon-cyan/40 bg-neon-cyan/[0.06] p-5 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex flex-col gap-1">
-                    <p className="text-sm font-semibold text-text-primary">
+                    <p className="text-sm font-bold text-text-primary">
                       Tu solicitud necesita documentos
                     </p>
                     <p className="text-xs text-text-secondary">
@@ -288,20 +293,22 @@ export default function DashboardPage() {
                       purpose={application.initial_proposal_purpose}
                     />
                   )}
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {/* Grid de KPI cards compactas: scoring, documentos, próximo
+                      paso y (si corresponde) agendar visita. */}
+                  <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
                     <ScoringCard scoring={scoring} />
                     <DocumentsCard documents={documents} onUploadClick={() => setUploadOpen(true)} />
+                    <PreEvaluationCard
+                      minUf={application?.pre_evaluation_min_uf}
+                      maxUf={application?.pre_evaluation_max_uf}
+                    />
+                    <NextStepCard stage={stage} />
                     {/* Agendar visita en paralelo a la subida de documentos --
                         no hay que esperar a "Aprobado previo" para conocer
                         las propiedades que el cliente ya eligió. */}
                     {stage === "DOCUMENTOS_PENDIENTES" && application && (
                       <ScheduleVisitCard applicationId={application.id} />
                     )}
-                    <PreEvaluationCard
-                      minUf={application?.pre_evaluation_min_uf}
-                      maxUf={application?.pre_evaluation_max_uf}
-                    />
-                    <NextStepCard stage={stage} />
                   </div>
                 </>
               )}

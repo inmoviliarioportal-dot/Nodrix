@@ -66,8 +66,8 @@ function ScheduleVisitCard({ applicationId }: { applicationId: string }) {
 
   if (loading) {
     return (
-      <div className="glass-card rounded-2xl p-6">
-        <p className="text-sm text-text-tertiary">Cargando tus propiedades elegidas...</p>
+      <div className="rounded-[14px] border border-glass-border bg-surface p-[18px]">
+        <p className="text-[12.5px] text-text-tertiary">Cargando tus propiedades elegidas...</p>
       </div>
     )
   }
@@ -79,22 +79,19 @@ function ScheduleVisitCard({ applicationId }: { applicationId: string }) {
   if (!properties || properties.length === 0) return null
 
   return (
-    <div className="glass-card flex flex-col gap-4 rounded-2xl p-6">
+    <div className="flex flex-col gap-2.5 rounded-[14px] border border-glass-border bg-surface p-[18px]">
       <div>
-        <h2 className="font-heading text-sm font-semibold uppercase tracking-wide text-text-tertiary">
-          Agenda tu visita
-        </h2>
-        <p className="mt-1 text-sm text-text-secondary">
-          Conoce en persona los proyectos que elegiste. Puedes agendar mientras subes tus documentos, no hace falta
-          esperar.
+        <h2 className="text-[13px] font-bold text-text-primary">Agenda tu visita</h2>
+        <p className="mt-1 text-[12.5px] leading-relaxed text-text-secondary">
+          Coordina una visita a la propiedad de tu interés en paralelo a la revisión de documentos.
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5">
         {properties.map((property) => (
           <span
             key={property.id}
-            className="inline-flex items-center gap-1.5 rounded-full border border-glass-border bg-surface-elevated px-3 py-1.5 text-xs text-text-secondary"
+            className="inline-flex items-center gap-1.5 rounded-full border border-glass-border bg-surface-elevated px-2.5 py-1 text-[11px] text-text-secondary"
           >
             <MapPin className="size-3 text-neon-cyan" />
             {property.name} · {property.comuna}
@@ -103,7 +100,7 @@ function ScheduleVisitCard({ applicationId }: { applicationId: string }) {
       </div>
 
       {scheduled ? (
-        <p className="flex items-center gap-1.5 text-sm font-medium text-neon-green">
+        <p className="flex items-center gap-1.5 text-[12.5px] font-medium text-neon-green">
           <CalendarCheck className="size-4" />
           Visita agendada. Tu asesor la confirmará contigo.
         </p>
