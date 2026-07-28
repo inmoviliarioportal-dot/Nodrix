@@ -372,15 +372,17 @@ export async function maybeApplyScoring(
 
 const VALID_INVESTMENT_TYPES = ["inversion", "vivienda_propia", "ambos"];
 const VALID_PROPERTY_STATUSES = ["en_verde", "en_blanco", "entrega_inmediata", "usado", "sin_definir"];
+const VALID_PROFESSIONAL_LEVELS = ["profesional", "tecnico"];
 
 /**
- * Persiste `investment_type`/`property_status`/`monthly_income` en `customers`
- * cuando vienen en el body de POST /api/leads. Estos 3 campos se pedían antes
- * en POST /api/auth/register; ahora se recolectan en el Wizard de
- * perfilamiento (rangos/tarjetas, ver lib/financial-bands.ts) y llegan acá
- * junto con el resto del perfil financiero. Best-effort: si el update falla o
- * los campos no vienen, no bloquea la creación/dedup del lead (mismo patrón
- * que `maybeApplyScoring`, que tampoco bloquea si falta el perfil completo).
+ * Persiste `investment_type`/`property_status`/`monthly_income`/
+ * `professional_level` en `customers` cuando vienen en el body de POST
+ * /api/leads. Estos campos se pedían antes en POST /api/auth/register; ahora
+ * se recolectan en el Wizard de perfilamiento (rangos/tarjetas, ver
+ * lib/financial-bands.ts) y llegan acá junto con el resto del perfil
+ * financiero. Best-effort: si el update falla o los campos no vienen, no
+ * bloquea la creación/dedup del lead (mismo patrón que `maybeApplyScoring`,
+ * que tampoco bloquea si falta el perfil completo).
  */
 export async function updateCustomerProfileFields(
   supabase: AnySupabaseClient,
@@ -400,6 +402,12 @@ export async function updateCustomerProfileFields(
     VALID_PROPERTY_STATUSES.includes(financial.propertyStatus)
   ) {
     update.property_status = financial.propertyStatus;
+  }
+  if (
+    typeof financial.professionalLevel === "string" &&
+    VALID_PROFESSIONAL_LEVELS.includes(financial.professionalLevel)
+  ) {
+    update.professional_level = financial.professionalLevel;
   }
   const resolvedMonthlySalary = resolveEffectiveMonthlySalary(financial);
   if (typeof resolvedMonthlySalary === "number") {

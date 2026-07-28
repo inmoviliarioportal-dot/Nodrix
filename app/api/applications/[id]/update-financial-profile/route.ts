@@ -14,6 +14,7 @@ const VALID_RELATIONSHIPS = ["conyuge", "padre", "madre", "hijo", "hermano"];
 type Body = {
   employmentType?: string;
   employmentYears?: number;
+  professionalLevel?: string;
   incomeSources?: IncomeSource[];
   /** Legado: usado solo si `incomeSources` no viene (integraciones antiguas). */
   monthlySalary?: number;
@@ -169,6 +170,7 @@ export const POST = withErrorHandling(async (request: Request, context: { params
   await updateCustomerProfileFields(supabase, customer.id, {
     investmentType: body.investmentType,
     propertyStatus: body.propertyStatus,
+    professionalLevel: body.professionalLevel,
     monthlySalary: body.monthlySalary,
     incomeSources: body.incomeSources,
   });

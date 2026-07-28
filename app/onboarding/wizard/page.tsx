@@ -17,6 +17,7 @@ import {
   type WizardEmploymentType,
   type WizardIncomeType,
   type WizardIncomeSourceEntry,
+  type WizardProfessionalLevel,
 } from "@/lib/wizard-storage";
 import type { IncomeSource } from "@/lib/income-types";
 
@@ -27,6 +28,12 @@ const INCOME_TYPE_OPTIONS: { label: string; value: WizardIncomeType }[] = [
   { label: "Jubilación / Pensión", value: "pension" },
   { label: "Alquiler de propiedades", value: "alquiler" },
   { label: "Sociedad / Compañía (dividendos)", value: "sociedad" },
+];
+
+/** Tope cualitativo sobre la probabilidad de aprobación -- ver lib/proposal-risk.ts. */
+const PROFESSIONAL_LEVEL_OPTIONS: { label: string; description: string; value: WizardProfessionalLevel }[] = [
+  { label: "Profesional / Ingeniero", description: "Título profesional universitario", value: "profesional" },
+  { label: "Técnico", description: "Título técnico o sin título", value: "tecnico" },
 ];
 
 const RENTAL_CONTRACT_OPTIONS: { label: string; value: number }[] = [
@@ -202,6 +209,7 @@ function WizardPageInner() {
                 setData((prev) => ({
                   ...prev,
                   incomeSources: prefillIncomeSources(app.income_sources, customer.monthly_income) ?? prev.incomeSources,
+                  professionalLevel: customer.professional_level ?? prev.professionalLevel,
                   investmentType: customer.investment_type ?? prev.investmentType,
                   propertyStatus: customer.property_status ?? prev.propertyStatus,
                   savingsBandId: closestBandId(SAVINGS_BANDS, app.savings_amount) ?? prev.savingsBandId,
@@ -240,7 +248,11 @@ function WizardPageInner() {
   function canAdvance(): boolean {
     switch (step) {
       case 1:
-        return data.employmentType !== null && data.employmentYears !== null;
+        return (
+          data.employmentType !== null &&
+          data.employmentYears !== null &&
+          data.professionalLevel !== null
+        );
       case 2: {
         if (data.incomeSources.length === 0) return false;
         if (data.investmentType === null || data.propertyStatus === null) return false;
@@ -323,6 +335,7 @@ function WizardPageInner() {
           body: JSON.stringify({
             employmentType: data.employmentType,
             employmentYears: data.employmentYears,
+            professionalLevel: data.professionalLevel,
             incomeSources,
             savingsAmount: savingsRepresentative,
             hasExistingDebt: data.hasExistingDebt,
@@ -360,6 +373,7 @@ function WizardPageInner() {
       savingsAmount: savingsRepresentative,
       employmentType: data.employmentType,
       employmentYears: data.employmentYears,
+      professionalLevel: data.professionalLevel,
       hasExistingDebt: data.hasExistingDebt,
       totalDebtBalance: debtRepresentative,
       investmentType: data.investmentType,
@@ -408,8 +422,10 @@ function WizardPageInner() {
             <StepEmployment
               employmentType={data.employmentType}
               employmentYears={data.employmentYears}
+              professionalLevel={data.professionalLevel}
               onChangeType={(v) => update("employmentType", v)}
               onChangeYears={(v) => update("employmentYears", v)}
+              onChangeProfessionalLevel={(v) => update("professionalLevel", v)}
             />
           )}
           {step === 2 && <StepFinancialProfile data={data} onChange={update} />}
@@ -447,13 +463,17 @@ function WizardPageInner() {
 function StepEmployment({
   employmentType,
   employmentYears,
+  professionalLevel,
   onChangeType,
   onChangeYears,
+  onChangeProfessionalLevel,
 }: {
   employmentType: WizardEmploymentType | null;
   employmentYears: number | null;
+  professionalLevel: WizardProfessionalLevel | null;
   onChangeType: (v: WizardEmploymentType) => void;
   onChangeYears: (v: number) => void;
+  onChangeProfessionalLevel: (v: WizardProfessionalLevel) => void;
 }) {
   return (
     <section className="flex flex-col gap-8">
@@ -500,6 +520,26 @@ function StepEmployment({
               label={opt.label}
               selected={employmentYears === opt.value}
               onClick={() => onChangeYears(opt.value)}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h2
+          className="mb-3 text-sm font-semibold uppercase tracking-wide"
+          style={{ color: "var(--text-secondary)" }}
+        >
+          Nivel profesional
+        </h2>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {PROFESSIONAL_LEVEL_OPTIONS.map((opt) => (
+            <SelectableCard
+              key={opt.value}
+              label={opt.label}
+              description={opt.description}
+              selected={professionalLevel === opt.value}
+              onClick={() => onChangeProfessionalLevel(opt.value)}
             />
           ))}
         </div>

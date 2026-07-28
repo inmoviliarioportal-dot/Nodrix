@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { apiError, requireAuth, withErrorHandling, HTTP_STATUS } from "@/app/api/_shared";
 import { MVP_ORG_ID } from "@/app/api/auth/_constants";
-import { calculateProposalBands } from "@/lib/proposal-risk";
+import { calculateProposalBands, type ProfessionalLevel } from "@/lib/proposal-risk";
 import { calculateUFPreEvaluation } from "@/lib/uf-preevaluation";
 import { evaluateIncomeSources, type IncomeSource } from "@/lib/income-types";
 import type { AnySupabaseClient } from "@/lib/leads";
@@ -38,7 +38,7 @@ export const GET = withErrorHandling(async (_request: Request, context: { params
   }
 
   const { data: customer } = await (supabase.from("customers") as any)
-    .select("investment_type, monthly_income")
+    .select("investment_type, monthly_income, professional_level")
     .eq("id", application.customer_id)
     .maybeSingle();
 
@@ -50,7 +50,11 @@ export const GET = withErrorHandling(async (_request: Request, context: { params
     .eq("application_id", id)
     .maybeSingle();
 
-  const bands = calculateProposalBands(application.scoring_score ?? 0);
+  // Tope cualitativo por nivel profesional (ver lib/proposal-risk.ts) --
+  // default "tecnico" (el más conservador) si el cliente no lo declaró.
+  const professionalLevel: ProfessionalLevel =
+    customer?.professional_level === "profesional" ? "profesional" : "tecnico";
+  const bands = calculateProposalBands(application.scoring_score ?? 0, professionalLevel);
 
   // La banda "1" es la de mayor probabilidad de aprobación (menor cantidad
   // de departamentos comprometidos) -- se usa como referencia conservadora

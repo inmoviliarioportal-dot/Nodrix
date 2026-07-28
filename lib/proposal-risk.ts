@@ -52,9 +52,29 @@ const BAND_DIFFICULTY: Record<ProposalBand, number> = {
 const MIN_PROBABILITY = 3;
 const MAX_PROBABILITY = 97;
 
-function probabilityFor(score: number, band: ProposalBand): number {
+/**
+ * Parámetro CUALITATIVO de nivel profesional -- a igual renta, un
+ * profesional/ingeniero tiene mayor empleabilidad de respaldo (si pierde el
+ * empleo, consigue uno nuevo más rápido) que un técnico, lo cual reduce el
+ * riesgo percibido de no pago a futuro. Por eso actúa como un TOPE sobre la
+ * probabilidad de aprobación (no como un factor más del score 0-100 de
+ * `lib/scoring.ts`, que sigue midiendo únicamente capacidad de pago):
+ * ningún profesional/ingeniero supera 90%, ningún técnico supera 80%, sin
+ * importar cuánto gane. Cualquier cliente sin título profesional o técnico
+ * declarado se trata como "tecnico" (el tope más conservador, nunca bloquea
+ * a nadie).
+ */
+export type ProfessionalLevel = "profesional" | "tecnico";
+
+const PROFESSIONAL_LEVEL_PROBABILITY_CAP: Record<ProfessionalLevel, number> = {
+  profesional: 90,
+  tecnico: 80,
+};
+
+function probabilityFor(score: number, band: ProposalBand, professionalLevel: ProfessionalLevel): number {
   const raw = score * BAND_DIFFICULTY[band];
-  return Math.min(MAX_PROBABILITY, Math.max(MIN_PROBABILITY, Math.round(raw)));
+  const cap = PROFESSIONAL_LEVEL_PROBABILITY_CAP[professionalLevel];
+  return Math.min(cap, MAX_PROBABILITY, Math.max(MIN_PROBABILITY, Math.round(raw)));
 }
 
 export interface ProposalBandResult {
@@ -69,12 +89,19 @@ export interface ProposalBandResult {
  * (inversión/vivienda) -- la UI decide cuál lente resaltar primero, pero el
  * cálculo de riesgo es el mismo (misma capacidad de pago, distinto destino
  * del inmueble).
+ *
+ * @param professionalLevel Tope cualitativo por nivel profesional (ver
+ * `ProfessionalLevel`). Por defecto "tecnico" (el tope más conservador) si
+ * el cliente no lo declaró.
  */
-export function calculateProposalBands(score: number): ProposalBandResult[] {
+export function calculateProposalBands(
+  score: number,
+  professionalLevel: ProfessionalLevel = "tecnico"
+): ProposalBandResult[] {
   const clamped = Number.isFinite(score) ? Math.min(100, Math.max(0, score)) : 0;
   return PROPOSAL_BANDS.map((band) => ({
     band,
     label: PROPOSAL_BAND_LABELS[band],
-    approvalProbability: probabilityFor(clamped, band),
+    approvalProbability: probabilityFor(clamped, band, professionalLevel),
   }));
 }

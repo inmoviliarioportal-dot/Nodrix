@@ -23,7 +23,13 @@ export const WIZARD_STORAGE_KEY = "wizard-progress";
 // tipos de ingreso mixtos: sueldo fijo/boleta/pensión/alquiler/sociedad,
 // ver lib/income-types.ts). Progreso v5 se descarta igual que en los bumps
 // anteriores.
-const WIZARD_STORAGE_VERSION = 6;
+// v7: se agrega `professionalLevel` (Paso 1) -- tope cualitativo sobre la
+// probabilidad de aprobación (ver lib/proposal-risk.ts). Progreso v6 se
+// descarta igual que en los bumps anteriores.
+const WIZARD_STORAGE_VERSION = 7;
+
+/** Mismos 2 valores EXACTOS que `ProfessionalLevel` en lib/proposal-risk.ts */
+export type WizardProfessionalLevel = "profesional" | "tecnico";
 
 /** Mismos 4 valores EXACTOS que `CustomerFinancialProfile.employmentType` en lib/scoring.ts */
 export type WizardEmploymentType =
@@ -81,6 +87,8 @@ export interface WizardData {
   // Paso 1
   employmentType: WizardEmploymentType | null;
   employmentYears: number | null;
+  /** Tope cualitativo sobre la probabilidad de aprobación (ver lib/proposal-risk.ts). */
+  professionalLevel: WizardProfessionalLevel | null;
   // Paso 2
   incomeSources: WizardIncomeSourceEntry[];
   investmentType: WizardInvestmentType | null;
@@ -108,6 +116,7 @@ export interface WizardProgress {
 export const WIZARD_INITIAL_DATA: WizardData = {
   employmentType: null,
   employmentYears: null,
+  professionalLevel: null,
   incomeSources: [],
   investmentType: null,
   propertyStatus: null,

@@ -15,11 +15,27 @@ describe("calculateProposalBands", () => {
     }
   });
 
-  it("un score excelente (BLACK) da probabilidades altas incluso en la banda más exigente", () => {
-    const result = calculateProposalBands(95);
+  it("un score excelente (BLACK) siendo profesional da probabilidades altas incluso en la banda más exigente", () => {
+    const result = calculateProposalBands(95, "profesional");
     const byBand = Object.fromEntries(result.map((r) => [r.band, r.approvalProbability]));
     expect(byBand["1"]).toBeGreaterThanOrEqual(85);
     expect(byBand["5-6"]).toBeGreaterThanOrEqual(30);
+  });
+
+  it("el nivel profesional topa la probabilidad: 90% máx. profesional, 80% máx. técnico", () => {
+    const profesional = calculateProposalBands(100, "profesional");
+    const tecnico = calculateProposalBands(100, "tecnico");
+    expect(profesional.every((r) => r.approvalProbability <= 90)).toBe(true);
+    expect(tecnico.every((r) => r.approvalProbability <= 80)).toBe(true);
+    // A igual score, técnico nunca supera a profesional.
+    for (let i = 0; i < profesional.length; i++) {
+      expect(tecnico[i].approvalProbability).toBeLessThanOrEqual(profesional[i].approvalProbability);
+    }
+  });
+
+  it("sin nivel profesional declarado, usa 'tecnico' por defecto (el tope más conservador)", () => {
+    const result = calculateProposalBands(100);
+    expect(result.every((r) => r.approvalProbability <= 80)).toBe(true);
   });
 
   it("un score bajo (BRONCE) da probabilidades bajas en todas las bandas", () => {
