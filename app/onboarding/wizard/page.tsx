@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Briefcase, PiggyBank, Wallet, Home, Check, X, Users } from "lucide-react";
 import { SelectableCard } from "@/components/wizard/SelectableCard";
+import { SelectableChip } from "@/components/wizard/SelectableChip";
 import { WizardProgress } from "@/components/wizard/WizardProgress";
 import { INVESTMENT_TYPE_OPTIONS, PROPERTY_STATUS_OPTIONS } from "@/components/auth/schemas";
 import { SALARY_BANDS, SAVINGS_BANDS, DEBT_BALANCE_BANDS, type FinancialBand } from "@/lib/financial-bands";
@@ -109,6 +110,7 @@ function prefillIncomeSources(
 export const WIZARD_PAYLOAD_STORAGE_KEY = "wizard-progress";
 
 const TOTAL_STEPS = 3;
+const STEP_LABELS = ["Empleo", "Finanzas", "Ahorro"];
 
 const EMPLOYMENT_OPTIONS: { label: string; description: string; value: WizardEmploymentType }[] = [
   { label: "Indefinido", description: "Contrato indefinido", value: "indefinido" },
@@ -403,7 +405,7 @@ function WizardPageInner() {
   return (
     <main className="bg-deep-ambient flex min-h-screen flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-2xl">
-        <WizardProgress step={step} totalSteps={TOTAL_STEPS} />
+        <WizardProgress step={step} totalSteps={TOTAL_STEPS} labels={STEP_LABELS} />
 
         {profileError && (
           <div
@@ -432,7 +434,10 @@ function WizardPageInner() {
           {step === 3 && <StepSavings data={data} onChange={update} />}
         </div>
 
-        <div className="mt-10 flex items-center justify-between gap-4">
+        <div
+          className="mt-9 flex items-center justify-between gap-4 border-t pt-5"
+          style={{ borderColor: "var(--glass-border)" }}
+        >
           <button
             type="button"
             onClick={handleBack}
@@ -513,9 +518,9 @@ function StepEmployment({
         >
           Antigüedad laboral
         </h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="flex flex-wrap gap-2">
           {YEARS_OPTIONS.map((opt) => (
-            <SelectableCard
+            <SelectableChip
               key={opt.value}
               label={opt.label}
               selected={employmentYears === opt.value}
@@ -592,13 +597,14 @@ function IncomeSourcesSection({
         <p className="mb-3 text-xs" style={{ color: "var(--text-tertiary)" }}>
           Puedes elegir más de una si tienes ingresos mixtos.
         </p>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="flex flex-wrap gap-2">
           {INCOME_TYPE_OPTIONS.map((opt) => (
-            <SelectableCard
+            <SelectableChip
               key={opt.value}
               label={opt.label}
               selected={data.incomeSources.some((e) => e.type === opt.value)}
               onClick={() => toggleType(opt.value)}
+              showCheckWhenSelected
             />
           ))}
         </div>
@@ -615,9 +621,9 @@ function IncomeSourcesSection({
             <p className="mb-2 text-xs" style={{ color: "var(--text-tertiary)" }}>
               ¿Cuál es el monto mensual de este ingreso?
             </p>
-            <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <div className="mb-4 flex flex-wrap gap-2">
               {SALARY_BANDS.map((band) => (
-                <SelectableCard
+                <SelectableChip
                   key={band.id}
                   label={band.label}
                   selected={entry.amountBandId === band.id}
@@ -631,14 +637,14 @@ function IncomeSourcesSection({
                 <p className="mb-2 text-xs" style={{ color: "var(--text-tertiary)" }}>
                   ¿La mayor parte de este ingreso viene de bonos (y no de tu sueldo base)?
                 </p>
-                <div className="grid grid-cols-2 gap-2">
-                  <SelectableCard
+                <div className="flex flex-wrap gap-2">
+                  <SelectableChip
                     label="Sí"
                     icon={Check}
                     selected={entry.hasSignificantBonusIncome === true}
                     onClick={() => updateEntry(entry.type, { hasSignificantBonusIncome: true })}
                   />
-                  <SelectableCard
+                  <SelectableChip
                     label="No"
                     icon={X}
                     selected={entry.hasSignificantBonusIncome === false}
@@ -653,14 +659,14 @@ function IncomeSourcesSection({
                 <p className="mb-2 text-xs" style={{ color: "var(--text-tertiary)" }}>
                   ¿Este ingreso varía durante el año (en vez de ser un monto fijo cada mes)?
                 </p>
-                <div className="grid grid-cols-2 gap-2">
-                  <SelectableCard
+                <div className="flex flex-wrap gap-2">
+                  <SelectableChip
                     label="Sí, varía"
                     icon={Check}
                     selected={entry.isVariableBoleta === true}
                     onClick={() => updateEntry(entry.type, { isVariableBoleta: true })}
                   />
-                  <SelectableCard
+                  <SelectableChip
                     label="No, es fijo"
                     icon={X}
                     selected={entry.isVariableBoleta === false}
@@ -675,9 +681,9 @@ function IncomeSourcesSection({
                 <p className="mb-2 text-xs" style={{ color: "var(--text-tertiary)" }}>
                   ¿Cuál es la duración de tu contrato de arriendo vigente?
                 </p>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <div className="flex flex-wrap gap-2">
                   {RENTAL_CONTRACT_OPTIONS.map((opt) => (
-                    <SelectableCard
+                    <SelectableChip
                       key={opt.value}
                       label={opt.label}
                       selected={entry.rentalContractMonths === opt.value}
@@ -693,14 +699,14 @@ function IncomeSourcesSection({
                 <p className="mb-2 text-xs" style={{ color: "var(--text-tertiary)" }}>
                   ¿La empresa acredita liquidez o cierres positivos (última declaración SII)?
                 </p>
-                <div className="grid grid-cols-2 gap-2">
-                  <SelectableCard
+                <div className="flex flex-wrap gap-2">
+                  <SelectableChip
                     label="Sí"
                     icon={Check}
                     selected={entry.companyHasLiquidity === true}
                     onClick={() => updateEntry(entry.type, { companyHasLiquidity: true })}
                   />
-                  <SelectableCard
+                  <SelectableChip
                     label="No"
                     icon={X}
                     selected={entry.companyHasLiquidity === false}
@@ -743,9 +749,9 @@ function StepFinancialProfile({
         >
           ¿Qué buscas?
         </h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="flex flex-wrap gap-2">
           {INVESTMENT_TYPE_OPTIONS.map((opt) => (
-            <SelectableCard
+            <SelectableChip
               key={opt.value}
               label={opt.label}
               selected={data.investmentType === opt.value}
@@ -762,9 +768,9 @@ function StepFinancialProfile({
         >
           <Home size={16} /> Estado del inmueble que buscas
         </h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="flex flex-wrap gap-2">
           {PROPERTY_STATUS_OPTIONS.map((opt) => (
-            <SelectableCard
+            <SelectableChip
               key={opt.value}
               label={opt.label}
               selected={data.propertyStatus === opt.value}
@@ -802,9 +808,9 @@ function StepSavings({
         >
           <PiggyBank size={16} /> ¿Cuánto ahorro/pie tienes disponible?
         </h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="flex flex-wrap gap-2">
           {SAVINGS_BANDS.map((band) => (
-            <SelectableCard
+            <SelectableChip
               key={band.id}
               label={band.label}
               selected={data.savingsBandId === band.id}
@@ -821,14 +827,14 @@ function StepSavings({
         >
           ¿Tienes deudas vigentes?
         </h2>
-        <div className="grid grid-cols-2 gap-3">
-          <SelectableCard
+        <div className="flex flex-wrap gap-2">
+          <SelectableChip
             label="Sí"
             icon={Check}
             selected={data.hasExistingDebt === true}
             onClick={() => onChange("hasExistingDebt", true)}
           />
-          <SelectableCard
+          <SelectableChip
             label="No"
             icon={X}
             selected={data.hasExistingDebt === false}
@@ -843,9 +849,9 @@ function StepSavings({
             <h3 className="mb-3 text-sm" style={{ color: "var(--text-tertiary)" }}>
               ¿Cuál es el saldo TOTAL de tus deudas vigentes?
             </h3>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-wrap gap-2">
               {DEBT_BALANCE_BANDS.map((band) => (
-                <SelectableCard
+                <SelectableChip
                   key={band.id}
                   label={band.label}
                   selected={data.totalDebtBalanceBandId === band.id}
@@ -864,14 +870,14 @@ function StepSavings({
         >
           <Users size={16} /> ¿Cuentas con un aval o codeudor?
         </h2>
-        <div className="grid grid-cols-2 gap-3">
-          <SelectableCard
+        <div className="flex flex-wrap gap-2">
+          <SelectableChip
             label="Sí"
             icon={Check}
             selected={data.hasAval === true}
             onClick={() => onChange("hasAval", true)}
           />
-          <SelectableCard
+          <SelectableChip
             label="No"
             icon={X}
             selected={data.hasAval === false}
@@ -885,14 +891,14 @@ function StepSavings({
         </div>
 
         {data.hasAval && (
-          <div className="mt-6 flex flex-col gap-6">
+          <div className="mt-6 flex flex-col gap-5">
             <div>
               <h3 className="mb-3 text-sm" style={{ color: "var(--text-tertiary)" }}>
                 Parentesco con el aval
               </h3>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <div className="flex flex-wrap gap-2">
                 {AVAL_RELATIONSHIP_OPTIONS.map((opt) => (
-                  <SelectableCard
+                  <SelectableChip
                     key={opt.value}
                     label={opt.label}
                     selected={data.avalRelationship === opt.value}
@@ -906,9 +912,9 @@ function StepSavings({
               <h3 className="mb-3 text-sm" style={{ color: "var(--text-tertiary)" }}>
                 Renta líquida mensual del aval
               </h3>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <div className="flex flex-wrap gap-2">
                 {SALARY_BANDS.map((band) => (
-                  <SelectableCard
+                  <SelectableChip
                     key={band.id}
                     label={band.label}
                     selected={data.avalSalaryBandId === band.id}
@@ -922,12 +928,11 @@ function StepSavings({
               <h3 className="mb-3 text-sm" style={{ color: "var(--text-tertiary)" }}>
                 Tipo de contrato del aval
               </h3>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="flex flex-wrap gap-2">
                 {EMPLOYMENT_OPTIONS.map((opt) => (
-                  <SelectableCard
+                  <SelectableChip
                     key={opt.value}
                     label={opt.label}
-                    description={opt.description}
                     selected={data.avalEmploymentType === opt.value}
                     onClick={() => onChange("avalEmploymentType", opt.value)}
                   />
