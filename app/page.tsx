@@ -38,7 +38,7 @@ export default function Home() {
   return (
     <div className="bg-deep-ambient flex min-h-screen flex-col">
       <header className="sticky top-0 z-40 border-b border-glass-border bg-deep/80 backdrop-blur-md">
-        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6">
+        <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-6">
           <span className="font-heading text-lg font-semibold tracking-tight text-text-primary">
             Nodrix
           </span>
@@ -67,19 +67,19 @@ export default function Home() {
 
       <main className="flex flex-1 flex-col">
         {/* Hero */}
-        <section className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center gap-10 px-6 py-20 text-center sm:py-28">
-          <div className="flex flex-col items-center gap-6">
-            <span className="glass-card inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-neon-purple">
+        <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center gap-8 px-6 py-14 text-center sm:py-20">
+          <div className="flex flex-col items-center gap-5">
+            <span className="glass-card inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-medium text-neon-purple">
               <Sparkles className="size-3.5" aria-hidden="true" />
               Análisis con inteligencia artificial
             </span>
 
-            <h1 className="font-heading max-w-3xl text-4xl leading-tight font-semibold tracking-tight text-text-primary sm:text-5xl sm:leading-tight md:text-6xl md:leading-tight">
+            <h1 className="font-heading max-w-xl text-[2.75rem] leading-[1.1] font-semibold tracking-tight text-text-primary">
               Tu futuro patrimonio{" "}
               <span className="text-neon-cyan text-glow-cyan">empieza aquí</span>
             </h1>
 
-            <p className="max-w-xl text-base leading-relaxed text-text-secondary sm:text-lg">
+            <p className="max-w-md text-sm leading-relaxed text-text-secondary sm:text-base">
               Evalúa tu capacidad de inversión inmobiliaria en minutos. Nuestro motor
               de scoring analiza tu perfil y te muestra oportunidades reales,
               respaldadas por datos y acompañadas por un asesor experto.
@@ -88,7 +88,7 @@ export default function Home() {
 
           <div className="flex flex-col items-center gap-3 sm:flex-row">
             <Button
-              className="glow-cyan h-12 gap-2 rounded-xl bg-neon-cyan px-8 text-base font-medium text-deep hover:bg-neon-cyan/90"
+              className="glow-cyan h-11 gap-2 rounded-xl bg-neon-cyan px-7 text-sm font-semibold text-deep hover:bg-neon-cyan/90"
               render={<Link href="/auth/register" />}
             >
               Empezar evaluación
@@ -96,14 +96,14 @@ export default function Home() {
             </Button>
             <Button
               variant="ghost"
-              className="h-12 gap-2 rounded-xl px-6 text-base font-medium text-text-secondary hover:bg-white/5 hover:text-text-primary"
+              className="h-11 gap-2 rounded-xl px-5 text-sm font-medium text-text-secondary hover:bg-white/5 hover:text-text-primary"
               render={<Link href="#como-funciona" />}
             >
               Ver cómo funciona
             </Button>
           </div>
 
-          <div className="grid w-full max-w-2xl grid-cols-1 gap-3 pt-2 sm:grid-cols-3">
+          <div className="grid w-full max-w-xl grid-cols-1 gap-2.5 pt-1 sm:grid-cols-3">
             <TrustBadge icon={Users} label="Miles de inversionistas" glow="cyan" />
             <TrustBadge icon={TrendingUp} label="Análisis con IA" glow="purple" />
             <TrustBadge icon={ShieldCheck} label="100% seguro" glow="green" />
@@ -112,30 +112,30 @@ export default function Home() {
 
         {/* Barra de confianza / stats */}
         <section className="border-y border-glass-border bg-surface/60">
-          <div className="mx-auto grid w-full max-w-5xl grid-cols-2 gap-3 px-6 py-10 sm:grid-cols-4">
+          <div className="mx-auto grid w-full max-w-4xl grid-cols-2 gap-3 px-6 py-8 sm:grid-cols-4">
             <StatTile value="+1.200" label="Solicitudes evaluadas" glow="cyan" />
             <StatTile value="94%" label="Precisión del scoring" glow="purple" />
-            <StatTile value="48h" label="Tiempo promedio de respuesta" glow="green" />
+            <StatTile value="48h" label="Tiempo de respuesta" glow="green" />
             <StatTile value="100%" label="Datos encriptados" glow="gold" />
           </div>
         </section>
 
         {/* Cómo funciona */}
-        <section id="como-funciona" className="mx-auto w-full max-w-5xl px-6 py-20 sm:py-24">
-          <div className="mb-12 flex flex-col items-center gap-3 text-center">
+        <section id="como-funciona" className="mx-auto w-full max-w-4xl px-6 py-16 sm:py-20">
+          <div className="mb-9 flex flex-col items-center gap-2 text-center">
             <span className="text-xs font-semibold tracking-wide text-neon-cyan uppercase">
               Cómo funciona
             </span>
-            <h2 className="font-heading text-3xl font-semibold text-text-primary sm:text-4xl">
+            <h2 className="font-heading text-2xl font-semibold text-text-primary sm:text-3xl">
               De tu perfil a tu propuesta, en tres pasos
             </h2>
-            <p className="max-w-xl text-sm text-text-secondary sm:text-base">
+            <p className="max-w-lg text-sm text-text-secondary">
               Sin formularios eternos ni respuestas genéricas — cada paso está
               diseñado para llegar rápido a una propuesta real.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
             <StepCard
               step={1}
               icon={Wand2}
@@ -159,17 +159,17 @@ export default function Home() {
 
         {/* Features */}
         <section id="features" className="border-y border-glass-border bg-surface/60">
-          <div className="mx-auto w-full max-w-5xl px-6 py-20 sm:py-24">
-            <div className="mb-12 flex flex-col items-center gap-3 text-center">
+          <div className="mx-auto w-full max-w-4xl px-6 py-16 sm:py-20">
+            <div className="mb-9 flex flex-col items-center gap-2 text-center">
               <span className="text-xs font-semibold tracking-wide text-neon-purple uppercase">
                 La plataforma
               </span>
-              <h2 className="font-heading text-3xl font-semibold text-text-primary sm:text-4xl">
+              <h2 className="font-heading text-2xl font-semibold text-text-primary sm:text-3xl">
                 Todo lo que necesitas para invertir con confianza
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
               <FeatureCard
                 icon={TrendingUp}
                 title="Scoring inteligente"
@@ -199,10 +199,10 @@ export default function Home() {
         </section>
 
         {/* Social proof */}
-        <section className="mx-auto w-full max-w-3xl px-6 py-20 sm:py-24">
-          <div className="glass-card flex flex-col items-center gap-6 rounded-2xl p-8 text-center sm:p-10">
-            <Quote className="size-8 text-neon-cyan" aria-hidden="true" />
-            <p className="font-heading max-w-xl text-lg leading-relaxed text-text-primary sm:text-xl">
+        <section className="mx-auto w-full max-w-2xl px-6 py-16 sm:py-20">
+          <div className="glass-card flex flex-col items-center gap-5 rounded-2xl p-6 text-center sm:p-8">
+            <Quote className="size-7 text-neon-cyan" aria-hidden="true" />
+            <p className="font-heading max-w-lg text-base leading-relaxed text-text-primary sm:text-lg">
               "En menos de una semana tuve claridad total sobre mi capacidad de
               inversión y una propuesta concreta. El seguimiento en el portal
               hizo que todo se sintiera transparente."
@@ -221,16 +221,16 @@ export default function Home() {
 
         {/* CTA final */}
         <section className="border-t border-glass-border bg-surface/60">
-          <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-6 px-6 py-20 text-center sm:py-24">
-            <h2 className="font-heading max-w-2xl text-3xl font-semibold text-text-primary sm:text-4xl">
+          <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-5 px-6 py-16 text-center sm:py-20">
+            <h2 className="font-heading max-w-xl text-2xl font-semibold text-text-primary sm:text-3xl">
               Descubre tu categoría de inversión en menos de 2 minutos
             </h2>
-            <p className="max-w-xl text-sm text-text-secondary sm:text-base">
+            <p className="max-w-md text-sm text-text-secondary">
               Sin compromiso, sin costo. Solo necesitas responder algunas preguntas
               sobre tu situación financiera.
             </p>
             <Button
-              className="glow-cyan h-12 gap-2 rounded-xl bg-neon-cyan px-8 text-base font-medium text-deep hover:bg-neon-cyan/90"
+              className="glow-cyan h-11 gap-2 rounded-xl bg-neon-cyan px-7 text-sm font-semibold text-deep hover:bg-neon-cyan/90"
               render={<Link href="/auth/register" />}
             >
               Empezar evaluación

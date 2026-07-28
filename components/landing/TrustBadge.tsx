@@ -18,9 +18,9 @@ const GLOW_CLASS: Record<NonNullable<TrustBadgeProps["glow"]>, string> = {
  */
 function TrustBadge({ icon: Icon, label, glow = "cyan" }: TrustBadgeProps) {
   return (
-    <div className="glass-card flex items-center gap-3 rounded-xl px-4 py-3">
-      <Icon className={`size-5 shrink-0 ${GLOW_CLASS[glow]}`} aria-hidden="true" />
-      <span className="text-sm text-text-secondary">{label}</span>
+    <div className="flex items-center justify-center gap-2 rounded-xl border border-glass-border px-3 py-2.5">
+      <Icon className={`size-4 shrink-0 ${GLOW_CLASS[glow]}`} aria-hidden="true" />
+      <span className="text-xs text-text-secondary">{label}</span>
     </div>
   )
 }

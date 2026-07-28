@@ -22,14 +22,14 @@ const GLOW_WRAPPER_CLASS: Record<NonNullable<FeatureCardProps["glow"]>, string> 
  */
 function FeatureCard({ icon: Icon, title, description, glow = "cyan" }: FeatureCardProps) {
   return (
-    <div className="glass-card flex flex-col gap-4 rounded-2xl p-6 transition-transform duration-200 hover:-translate-y-0.5">
+    <div className="glass-card flex flex-col gap-3 rounded-2xl p-5 transition-transform duration-200 hover:-translate-y-0.5">
       <span
-        className={`flex size-11 shrink-0 items-center justify-center rounded-xl border ${GLOW_WRAPPER_CLASS[glow]}`}
+        className={`flex size-9 shrink-0 items-center justify-center rounded-xl border ${GLOW_WRAPPER_CLASS[glow]}`}
       >
-        <Icon className="size-5" aria-hidden="true" />
+        <Icon className="size-4" aria-hidden="true" />
       </span>
-      <h3 className="font-heading text-lg font-semibold text-text-primary">{title}</h3>
-      <p className="text-sm leading-relaxed text-text-secondary">{description}</p>
+      <h3 className="font-heading text-base font-semibold text-text-primary">{title}</h3>
+      <p className="text-xs leading-relaxed text-text-secondary">{description}</p>
     </div>
   )
 }

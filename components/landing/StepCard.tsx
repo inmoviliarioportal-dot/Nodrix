@@ -14,15 +14,15 @@ interface StepCardProps {
  */
 function StepCard({ step, icon: Icon, title, description }: StepCardProps) {
   return (
-    <div className="glass-card relative flex flex-col gap-3 rounded-2xl p-6">
-      <div className="flex items-center gap-3">
-        <span className="glow-cyan flex size-10 shrink-0 items-center justify-center rounded-full border border-neon-cyan bg-neon-cyan/10 text-sm font-semibold text-neon-cyan">
-          {step}
+    <div className="relative flex flex-col gap-2 rounded-2xl border border-glass-border p-5">
+      <div className="flex items-center gap-2">
+        <span className="font-heading text-xs font-bold text-neon-cyan">
+          {String(step).padStart(2, "0")}
         </span>
-        <Icon className="size-5 text-text-secondary" aria-hidden="true" />
+        <Icon className="size-4 text-text-tertiary" aria-hidden="true" />
       </div>
-      <h3 className="font-heading text-lg font-semibold text-text-primary">{title}</h3>
-      <p className="text-sm leading-relaxed text-text-secondary">{description}</p>
+      <h3 className="font-heading text-base font-semibold text-text-primary">{title}</h3>
+      <p className="text-xs leading-relaxed text-text-secondary">{description}</p>
     </div>
   )
 }

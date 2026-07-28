@@ -17,11 +17,11 @@ const GLOW_CLASS: Record<NonNullable<StatTileProps["glow"]>, string> = {
  */
 function StatTile({ value, label, glow = "cyan" }: StatTileProps) {
   return (
-    <div className="glass-card flex flex-col items-center gap-1 rounded-2xl px-4 py-6 text-center">
-      <span className={`font-heading text-3xl font-semibold tabular-nums sm:text-4xl ${GLOW_CLASS[glow]}`}>
+    <div className="flex flex-col items-center gap-1 rounded-xl px-3 py-4 text-center">
+      <span className={`font-heading text-2xl font-semibold tabular-nums sm:text-3xl ${GLOW_CLASS[glow]}`}>
         {value}
       </span>
-      <span className="text-sm text-text-secondary">{label}</span>
+      <span className="text-xs text-text-secondary">{label}</span>
     </div>
   )
 }
