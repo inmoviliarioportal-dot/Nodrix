@@ -5,9 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Briefcase, PiggyBank, Wallet, Home, Check, X, Users } from "lucide-react";
 import { SelectableCard } from "@/components/wizard/SelectableCard";
 import { SelectableChip } from "@/components/wizard/SelectableChip";
+import { AmountSelect } from "@/components/wizard/AmountSelect";
 import { WizardProgress } from "@/components/wizard/WizardProgress";
 import { INVESTMENT_TYPE_OPTIONS, PROPERTY_STATUS_OPTIONS } from "@/components/auth/schemas";
-import { SALARY_BANDS, SAVINGS_BANDS, DEBT_BALANCE_BANDS, type FinancialBand } from "@/lib/financial-bands";
 import {
   WIZARD_INITIAL_DATA,
   clearWizardProgress,
@@ -54,30 +54,13 @@ const AVAL_RELATIONSHIP_OPTIONS: { label: string; value: string }[] = [
   { label: "Hermano/a", value: "hermano" },
 ];
 
-/** Encuentra la banda cuyo `representative` está más cerca de un valor CLP
- * dado -- usado para precargar el wizard en modo edición a partir de valores
- * numéricos ya guardados en `customers`/`applications` (no hace falta
- * exactitud perfecta, solo la mejor aproximación disponible). */
-function closestBandId(bands: FinancialBand[], value: number | null | undefined): string | null {
-  if (typeof value !== "number") return null;
-  let best: FinancialBand | null = null;
-  let bestDiff = Infinity;
-  for (const band of bands) {
-    const diff = Math.abs(band.representative - value);
-    if (diff < bestDiff) {
-      bestDiff = diff;
-      best = band;
-    }
-  }
-  return best?.id ?? null;
-}
-
 /**
  * Reconstruye las fuentes de ingreso del wizard (modo edición) a partir del
  * `income_sources` crudo persistido en la application (ver migración
  * 021_application_income_sources.sql). Si la application es de antes de
  * este cambio (columna null) hace un mejor esfuerzo con un solo sueldo fijo
  * a partir de `customers.monthly_income`, que es lo único que existía antes.
+ * Los montos se precargan EXACTOS (ya no hay bandas que aproximar).
  */
 function prefillIncomeSources(
   rawIncomeSources: unknown,
@@ -87,7 +70,7 @@ function prefillIncomeSources(
     return rawIncomeSources.map((raw) => {
       const r = raw as Partial<IncomeSource> & Record<string, unknown>;
       const entry = emptyIncomeSourceEntry((r.type as WizardIncomeType) ?? "sueldo_fijo");
-      entry.amountBandId = closestBandId(SALARY_BANDS, r.monthlyAmountCLP as number);
+      entry.monthlyAmountCLP = typeof r.monthlyAmountCLP === "number" ? r.monthlyAmountCLP : null;
       entry.hasSignificantBonusIncome = (r.hasSignificantBonusIncome as boolean) ?? null;
       entry.isVariableBoleta = (r.isVariableBoleta as boolean) ?? null;
       entry.rentalContractMonths = (r.rentalContractMonths as number) ?? null;
@@ -97,7 +80,7 @@ function prefillIncomeSources(
   }
   if (typeof monthlyIncome === "number") {
     const entry = emptyIncomeSourceEntry("sueldo_fijo");
-    entry.amountBandId = closestBandId(SALARY_BANDS, monthlyIncome);
+    entry.monthlyAmountCLP = monthlyIncome;
     entry.hasSignificantBonusIncome = false;
     return [entry];
   }
@@ -214,7 +197,7 @@ function WizardPageInner() {
                   professionalLevel: customer.professional_level ?? prev.professionalLevel,
                   investmentType: customer.investment_type ?? prev.investmentType,
                   propertyStatus: customer.property_status ?? prev.propertyStatus,
-                  savingsBandId: closestBandId(SAVINGS_BANDS, app.savings_amount) ?? prev.savingsBandId,
+                  savingsAmount: typeof app.savings_amount === "number" ? app.savings_amount : prev.savingsAmount,
                 }));
               }
             }
@@ -259,7 +242,7 @@ function WizardPageInner() {
         if (data.incomeSources.length === 0) return false;
         if (data.investmentType === null || data.propertyStatus === null) return false;
         return data.incomeSources.every((entry) => {
-          if (!entry.amountBandId) return false;
+          if (entry.monthlyAmountCLP === null) return false;
           if (entry.type === "sueldo_fijo") return entry.hasSignificantBonusIncome !== null;
           if (entry.type === "boleta") return entry.isVariableBoleta !== null;
           if (entry.type === "alquiler") return entry.rentalContractMonths !== null;
@@ -268,10 +251,10 @@ function WizardPageInner() {
         });
       }
       case 3:
-        if (data.savingsBandId === null || data.hasExistingDebt === null) return false;
-        if (data.hasExistingDebt && !data.totalDebtBalanceBandId) return false;
+        if (data.savingsAmount === null || data.hasExistingDebt === null) return false;
+        if (data.hasExistingDebt && data.totalDebtBalance === null) return false;
         if (data.hasAval === null) return false;
-        if (data.hasAval && (!data.avalRelationship || !data.avalSalaryBandId || !data.avalEmploymentType)) {
+        if (data.hasAval && (!data.avalRelationship || data.avalMonthlySalary === null || !data.avalEmploymentType)) {
           return false;
         }
         return true;
@@ -293,16 +276,13 @@ function WizardPageInner() {
       return;
     }
 
-    // Resuelve los valores representativos de las bandas elegidas -- el
-    // cliente eligió un rango, no tipeó un número, pero el motor de scoring
-    // (lib/scoring.ts) y el endpoint de actualización siguen esperando
-    // números (ver lib/financial-bands.ts).
     // Cada fuente de ingreso declarada (mixto) se resuelve a un IncomeSource
     // real -- ver lib/income-types.ts. La edad para pensión viene del
-    // registro (profile.age), no se vuelve a preguntar.
+    // registro (profile.age), no se vuelve a preguntar. Los montos ya son
+    // EXACTOS (elegidos en un desplegable, ver lib/amount-options.ts), no
+    // hay bandas/representativos que resolver.
     const incomeSources: IncomeSource[] = data.incomeSources.map((entry) => {
-      const amount = SALARY_BANDS.find((b) => b.id === entry.amountBandId)?.representative ?? 0;
-      const source: IncomeSource = { type: entry.type, monthlyAmountCLP: amount };
+      const source: IncomeSource = { type: entry.type, monthlyAmountCLP: entry.monthlyAmountCLP ?? 0 };
       if (entry.type === "sueldo_fijo") source.hasSignificantBonusIncome = entry.hasSignificantBonusIncome ?? false;
       if (entry.type === "boleta") source.isVariableBoleta = entry.isVariableBoleta ?? false;
       if (entry.type === "pension") source.ageYears = profile?.age ?? undefined;
@@ -310,14 +290,9 @@ function WizardPageInner() {
       if (entry.type === "sociedad") source.companyHasLiquidity = entry.companyHasLiquidity ?? false;
       return source;
     });
-    const savingsRepresentative =
-      SAVINGS_BANDS.find((b) => b.id === data.savingsBandId)?.representative ?? null;
-    const debtRepresentative = data.hasExistingDebt
-      ? (DEBT_BALANCE_BANDS.find((b) => b.id === data.totalDebtBalanceBandId)?.representative ?? 0)
-      : 0;
-    const avalSalaryRepresentative = data.hasAval
-      ? (SALARY_BANDS.find((b) => b.id === data.avalSalaryBandId)?.representative ?? null)
-      : null;
+    const savingsRepresentative = data.savingsAmount;
+    const debtRepresentative = data.hasExistingDebt ? (data.totalDebtBalance ?? 0) : 0;
+    const avalSalaryRepresentative = data.hasAval ? data.avalMonthlySalary : null;
 
     if (isEditMode) {
       // Modo edición: llama directamente al endpoint de actualización (no
@@ -619,17 +594,13 @@ function IncomeSourcesSection({
             </h3>
 
             <p className="mb-2 text-xs" style={{ color: "var(--text-tertiary)" }}>
-              ¿Cuál es el monto mensual de este ingreso?
+              ¿Cuál es el monto mensual exacto de este ingreso?
             </p>
-            <div className="mb-4 flex flex-wrap gap-2">
-              {SALARY_BANDS.map((band) => (
-                <SelectableChip
-                  key={band.id}
-                  label={band.label}
-                  selected={entry.amountBandId === band.id}
-                  onClick={() => updateEntry(entry.type, { amountBandId: band.id })}
-                />
-              ))}
+            <div className="mb-4 max-w-xs">
+              <AmountSelect
+                value={entry.monthlyAmountCLP}
+                onChange={(v) => updateEntry(entry.type, { monthlyAmountCLP: v })}
+              />
             </div>
 
             {entry.type === "sueldo_fijo" && (
@@ -808,15 +779,8 @@ function StepSavings({
         >
           <PiggyBank size={16} /> ¿Cuánto ahorro/pie tienes disponible?
         </h2>
-        <div className="flex flex-wrap gap-2">
-          {SAVINGS_BANDS.map((band) => (
-            <SelectableChip
-              key={band.id}
-              label={band.label}
-              selected={data.savingsBandId === band.id}
-              onClick={() => onChange("savingsBandId", band.id)}
-            />
-          ))}
+        <div className="max-w-xs">
+          <AmountSelect value={data.savingsAmount} onChange={(v) => onChange("savingsAmount", v)} />
         </div>
       </div>
 
@@ -840,25 +804,16 @@ function StepSavings({
             selected={data.hasExistingDebt === false}
             onClick={() => {
               onChange("hasExistingDebt", false);
-              onChange("totalDebtBalanceBandId", null);
+              onChange("totalDebtBalance", null);
             }}
           />
         </div>
         {data.hasExistingDebt && (
-          <div className="mt-3">
+          <div className="mt-3 max-w-xs">
             <h3 className="mb-3 text-sm" style={{ color: "var(--text-tertiary)" }}>
-              ¿Cuál es el saldo TOTAL de tus deudas vigentes?
+              ¿Cuál es el saldo TOTAL exacto de tus deudas vigentes?
             </h3>
-            <div className="flex flex-wrap gap-2">
-              {DEBT_BALANCE_BANDS.map((band) => (
-                <SelectableChip
-                  key={band.id}
-                  label={band.label}
-                  selected={data.totalDebtBalanceBandId === band.id}
-                  onClick={() => onChange("totalDebtBalanceBandId", band.id)}
-                />
-              ))}
-            </div>
+            <AmountSelect value={data.totalDebtBalance} onChange={(v) => onChange("totalDebtBalance", v)} />
           </div>
         )}
       </div>
@@ -884,7 +839,7 @@ function StepSavings({
             onClick={() => {
               onChange("hasAval", false);
               onChange("avalRelationship", null);
-              onChange("avalSalaryBandId", null);
+              onChange("avalMonthlySalary", null);
               onChange("avalEmploymentType", null);
             }}
           />
@@ -908,20 +863,14 @@ function StepSavings({
               </div>
             </div>
 
-            <div>
+            <div className="max-w-xs">
               <h3 className="mb-3 text-sm" style={{ color: "var(--text-tertiary)" }}>
-                Renta líquida mensual del aval
+                Renta líquida mensual exacta del aval
               </h3>
-              <div className="flex flex-wrap gap-2">
-                {SALARY_BANDS.map((band) => (
-                  <SelectableChip
-                    key={band.id}
-                    label={band.label}
-                    selected={data.avalSalaryBandId === band.id}
-                    onClick={() => onChange("avalSalaryBandId", band.id)}
-                  />
-                ))}
-              </div>
+              <AmountSelect
+                value={data.avalMonthlySalary}
+                onChange={(v) => onChange("avalMonthlySalary", v)}
+              />
             </div>
 
             <div>

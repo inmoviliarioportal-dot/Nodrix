@@ -26,7 +26,13 @@ export const WIZARD_STORAGE_KEY = "wizard-progress";
 // v7: se agrega `professionalLevel` (Paso 1) -- tope cualitativo sobre la
 // probabilidad de aprobación (ver lib/proposal-risk.ts). Progreso v6 se
 // descarta igual que en los bumps anteriores.
-const WIZARD_STORAGE_VERSION = 7;
+// v8: los campos de RANGO/BANDA (amountBandId, savingsBandId,
+// totalDebtBalanceBandId, avalSalaryBandId) pasan a montos EXACTOS
+// (monthlyAmountCLP, savingsAmount, totalDebtBalance, avalMonthlySalary)
+// elegidos en un desplegable (ver lib/amount-options.ts) en vez de estimar
+// un rango -- mejora la precisión de la pre-evaluación en UF. Progreso v7
+// se descarta igual que en los bumps anteriores.
+const WIZARD_STORAGE_VERSION = 8;
 
 /** Mismos 2 valores EXACTOS que `ProfessionalLevel` en lib/proposal-risk.ts */
 export type WizardProfessionalLevel = "profesional" | "tecnico";
@@ -43,14 +49,14 @@ export type WizardIncomeType = "sueldo_fijo" | "boleta" | "pension" | "alquiler"
 
 /**
  * Una fuente de ingreso declarada en el wizard -- el cliente puede declarar
- * más de una (ingreso mixto). `amountBandId` resuelve a un monto CLP vía
- * `lib/financial-bands.ts` (se reutiliza SALARY_BANDS como rango genérico
- * para todos los tipos). Los campos específicos por tipo solo aplican al
- * tipo correspondiente (ver lib/income-types.ts para el detalle de cada uno).
+ * más de una (ingreso mixto). `monthlyAmountCLP` es el monto EXACTO elegido
+ * en un desplegable (ver lib/amount-options.ts), no una banda/rango
+ * estimado. Los campos específicos por tipo solo aplican al tipo
+ * correspondiente (ver lib/income-types.ts para el detalle de cada uno).
  */
 export interface WizardIncomeSourceEntry {
   type: WizardIncomeType;
-  amountBandId: string | null;
+  monthlyAmountCLP: number | null;
   /** sueldo_fijo: ingreso mayoritariamente por bonos (no por sueldo base). */
   hasSignificantBonusIncome: boolean | null;
   /** boleta: ingreso que varía durante el año (vs. monto fijo mensual). */
@@ -64,7 +70,7 @@ export interface WizardIncomeSourceEntry {
 export function emptyIncomeSourceEntry(type: WizardIncomeType): WizardIncomeSourceEntry {
   return {
     type,
-    amountBandId: null,
+    monthlyAmountCLP: null,
     hasSignificantBonusIncome: null,
     isVariableBoleta: null,
     rentalContractMonths: null,
@@ -94,16 +100,16 @@ export interface WizardData {
   investmentType: WizardInvestmentType | null;
   propertyStatus: WizardPropertyStatus | null;
   // Paso 3
-  savingsBandId: string | null;
+  savingsAmount: number | null;
   hasExistingDebt: boolean | null;
-  /** Saldo TOTAL de deuda de corto plazo (no la cuota mensual) -- ver DEBT_BALANCE_BANDS. */
-  totalDebtBalanceBandId: string | null;
+  /** Saldo TOTAL de deuda de corto plazo (no la cuota mensual) -- monto exacto. */
+  totalDebtBalance: number | null;
   // Paso 3 -- aval/codeudor. Los bancos chilenos típicamente solo aceptan
   // parentescos cercanos como aval hipotecario (cónyuge, padre, madre, hijo,
   // hermano) -- ver WizardAvalRelationship.
   hasAval: boolean | null;
   avalRelationship: string | null;
-  avalSalaryBandId: string | null;
+  avalMonthlySalary: number | null;
   avalEmploymentType: WizardEmploymentType | null;
 }
 
@@ -120,12 +126,12 @@ export const WIZARD_INITIAL_DATA: WizardData = {
   incomeSources: [],
   investmentType: null,
   propertyStatus: null,
-  savingsBandId: null,
+  savingsAmount: null,
   hasExistingDebt: null,
-  totalDebtBalanceBandId: null,
+  totalDebtBalance: null,
   hasAval: null,
   avalRelationship: null,
-  avalSalaryBandId: null,
+  avalMonthlySalary: null,
   avalEmploymentType: null,
 };
 

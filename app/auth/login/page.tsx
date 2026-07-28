@@ -129,7 +129,7 @@ export default function LoginPage() {
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="glow-cyan w-full bg-neon-cyan text-deep hover:bg-neon-cyan/90"
+            className="glow-cyan min-h-11 w-full bg-neon-cyan text-deep hover:bg-neon-cyan/90"
           >
             {isSubmitting ? "Ingresando..." : "Entrar"}
           </Button>
