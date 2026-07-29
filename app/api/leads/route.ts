@@ -371,6 +371,7 @@ export async function maybeApplyScoring(
 }
 
 const VALID_INVESTMENT_TYPES = ["inversion", "vivienda_propia", "ambos"];
+const VALID_PROPERTY_DESTINATIONS = ["vivir", "airbnb", "alquiler_tradicional", "venta_corto_plazo"];
 const VALID_PROPERTY_STATUSES = ["en_verde", "en_blanco", "entrega_inmediata", "usado", "sin_definir"];
 const VALID_PROFESSIONAL_LEVELS = ["profesional", "tecnico"];
 
@@ -396,6 +397,12 @@ export async function updateCustomerProfileFields(
     VALID_INVESTMENT_TYPES.includes(financial.investmentType)
   ) {
     update.investment_type = financial.investmentType;
+  }
+  if (
+    typeof financial.propertyDestination === "string" &&
+    VALID_PROPERTY_DESTINATIONS.includes(financial.propertyDestination)
+  ) {
+    update.property_destination = financial.propertyDestination;
   }
   if (
     typeof financial.propertyStatus === "string" &&

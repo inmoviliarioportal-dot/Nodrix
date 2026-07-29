@@ -38,7 +38,7 @@ export const GET = withErrorHandling(async (_request: Request, context: { params
   }
 
   const { data: customer } = await (supabase.from("customers") as any)
-    .select("investment_type, monthly_income, professional_level")
+    .select("investment_type, property_destination, monthly_income, professional_level")
     .eq("id", application.customer_id)
     .maybeSingle();
 
@@ -86,6 +86,7 @@ export const GET = withErrorHandling(async (_request: Request, context: { params
     bands,
     ufPreEvaluation,
     registeredPurpose: customer?.investment_type ?? null,
+    registeredDestination: customer?.property_destination ?? null,
     selection:
       application.initial_proposal_band && application.initial_proposal_purpose
         ? { band: application.initial_proposal_band, purpose: application.initial_proposal_purpose }

@@ -7,6 +7,9 @@ type Purpose = "inversion" | "vivienda_propia" | "ambos";
 type PropertyType = "casa" | "departamento";
 type DepartmentCount = 1 | 2 | 3;
 
+/** Destino real que el cliente declaró en el wizard -- ver lib/wizard-storage.ts. */
+type PropertyDestination = "vivir" | "airbnb" | "alquiler_tradicional" | "venta_corto_plazo";
+
 interface RecommendationsBody {
   // Opcional cuando purpose === "inversion": ese flujo va directo al
   // carrusel de propiedades sin pedir preferencias al cliente.
@@ -22,6 +25,16 @@ interface RecommendationsBody {
    * cliente en vez de solo por fecha de creación.
    */
   budgetUf?: number;
+  /** Destino declarado en el wizard -- determina si se aplica el
+   * perfilamiento de proximidad (Airbnb/venta a corto plazo, ver más abajo). */
+  destination?: PropertyDestination;
+  /** Los 3 parámetros de proximidad que buscan los clientes de Airbnb/venta a
+   * corto plazo (ver components/dashboard/ProximityProfileForm.tsx). Si no
+   * se marca ninguno, el carrusel se comporta igual que antes (orden por
+   * cercanía de precio). */
+  profileHistoric?: boolean;
+  profileTourist?: boolean;
+  profileBusiness?: boolean;
 }
 
 interface PropertyRow {
@@ -37,6 +50,9 @@ interface PropertyRow {
   images: string[] | null;
   video_url: string | null;
   created_at: string;
+  near_historic_center: boolean | null;
+  near_tourist_zone: boolean | null;
+  near_business_district: boolean | null;
 }
 
 export interface PropertyRecommendation {
@@ -61,7 +77,7 @@ export interface PropertyProposal {
 }
 
 /** Cantidad de propiedades mostradas en el carrusel de inversión. */
-const CAROUSEL_SIZE = 8;
+const CAROUSEL_SIZE = 6;
 
 /**
  * POST /api/properties/recommendations
@@ -70,7 +86,7 @@ const CAROUSEL_SIZE = 8;
  * para la etapa "aprobado previo"), este endpoint devuelve propiedades
  * CONCRETAS:
  *
- * - purpose === "inversion": un CARRUSEL de hasta 8 propiedades DISTINTAS
+ * - purpose === "inversion": un CARRUSEL de hasta 6 propiedades DISTINTAS
  *   (campo `carousel`), ordenadas por cercanía de precio al presupuesto
  *   estimado (`budgetUf`, viene de la pre-evaluación en UF) si se provee, o
  *   por más recientes si no. El cliente elige libremente cuántas quiere (no
@@ -101,7 +117,7 @@ export const POST = withErrorHandling(async (request: Request) => {
   const { data, error } = await supabase
     .from("properties")
     .select(
-      "id, name, comuna, location, price_uf, purpose, bedrooms, bathrooms, property_type, images, video_url, created_at"
+      "id, name, comuna, location, price_uf, purpose, bedrooms, bathrooms, property_type, images, video_url, created_at, near_historic_center, near_tourist_zone, near_business_district"
     )
     .eq("org_id", MVP_ORG_ID)
     .eq("available", true);
@@ -165,7 +181,30 @@ export const POST = withErrorHandling(async (request: Request) => {
     // presupuesto real del cliente si viene `budgetUf`.
     const candidates = purposeMatches(allRows);
     const pool = candidates.length > 0 ? candidates : allRows; // nunca vacío si hay inventario
+
+    // Perfilamiento Airbnb/venta a corto plazo: prioriza las propiedades que
+    // matchean más de los 3 parámetros de proximidad declarados (casco
+    // histórico/céntrico, zona turística, negocios/sector financiero) --
+    // ver ProximityProfileForm.tsx. Si el cliente no marcó ninguno (o su
+    // destino no aplica), el orden es idéntico al de antes (solo precio).
+    const { profileHistoric, profileTourist, profileBusiness } = body;
+    const applyProximityProfiling =
+      (body.destination === "airbnb" || body.destination === "venta_corto_plazo") &&
+      (profileHistoric || profileTourist || profileBusiness);
+
+    function proximityScore(r: PropertyRow): number {
+      let score = 0;
+      if (profileHistoric && r.near_historic_center) score++;
+      if (profileTourist && r.near_tourist_zone) score++;
+      if (profileBusiness && r.near_business_district) score++;
+      return score;
+    }
+
     const sorted = [...pool].sort((a, b) => {
+      if (applyProximityProfiling) {
+        const scoreDiff = proximityScore(b) - proximityScore(a);
+        if (scoreDiff !== 0) return scoreDiff;
+      }
       if (typeof body.budgetUf === "number") {
         return Math.abs(a.price_uf - body.budgetUf) - Math.abs(b.price_uf - body.budgetUf);
       }

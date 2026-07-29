@@ -39,6 +39,9 @@ type PropertyBody = {
   images?: string[];
   floorPlanUrl?: string | null;
   videoUrl?: string | null;
+  nearHistoricCenter?: boolean;
+  nearTouristZone?: boolean;
+  nearBusinessDistrict?: boolean;
 };
 
 function validate(body: PropertyBody): string | null {
@@ -75,6 +78,9 @@ export const POST = withErrorHandling(async (request: Request) => {
       images: body.images ?? [],
       floor_plan_url: body.floorPlanUrl ?? null,
       video_url: body.videoUrl ?? null,
+      near_historic_center: body.nearHistoricCenter ?? false,
+      near_tourist_zone: body.nearTouristZone ?? false,
+      near_business_district: body.nearBusinessDistrict ?? false,
     })
     .select("*")
     .single();

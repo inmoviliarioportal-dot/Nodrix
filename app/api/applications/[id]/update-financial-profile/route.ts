@@ -22,6 +22,7 @@ type Body = {
   hasExistingDebt?: boolean;
   totalDebtBalance?: number;
   investmentType?: string;
+  propertyDestination?: string;
   propertyStatus?: string;
   hasAval?: boolean;
   avalRelationship?: string;
@@ -169,6 +170,7 @@ export const POST = withErrorHandling(async (request: Request, context: { params
   // 5. Persistir investment_type/property_status/monthly_income en customers.
   await updateCustomerProfileFields(supabase, customer.id, {
     investmentType: body.investmentType,
+    propertyDestination: body.propertyDestination,
     propertyStatus: body.propertyStatus,
     professionalLevel: body.professionalLevel,
     monthlySalary: body.monthlySalary,

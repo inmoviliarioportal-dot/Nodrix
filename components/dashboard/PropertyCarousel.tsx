@@ -22,7 +22,7 @@ export interface PropertyRecommendation {
 }
 
 /**
- * Carrusel de hasta 8 propiedades de inversión, las más adecuadas según la
+ * Carrusel de hasta 6 propiedades de inversión, las más adecuadas según la
  * pre-evaluación en UF del cliente (ordenadas por cercanía de precio en el
  * backend, ver app/api/properties/recommendations/route.ts). Reemplaza el
  * viejo esquema de 3 "propuestas" fijas (1/2/3 departamentos): acá el

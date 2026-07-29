@@ -15,6 +15,9 @@ type PropertyBody = {
   images?: string[];
   floorPlanUrl?: string | null;
   videoUrl?: string | null;
+  nearHistoricCenter?: boolean;
+  nearTouristZone?: boolean;
+  nearBusinessDistrict?: boolean;
 };
 
 /** PATCH /api/admin/properties/{id} — edita una propiedad. Requiere admin/gerencia. */
@@ -47,6 +50,9 @@ export const PATCH = withErrorHandling(async (request: Request, context: { param
   if (body.images !== undefined) update.images = body.images;
   if (body.floorPlanUrl !== undefined) update.floor_plan_url = body.floorPlanUrl;
   if (body.videoUrl !== undefined) update.video_url = body.videoUrl;
+  if (body.nearHistoricCenter !== undefined) update.near_historic_center = body.nearHistoricCenter;
+  if (body.nearTouristZone !== undefined) update.near_tourist_zone = body.nearTouristZone;
+  if (body.nearBusinessDistrict !== undefined) update.near_business_district = body.nearBusinessDistrict;
 
   if (Object.keys(update).length === 0) {
     return apiError("Nada para actualizar", HTTP_STATUS.BAD_REQUEST, "EMPTY_UPDATE");

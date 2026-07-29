@@ -39,6 +39,9 @@ export default function InitialProposalPage() {
   const [notFound, setNotFound] = React.useState(false)
   const [step, setStep] = React.useState<Step>("initial-proposal")
   const [purpose, setPurpose] = React.useState<"inversion" | "vivienda_propia" | "ambos" | null>(null)
+  const [destination, setDestination] = React.useState<
+    "vivir" | "airbnb" | "alquiler_tradicional" | "venta_corto_plazo" | undefined
+  >(undefined)
 
   React.useEffect(() => {
     let id: string | null = null
@@ -134,6 +137,7 @@ export default function InitialProposalPage() {
             purpose={purpose}
             applicationId={applicationId}
             mode="investment"
+            destination={destination}
             onAccepted={() => {
               // "ambos" encadena directo a preferencias de vivienda; el
               // resto (inversión pura) ya terminó y va al cierre.
@@ -150,12 +154,20 @@ export default function InitialProposalPage() {
         ) : (
           <InitialProposalCard
             applicationId={applicationId}
-            onSelected={(registeredPurpose) => {
+            onSelected={(registeredPurpose, registeredDestination) => {
               const normalized =
                 registeredPurpose === "vivienda_propia" || registeredPurpose === "ambos"
                   ? registeredPurpose
                   : "inversion"
               setPurpose(normalized)
+              if (
+                registeredDestination === "vivir" ||
+                registeredDestination === "airbnb" ||
+                registeredDestination === "alquiler_tradicional" ||
+                registeredDestination === "venta_corto_plazo"
+              ) {
+                setDestination(registeredDestination)
+              }
               // "vivienda_propia" no pasa por la propuesta de inversión.
               setStep(normalized === "vivienda_propia" ? "housing-preferences" : "investment-proposal")
             }}

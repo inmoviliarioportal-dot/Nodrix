@@ -20,6 +20,9 @@ interface PropertyRow {
   images: string[] | null
   floor_plan_url: string | null
   video_url: string | null
+  near_historic_center: boolean
+  near_tourist_zone: boolean
+  near_business_district: boolean
 }
 
 const PURPOSE_OPTIONS = [
@@ -46,6 +49,9 @@ const EMPTY_FORM = {
   imagesText: "",
   floorPlanUrl: "",
   videoUrl: "",
+  nearHistoricCenter: false,
+  nearTouristZone: false,
+  nearBusinessDistrict: false,
 }
 
 /**
@@ -90,6 +96,9 @@ export default function AdminPropertiesPage() {
       imagesText: (property.images ?? []).join("\n"),
       floorPlanUrl: property.floor_plan_url ?? "",
       videoUrl: property.video_url ?? "",
+      nearHistoricCenter: property.near_historic_center,
+      nearTouristZone: property.near_tourist_zone,
+      nearBusinessDistrict: property.near_business_district,
     })
   }
 
@@ -145,6 +154,9 @@ export default function AdminPropertiesPage() {
           images,
           floorPlanUrl: form.floorPlanUrl || null,
           videoUrl: form.videoUrl || null,
+          nearHistoricCenter: form.nearHistoricCenter,
+          nearTouristZone: form.nearTouristZone,
+          nearBusinessDistrict: form.nearBusinessDistrict,
         }),
       })
       if (!res.ok) {
@@ -268,6 +280,36 @@ export default function AdminPropertiesPage() {
               onChange={(e) => setForm((f) => ({ ...f, videoUrl: e.target.value }))}
               placeholder="https://.../video.mp4"
             />
+          </Field>
+
+          <Field>
+            <FieldLabel>Perfilamiento Airbnb / venta a corto plazo</FieldLabel>
+            <div className="flex flex-wrap gap-4 pt-1 text-sm text-text-secondary">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={form.nearHistoricCenter}
+                  onChange={(e) => setForm((f) => ({ ...f, nearHistoricCenter: e.target.checked }))}
+                />
+                Cerca de casco histórico/céntrico
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={form.nearTouristZone}
+                  onChange={(e) => setForm((f) => ({ ...f, nearTouristZone: e.target.checked }))}
+                />
+                Cerca de zona turística
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={form.nearBusinessDistrict}
+                  onChange={(e) => setForm((f) => ({ ...f, nearBusinessDistrict: e.target.checked }))}
+                />
+                Cerca de negocios/sector financiero
+              </label>
+            </div>
           </Field>
 
           <div className="flex gap-2">

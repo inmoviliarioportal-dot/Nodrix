@@ -11,13 +11,13 @@ type Body = {
 
 /** Máximo de propiedades seleccionables -- coincide con CAROUSEL_SIZE en
  * app/api/properties/recommendations/route.ts. */
-const MAX_SELECTABLE_PROPERTIES = 8;
+const MAX_SELECTABLE_PROPERTIES = 6;
 
 /**
  * POST /api/applications/[id]/accept-property-proposal
  *
  * Persiste qué propiedades de inversión eligió el cliente del carrusel de
- * hasta 8 (ver PropertyCarousel.tsx) tras verlas en
+ * hasta 6 (ver PropertyCarousel.tsx) tras verlas en
  * /onboarding/initial-proposal -- el cliente elige libremente cuántas
  * quiere (1, 2, 4, 6...), no hay "bundles" fijos de 1/2/3 departamentos.
  * `departmentCount` se mantiene como el conteo de propiedades elegidas

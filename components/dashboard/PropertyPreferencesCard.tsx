@@ -9,10 +9,16 @@ import { SelectableCard } from "@/components/wizard/SelectableCard"
 import { RegionComunaSelect } from "@/components/wizard/RegionComunaSelect"
 import { PropertyCarousel, type PropertyRecommendation } from "@/components/dashboard/PropertyCarousel"
 import { HousingPropertyList } from "@/components/dashboard/HousingPropertyList"
+import { ProximityProfileForm, type ProximityProfile } from "@/components/dashboard/ProximityProfileForm"
 
 type PropertyType = "casa" | "departamento"
 type Purpose = "inversion" | "vivienda_propia" | "ambos"
 type Mode = "investment" | "housing"
+/** Destino declarado en el wizard -- ver lib/wizard-storage.ts. Solo relevante
+ * en mode="investment": airbnb/venta_corto_plazo piden un perfilamiento de
+ * proximidad antes de mostrar el carrusel; alquiler_tradicional (y el resto)
+ * van directo al carrusel, igual que antes. */
+type PropertyDestination = "vivir" | "airbnb" | "alquiler_tradicional" | "venta_corto_plazo"
 
 const BEDROOM_OPTIONS = [1, 2, 3, 4] as const
 const BATHROOM_OPTIONS = [1, 2, 3] as const
@@ -35,11 +41,14 @@ function PropertyPreferencesCard({
   purpose,
   applicationId,
   mode,
+  destination,
   onAccepted,
 }: {
   purpose: Purpose
   applicationId: string
   mode: Mode
+  /** Solo relevante en mode="investment" -- ver tipo `PropertyDestination` arriba. */
+  destination?: PropertyDestination
   onAccepted: () => void
 }) {
   const [propertyType, setPropertyType] = React.useState<PropertyType | null>(null)
@@ -51,15 +60,15 @@ function PropertyPreferencesCard({
   const [carousel, setCarousel] = React.useState<PropertyRecommendation[] | null>(null)
   const [housingProperties, setHousingProperties] = React.useState<PropertyRecommendation[] | null>(null)
 
+  // Airbnb/venta a corto plazo piden el perfilamiento de proximidad ANTES
+  // del carrusel -- ver ProximityProfileForm.tsx. `null` = aún no lo llenó
+  // (y no aplica si destination no es una de estas dos).
+  const requiresProximityProfile = destination === "airbnb" || destination === "venta_corto_plazo"
+  const [proximityProfile, setProximityProfile] = React.useState<ProximityProfile | null>(null)
+
   const requestedCarousel = React.useRef(false)
 
-  // mode="investment" no pide preferencias -- dispara la búsqueda apenas se
-  // monta, una sola vez. Primero busca el presupuesto en UF ya calculado
-  // (pre-evaluación) para que el carrusel muestre las propiedades más
-  // cercanas al precio que el cliente realmente puede pagar.
-  React.useEffect(() => {
-    if (mode !== "investment" || requestedCarousel.current) return
-    requestedCarousel.current = true
+  function fetchCarousel(profile: ProximityProfile | null) {
     setIsSubmitting(true)
     fetch(`/api/applications/${applicationId}/proposal-bands`)
       .then((res) => (res.ok ? res.json() : null))
@@ -68,7 +77,14 @@ function PropertyPreferencesCard({
         return fetch("/api/properties/recommendations", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ purpose: "inversion", budgetUf }),
+          body: JSON.stringify({
+            purpose: "inversion",
+            budgetUf,
+            destination,
+            profileHistoric: profile?.historic,
+            profileTourist: profile?.tourist,
+            profileBusiness: profile?.business,
+          }),
         })
       })
       .then(async (res) => {
@@ -81,7 +97,26 @@ function PropertyPreferencesCard({
         setCarousel(data?.carousel ?? [])
       })
       .finally(() => setIsSubmitting(false))
-  }, [mode, applicationId])
+  }
+
+  // mode="investment" sin perfilamiento de proximidad no pide preferencias --
+  // dispara la búsqueda apenas se monta, una sola vez. Primero busca el
+  // presupuesto en UF ya calculado (pre-evaluación) para que el carrusel
+  // muestre las propiedades más cercanas al precio que el cliente realmente
+  // puede pagar. Si requiere perfilamiento, espera a que el cliente lo
+  // complete (ver handleProximityProfileSubmit).
+  React.useEffect(() => {
+    if (mode !== "investment" || requiresProximityProfile || requestedCarousel.current) return
+    requestedCarousel.current = true
+    fetchCarousel(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, applicationId, requiresProximityProfile])
+
+  function handleProximityProfileSubmit(profile: ProximityProfile) {
+    setProximityProfile(profile)
+    requestedCarousel.current = true
+    fetchCarousel(profile)
+  }
 
   async function handleHousingSubmit() {
     if (!comuna) {
@@ -163,6 +198,9 @@ function PropertyPreferencesCard({
   }
 
   if (mode === "investment") {
+    if (requiresProximityProfile && proximityProfile === null) {
+      return <ProximityProfileForm onSubmit={handleProximityProfileSubmit} isSubmitting={isSubmitting} />
+    }
     if (!carousel) {
       return (
         <div className="glass-card flex flex-col items-center gap-3 rounded-2xl p-6">

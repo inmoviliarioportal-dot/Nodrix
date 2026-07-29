@@ -40,7 +40,7 @@ function InitialProposalCard({
   onQualificationChange,
 }: {
   applicationId: string
-  onSelected: (registeredPurpose: string | null) => void
+  onSelected: (registeredPurpose: string | null, registeredDestination: string | null) => void
   /** Notifica al padre si el cliente califica o no, para que pueda ocultar
    * el resto de la UI del dashboard (timeline, etc.) en el caso no calificado. */
   onQualificationChange?: (qualifies: boolean) => void
@@ -49,6 +49,7 @@ function InitialProposalCard({
   const [bands, setBands] = React.useState<BandResult[] | null>(null)
   const [ufPreEvaluation, setUfPreEvaluation] = React.useState<UFPreEvaluation | null>(null)
   const [registeredPurpose, setRegisteredPurpose] = React.useState<string | null>(null)
+  const [registeredDestination, setRegisteredDestination] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
 
@@ -59,6 +60,7 @@ function InitialProposalCard({
         setBands(data?.bands ?? [])
         setUfPreEvaluation(data?.ufPreEvaluation ?? null)
         setRegisteredPurpose(data?.registeredPurpose ?? null)
+        setRegisteredDestination(data?.registeredDestination ?? null)
       })
       .catch(() => setBands([]))
       .finally(() => setLoading(false))
@@ -97,7 +99,7 @@ function InitialProposalCard({
         return
       }
       toast.success("¡Tu solicitud avanzó a la siguiente etapa!")
-      onSelected(registeredPurpose)
+      onSelected(registeredPurpose, registeredDestination)
     } finally {
       setIsSubmitting(false)
     }

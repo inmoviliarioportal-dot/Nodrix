@@ -22,7 +22,7 @@ import { PreEvaluationCard } from "@/components/dashboard/PreEvaluationCard"
 import { ScoringCard } from "@/components/dashboard/ScoringCard"
 import { ScheduleVisitCard } from "@/components/dashboard/ScheduleVisitCard"
 import { StageAlert } from "@/components/dashboard/StageAlert"
-import { HookVideo } from "@/components/dashboard/HookVideo"
+import { GuideVideoOverlay } from "@/components/dashboard/GuideVideoOverlay"
 import { StageProgressBar } from "@/components/dashboard/StageProgressBar"
 import { Clock } from "lucide-react"
 import { STAGE_CLIENT_CONTENT } from "@/components/dashboard/stageContent"
@@ -198,9 +198,10 @@ export default function DashboardPage() {
                 </Button>
               </div>
 
-              <HookVideo
+              <GuideVideoOverlay
                 title={STAGE_CLIENT_CONTENT.RECEPCIONADA.videoTitle}
                 videoUrl={STAGE_CLIENT_CONTENT.RECEPCIONADA.videoUrl}
+                stageKey="RECEPCIONADA"
               />
             </div>
           </div>
@@ -274,7 +275,7 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              <HookVideo title={stageContent.videoTitle} videoUrl={stageContent.videoUrl} />
+              <GuideVideoOverlay title={stageContent.videoTitle} videoUrl={stageContent.videoUrl} stageKey={stage} />
 
               {stage === "SCORING_COMPLETADO" && application ? (
                 // Antes de subir documentos, el cliente debe elegir su
