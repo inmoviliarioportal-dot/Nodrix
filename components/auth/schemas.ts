@@ -14,8 +14,8 @@ export const GENDER_OPTIONS = [
 ] as const
 
 export const INVESTMENT_TYPE_OPTIONS = [
-  { value: "inversion", label: "Inversión" },
   { value: "vivienda_propia", label: "Vivienda propia" },
+  { value: "inversion", label: "Inversión / arriendo" },
   { value: "ambos", label: "Ambos (comprar e invertir)" },
 ] as const
 
