@@ -23,11 +23,9 @@ import { ScoringCard } from "@/components/dashboard/ScoringCard"
 import { ScheduleVisitCard } from "@/components/dashboard/ScheduleVisitCard"
 import { StageAlert } from "@/components/dashboard/StageAlert"
 import { GuideVideoOverlay } from "@/components/dashboard/GuideVideoOverlay"
-import { StageProgressBar } from "@/components/dashboard/StageProgressBar"
 import { Clock } from "lucide-react"
 import { STAGE_CLIENT_CONTENT } from "@/components/dashboard/stageContent"
 import {
-  APPLICATION_STAGES,
   CLIENT_TIMELINE_STAGES,
   STAGE_LABELS,
   STAGE_MARKETING_LABELS,
@@ -117,8 +115,6 @@ export default function DashboardPage() {
   const stageLabel = STAGE_LABELS[stage] ?? stage
   const stageContent =
     STAGE_CLIENT_CONTENT[stage as ApplicationStage] ?? STAGE_CLIENT_CONTENT.RECEPCIONADA
-  const currentStageIndex = application ? APPLICATION_STAGES.indexOf(stage as ApplicationStage) : -1
-  const completedSteps = currentStageIndex >= 0 ? currentStageIndex : 0
   const documents = application?.documents ?? []
   const scoring =
     application?.scoring ??
@@ -141,7 +137,7 @@ export default function DashboardPage() {
                 Estado de tu proceso
               </span>
               <span className="text-2xl font-bold tracking-tight text-text-primary">
-                {stageLabel}
+                {application ? stageLabel : "Sin evaluación iniciada"}
               </span>
             </div>
             {scoring && isScoringCategory(scoring.category) && (
@@ -149,67 +145,55 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {!loading && (
-            <div className="mt-5">
-              <StageProgressBar completedSteps={completedSteps} totalSteps={APPLICATION_STAGES.length} />
-            </div>
-          )}
-
-          {loading && (
-            <p className="mt-4 text-sm text-text-tertiary">Cargando tu solicitud...</p>
-          )}
+          {loading && <p className="mt-4 text-sm text-text-tertiary">Cargando tu solicitud...</p>}
           {error && <p className="mt-4 text-sm text-error">{error}</p>}
-        </div>
 
-        {!loading && !application && (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(240px,300px)_1fr]">
-            <div className="rounded-2xl border border-glass-border bg-surface p-[22px] lg:self-start">
-              <h2 className="mb-4 text-xs font-bold uppercase tracking-wide text-text-tertiary">
-                Tu recorrido
-              </h2>
+          {!loading && (
+            <div className="mt-6">
               <Timeline
-                orientation="vertical"
-                density="compact"
-                currentStage=""
+                orientation="horizontal"
+                currentStage={application ? stage : ""}
                 stages={CLIENT_TIMELINE_STAGES}
                 labels={STAGE_MARKETING_LABELS}
               />
             </div>
+          )}
+        </div>
 
-            <div className="flex flex-col gap-4">
-              <StageAlert
-                tone="info"
-                message="Aún no has comenzado tu evaluación. Completa el formulario de perfilamiento para ver tu solicitud avanzar por estas etapas."
-              />
+        {!loading && !application && (
+          <div className="flex flex-col gap-4">
+            <StageAlert
+              tone="info"
+              message="Aún no has comenzado tu evaluación. Completa el formulario de perfilamiento para ver tu solicitud avanzar por estas etapas."
+            />
 
-              <div className="glow-cyan flex flex-col items-start gap-3.5 rounded-2xl border border-neon-cyan/40 bg-neon-cyan/[0.06] p-5 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex flex-col gap-1">
-                  <p className="text-sm font-bold text-text-primary">Comienza tu evaluación</p>
-                  <p className="text-xs text-text-secondary">
-                    Responde algunas preguntas y descubre tu categoría de inversión al instante.
-                  </p>
-                </div>
-                <Button
-                  className="glow-cyan gap-2 bg-neon-cyan text-deep hover:bg-neon-cyan/90"
-                  render={<Link href="/onboarding/wizard" />}
-                >
-                  Empezar ahora
-                  <ArrowRight className="size-4" aria-hidden="true" />
-                </Button>
+            <div className="glow-cyan flex flex-col items-start gap-3.5 rounded-2xl border border-neon-cyan/40 bg-neon-cyan/[0.06] p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-1">
+                <p className="text-sm font-bold text-text-primary">Comienza tu evaluación</p>
+                <p className="text-xs text-text-secondary">
+                  Responde algunas preguntas y descubre tu categoría de inversión al instante.
+                </p>
               </div>
-
-              <GuideVideoOverlay
-                title={STAGE_CLIENT_CONTENT.RECEPCIONADA.videoTitle}
-                videoUrl={STAGE_CLIENT_CONTENT.RECEPCIONADA.videoUrl}
-                stageKey="RECEPCIONADA"
-              />
+              <Button
+                className="glow-cyan gap-2 bg-neon-cyan text-deep hover:bg-neon-cyan/90"
+                render={<Link href="/onboarding/wizard" />}
+              >
+                Empezar ahora
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </Button>
             </div>
+
+            <GuideVideoOverlay
+              title={STAGE_CLIENT_CONTENT.RECEPCIONADA.videoTitle}
+              videoUrl={STAGE_CLIENT_CONTENT.RECEPCIONADA.videoUrl}
+              stageKey="RECEPCIONADA"
+            />
           </div>
         )}
 
         {!loading && application && stage === "SCORING_COMPLETADO" && initialProposalQualifies === false && (
-          // Cliente en análisis de perfil que NO califica: ocultamos timeline
-          // y demás secciones de progreso, dejando solo la tarjeta ámbar.
+          // Cliente en análisis de perfil que NO califica: dejamos solo la
+          // tarjeta ámbar, sin el resto de secciones de progreso.
           <div className="flex flex-col gap-4">
             <InitialProposalCard
               applicationId={application.id}
@@ -220,106 +204,91 @@ export default function DashboardPage() {
         )}
 
         {!loading && application && !(stage === "SCORING_COMPLETADO" && initialProposalQualifies === false) && (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(240px,300px)_1fr]">
-            <div className="rounded-2xl border border-glass-border bg-surface p-[22px] lg:self-start">
-              <h2 className="mb-4 text-xs font-bold uppercase tracking-wide text-text-tertiary">
-                Línea de tiempo
-              </h2>
-              <Timeline
-                orientation="vertical"
-                density="compact"
-                currentStage={stage}
-                stages={CLIENT_TIMELINE_STAGES}
-                labels={STAGE_MARKETING_LABELS}
-              />
+          <div className="flex flex-col gap-4">
+            <StageAlert tone={stageContent.alert.tone} message={stageContent.alert.message} />
+
+            <div className="flex items-center gap-2 text-xs text-text-tertiary">
+              <Clock className="size-3.5 shrink-0" aria-hidden="true" />
+              <span>Duración estimada de esta etapa: {stageContent.estimatedDuration}</span>
             </div>
 
-            <div className="flex flex-col gap-4">
-              <StageAlert tone={stageContent.alert.tone} message={stageContent.alert.message} />
+            {(stage === "SCORING_COMPLETADO" || stage === "DOCUMENTOS_PENDIENTES") && (
+              <Button
+                variant="outline"
+                className="w-fit"
+                render={<Link href="/onboarding/wizard?edit=true" />}
+              >
+                Actualizar mis datos
+              </Button>
+            )}
 
-              <div className="flex items-center gap-2 text-xs text-text-tertiary">
-                <Clock className="size-3.5 shrink-0" aria-hidden="true" />
-                <span>Duración estimada de esta etapa: {stageContent.estimatedDuration}</span>
-              </div>
-
-              {(stage === "SCORING_COMPLETADO" || stage === "DOCUMENTOS_PENDIENTES") && (
-                <Button
-                  variant="outline"
-                  className="w-fit"
-                  render={<Link href="/onboarding/wizard?edit=true" />}
-                >
-                  Actualizar mis datos
-                </Button>
-              )}
-
-              {/* Un solo CTA prominente por etapa cuando aplica -- el resto de
-                  las acciones (agendar visita, actualizar datos) van como
-                  botones secundarios dentro de sus propias cards. */}
-              {stageContent.showUploadCta && (
-                <div className="glow-cyan flex flex-col items-start gap-3.5 rounded-2xl border border-neon-cyan/40 bg-neon-cyan/[0.06] p-5 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex flex-col gap-1">
-                    <p className="text-sm font-bold text-text-primary">
-                      Tu solicitud necesita documentos
-                    </p>
-                    <p className="text-xs text-text-secondary">
-                      Súbelos ahora para que tu asesor pueda continuar el proceso.
-                    </p>
-                  </div>
-                  <Button
-                    className="glow-cyan gap-2 bg-neon-cyan text-deep hover:bg-neon-cyan/90"
-                    onClick={() => setUploadOpen(true)}
-                  >
-                    <UploadCloud className="size-4" aria-hidden="true" />
-                    Subir documentos
-                  </Button>
+            {/* Un solo CTA prominente por etapa cuando aplica -- el resto de
+                las acciones (agendar visita, actualizar datos) van como
+                botones secundarios dentro de sus propias cards. */}
+            {stageContent.showUploadCta && (
+              <div className="glow-cyan flex flex-col items-start gap-3.5 rounded-2xl border border-neon-cyan/40 bg-neon-cyan/[0.06] p-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-1">
+                  <p className="text-sm font-bold text-text-primary">
+                    Tu solicitud necesita documentos
+                  </p>
+                  <p className="text-xs text-text-secondary">
+                    Súbelos ahora para que tu asesor pueda continuar el proceso.
+                  </p>
                 </div>
-              )}
+                <Button
+                  className="glow-cyan gap-2 bg-neon-cyan text-deep hover:bg-neon-cyan/90"
+                  onClick={() => setUploadOpen(true)}
+                >
+                  <UploadCloud className="size-4" aria-hidden="true" />
+                  Subir documentos
+                </Button>
+              </div>
+            )}
 
-              <GuideVideoOverlay title={stageContent.videoTitle} videoUrl={stageContent.videoUrl} stageKey={stage} />
+            <GuideVideoOverlay title={stageContent.videoTitle} videoUrl={stageContent.videoUrl} stageKey={stage} />
 
-              {stage === "SCORING_COMPLETADO" && application ? (
-                // Antes de subir documentos, el cliente debe elegir su
-                // propuesta inicial (simulación de riesgo) -- no tiene
-                // sentido mostrarle la tarjeta de documentos todavía.
-                <InitialProposalCard
-                  applicationId={application.id}
-                  onSelected={loadData}
-                  onQualificationChange={setInitialProposalQualifies}
-                />
-              ) : (
-                <>
-                  {application?.initial_proposal_band && application?.initial_proposal_purpose && (
-                    <InitialProposalReminder
-                      band={application.initial_proposal_band}
-                      purpose={application.initial_proposal_purpose}
-                    />
+            {stage === "SCORING_COMPLETADO" && application ? (
+              // Antes de subir documentos, el cliente debe elegir su
+              // propuesta inicial (simulación de riesgo) -- no tiene
+              // sentido mostrarle la tarjeta de documentos todavía.
+              <InitialProposalCard
+                applicationId={application.id}
+                onSelected={loadData}
+                onQualificationChange={setInitialProposalQualifies}
+              />
+            ) : (
+              <>
+                {application?.initial_proposal_band && application?.initial_proposal_purpose && (
+                  <InitialProposalReminder
+                    band={application.initial_proposal_band}
+                    purpose={application.initial_proposal_purpose}
+                  />
+                )}
+                {/* Grid de KPI cards compactas: scoring, documentos, próximo
+                    paso y (si corresponde) agendar visita. */}
+                <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                  <ScoringCard scoring={scoring} />
+                  <DocumentsCard documents={documents} onUploadClick={() => setUploadOpen(true)} />
+                  <PreEvaluationCard
+                    minUf={application?.pre_evaluation_min_uf}
+                    maxUf={application?.pre_evaluation_max_uf}
+                  />
+                  <NextStepCard stage={stage} />
+                  {/* Agendar visita en paralelo a la subida de documentos --
+                      no hay que esperar a "Aprobado previo" para conocer
+                      las propiedades que el cliente ya eligió. */}
+                  {stage === "DOCUMENTOS_PENDIENTES" && application && (
+                    <ScheduleVisitCard applicationId={application.id} />
                   )}
-                  {/* Grid de KPI cards compactas: scoring, documentos, próximo
-                      paso y (si corresponde) agendar visita. */}
-                  <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-                    <ScoringCard scoring={scoring} />
-                    <DocumentsCard documents={documents} onUploadClick={() => setUploadOpen(true)} />
-                    <PreEvaluationCard
-                      minUf={application?.pre_evaluation_min_uf}
-                      maxUf={application?.pre_evaluation_max_uf}
-                    />
-                    <NextStepCard stage={stage} />
-                    {/* Agendar visita en paralelo a la subida de documentos --
-                        no hay que esperar a "Aprobado previo" para conocer
-                        las propiedades que el cliente ya eligió. */}
-                    {stage === "DOCUMENTOS_PENDIENTES" && application && (
-                      <ScheduleVisitCard applicationId={application.id} />
-                    )}
-                  </div>
-                </>
-              )}
-              {stage === "PRE_EVALUACION_COMPLETADA" && application && (
-                <ComunaOffersCard applicationId={application.id} />
-              )}
-              {["ENVIADO_A_BANCO", "ESCRITURACION_AGENDADA", "CIERRE"].includes(stage) && application && (
-                <FinalProposalCard applicationId={application.id} />
-              )}
-            </div>
+                </div>
+              </>
+            )}
+            {stage === "PRE_EVALUACION_COMPLETADA" && application && (
+              <ComunaOffersCard applicationId={application.id} />
+            )}
+            {["ENVIADO_A_BANCO", "ESCRITURACION_AGENDADA", "CIERRE"].includes(stage) && application && (
+              <FinalProposalCard applicationId={application.id} />
+            )}
           </div>
         )}
       </div>
