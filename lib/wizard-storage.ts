@@ -32,7 +32,16 @@ export const WIZARD_STORAGE_KEY = "wizard-progress";
 // elegidos en un desplegable (ver lib/amount-options.ts) en vez de estimar
 // un rango -- mejora la precisión de la pre-evaluación en UF. Progreso v7
 // se descarta igual que en los bumps anteriores.
-const WIZARD_STORAGE_VERSION = 8;
+// v9: se elimina `employmentType`/`employmentYears` como pregunta genérica
+// del Paso 1 -- ahora el Paso 1 identifica el/los PERFIL(es) laboral(es) del
+// cliente (empleado/socio/independiente/pensionado/arrendador, el mismo
+// concepto que antes vivía en `incomeSources` del Paso 2) y anida ahí las
+// preguntas cualitativas de cada perfil (contrato + antigüedad si es
+// empleado, antigüedad para todos los perfiles, bono/variable/liquidez
+// según corresponda). El Paso 2 ("Finanzas") ya no vuelve a preguntar el
+// tipo -- solo habilita el monto exacto de cada perfil ya elegido. Progreso
+// v8 se descarta igual que en los bumps anteriores.
+const WIZARD_STORAGE_VERSION = 9;
 
 /** Mismos 2 valores EXACTOS que `ProfessionalLevel` en lib/proposal-risk.ts */
 export type WizardProfessionalLevel = "profesional" | "tecnico";
@@ -48,22 +57,31 @@ export type WizardEmploymentType =
 export type WizardIncomeType = "sueldo_fijo" | "boleta" | "pension" | "alquiler" | "sociedad";
 
 /**
- * Una fuente de ingreso declarada en el wizard -- el cliente puede declarar
- * más de una (ingreso mixto). `monthlyAmountCLP` es el monto EXACTO elegido
- * en un desplegable (ver lib/amount-options.ts), no una banda/rango
- * estimado. Los campos específicos por tipo solo aplican al tipo
- * correspondiente (ver lib/income-types.ts para el detalle de cada uno).
+ * Un perfil laboral/fuente de ingreso declarado en el wizard -- el cliente
+ * puede declarar más de uno (perfil mixto, ej. empleado + arrendador).
+ * `monthlyAmountCLP` (Paso 2, "Finanzas") es el monto EXACTO elegido en un
+ * desplegable (ver lib/amount-options.ts). El resto de los campos son
+ * CUALITATIVOS y se piden en el Paso 1 ("Tu perfil"), anidados bajo cada
+ * tipo elegido -- ver lib/income-types.ts para el detalle de negocio de
+ * cada uno.
  */
 export interface WizardIncomeSourceEntry {
   type: WizardIncomeType;
+  /** Paso 2: monto mensual exacto de este perfil. */
   monthlyAmountCLP: number | null;
-  /** sueldo_fijo: ingreso mayoritariamente por bonos (no por sueldo base). */
+  /** Paso 1, TODOS los tipos: hace cuánto tiempo tiene este ingreso/actividad
+   * (alimenta `CustomerFinancialProfile.employmentYears` -- ver
+   * `deriveEmployment` en app/onboarding/wizard/page.tsx). */
+  antiguedadYears: number | null;
+  /** Paso 1, SOLO sueldo_fijo: tipo de contrato (indefinido/plazo_fijo). */
+  contractType: WizardEmploymentType | null;
+  /** Paso 1, sueldo_fijo: ingreso mayoritariamente por bonos (no por sueldo base). */
   hasSignificantBonusIncome: boolean | null;
-  /** boleta: ingreso que varía durante el año (vs. monto fijo mensual). */
+  /** Paso 1, boleta: ingreso que varía durante el año (vs. monto fijo mensual). */
   isVariableBoleta: boolean | null;
-  /** alquiler: duración declarada del contrato de arriendo, en meses. */
+  /** Paso 1, alquiler: duración declarada del contrato de arriendo, en meses. */
   rentalContractMonths: number | null;
-  /** sociedad: la empresa acredita liquidez / cierres positivos (SII 104/105). */
+  /** Paso 1, sociedad: la empresa acredita liquidez / cierres positivos (SII 104/105). */
   companyHasLiquidity: boolean | null;
 }
 
@@ -71,6 +89,8 @@ export function emptyIncomeSourceEntry(type: WizardIncomeType): WizardIncomeSour
   return {
     type,
     monthlyAmountCLP: null,
+    antiguedadYears: null,
+    contractType: null,
     hasSignificantBonusIncome: null,
     isVariableBoleta: null,
     rentalContractMonths: null,
@@ -90,13 +110,13 @@ export type WizardPropertyStatus =
   | "sin_definir";
 
 export interface WizardData {
-  // Paso 1
-  employmentType: WizardEmploymentType | null;
-  employmentYears: number | null;
+  // Paso 1: identifica el/los perfil(es) laboral(es) (empleado/socio/
+  // independiente/pensionado/arrendador) y sus preguntas cualitativas
+  // anidadas -- ver WizardIncomeSourceEntry.
+  incomeSources: WizardIncomeSourceEntry[];
   /** Tope cualitativo sobre la probabilidad de aprobación (ver lib/proposal-risk.ts). */
   professionalLevel: WizardProfessionalLevel | null;
-  // Paso 2
-  incomeSources: WizardIncomeSourceEntry[];
+  // Paso 2: SOLO montos (ver `incomeSources[].monthlyAmountCLP`) + qué busca.
   investmentType: WizardInvestmentType | null;
   propertyStatus: WizardPropertyStatus | null;
   // Paso 3
@@ -120,8 +140,6 @@ export interface WizardProgress {
 }
 
 export const WIZARD_INITIAL_DATA: WizardData = {
-  employmentType: null,
-  employmentYears: null,
   professionalLevel: null,
   incomeSources: [],
   investmentType: null,

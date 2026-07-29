@@ -16,10 +16,15 @@ function AmountSelect({
   value,
   onChange,
   placeholder = "Selecciona un monto",
+  options = AMOUNT_OPTIONS,
 }: {
   value: number | null
   onChange: (value: number) => void
   placeholder?: string
+  /** Lista de montos a mostrar -- por defecto el rango completo (hasta $30M).
+   * Pasar `INCOME_AMOUNT_OPTIONS` (lib/amount-options.ts) para montos de
+   * ingreso, topados en $8M. */
+  options?: number[]
 }) {
   return (
     <div className="relative">
@@ -31,7 +36,7 @@ function AmountSelect({
         <option value="" disabled>
           {placeholder}
         </option>
-        {AMOUNT_OPTIONS.map((amount) => (
+        {options.map((amount) => (
           <option key={amount} value={amount}>
             {formatAmountCLP(amount)}
           </option>

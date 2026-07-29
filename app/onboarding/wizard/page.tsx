@@ -2,12 +2,13 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Briefcase, PiggyBank, Wallet, Home, Check, X, Users } from "lucide-react";
+import { Briefcase, PiggyBank, Home, Check, X, Users } from "lucide-react";
 import { SelectableCard } from "@/components/wizard/SelectableCard";
 import { SelectableChip } from "@/components/wizard/SelectableChip";
 import { AmountSelect } from "@/components/wizard/AmountSelect";
 import { WizardProgress } from "@/components/wizard/WizardProgress";
 import { INVESTMENT_TYPE_OPTIONS, PROPERTY_STATUS_OPTIONS } from "@/components/auth/schemas";
+import { INCOME_AMOUNT_OPTIONS } from "@/lib/amount-options";
 import {
   WIZARD_INITIAL_DATA,
   clearWizardProgress,
@@ -22,19 +23,31 @@ import {
 } from "@/lib/wizard-storage";
 import type { IncomeSource } from "@/lib/income-types";
 
-/** Los 5 tipos de ingreso que evalúa la banca -- ver lib/income-types.ts. */
+/**
+ * Los 5 perfiles laborales/fuente de ingreso que evalúa la banca -- ver
+ * lib/income-types.ts. Se piden en el Paso 1 ("Tu perfil") junto con sus
+ * preguntas cualitativas anidadas (contrato, antigüedad, bono/variable/
+ * liquidez); el Paso 2 ("Finanzas") solo pide el monto exacto de cada uno.
+ */
 const INCOME_TYPE_OPTIONS: { label: string; value: WizardIncomeType }[] = [
-  { label: "Sueldo fijo (recibo de sueldo)", value: "sueldo_fijo" },
-  { label: "Boleta de honorarios", value: "boleta" },
-  { label: "Jubilación / Pensión", value: "pension" },
-  { label: "Alquiler de propiedades", value: "alquiler" },
-  { label: "Sociedad / Compañía (dividendos)", value: "sociedad" },
+  { label: "Empleado (dependiente)", value: "sueldo_fijo" },
+  { label: "Socio o dueño de empresa", value: "sociedad" },
+  { label: "Independiente (boleta)", value: "boleta" },
+  { label: "Pensionado", value: "pension" },
+  { label: "Arrendador", value: "alquiler" },
 ];
 
 /** Tope cualitativo sobre la probabilidad de aprobación -- ver lib/proposal-risk.ts. */
 const PROFESSIONAL_LEVEL_OPTIONS: { label: string; description: string; value: WizardProfessionalLevel }[] = [
   { label: "Profesional / Ingeniero", description: "Título profesional universitario", value: "profesional" },
   { label: "Técnico", description: "Título técnico o sin título", value: "tecnico" },
+];
+
+/** Solo aplica al perfil "Empleado" -- socio/independiente/pensionado/
+ * arrendador no tienen un empleador con quien firmar un contrato. */
+const CONTRACT_TYPE_OPTIONS: { label: string; description: string; value: WizardEmploymentType }[] = [
+  { label: "Indefinido", description: "Contrato indefinido", value: "indefinido" },
+  { label: "Plazo fijo", description: "Contrato a plazo fijo", value: "plazo_fijo" },
 ];
 
 const RENTAL_CONTRACT_OPTIONS: { label: string; value: number }[] = [
@@ -54,13 +67,58 @@ const AVAL_RELATIONSHIP_OPTIONS: { label: string; value: string }[] = [
   { label: "Hermano/a", value: "hermano" },
 ];
 
+/** Mismas 4 opciones usadas para el contrato del aval (a él sí se le puede
+ * preguntar honorarios/independiente porque no es "su" perfil laboral el que
+ * determina las preguntas anidadas del cliente). */
+const EMPLOYMENT_OPTIONS: { label: string; description: string; value: WizardEmploymentType }[] = [
+  { label: "Indefinido", description: "Contrato indefinido", value: "indefinido" },
+  { label: "Plazo fijo", description: "Contrato a plazo fijo", value: "plazo_fijo" },
+  { label: "Honorarios", description: "Boletas de honorarios", value: "honorarios" },
+  { label: "Independiente", description: "Trabajo por cuenta propia", value: "independiente" },
+];
+
+const YEARS_OPTIONS: { label: string; value: number }[] = [
+  { label: "Menos de 1 año", value: 0.5 },
+  { label: "1 a 2 años", value: 1.5 },
+  { label: "2 a 5 años", value: 3 },
+  { label: "5 años o más", value: 6 },
+];
+
+/**
+ * Resuelve el `employmentType`/`employmentYears` ÚNICO que necesita el motor
+ * de scoring (`CustomerFinancialProfile`, lib/scoring.ts) a partir de los
+ * perfiles laborales mixtos declarados en el Paso 1. Prioridad: si el
+ * cliente declaró "Empleado" (sueldo_fijo), se usa SU contrato/antigüedad
+ * (el dato más verificable). Si no, "Independiente (boleta)" mapea a
+ * "honorarios". Si tampoco, se usa el primer perfil restante (socio/
+ * pensionado/arrendador) mapeado a "independiente" -- ninguno depende de un
+ * empleador.
+ */
+function deriveEmployment(entries: WizardIncomeSourceEntry[]): { employmentType: WizardEmploymentType; employmentYears: number } | null {
+  const empleado = entries.find((e) => e.type === "sueldo_fijo");
+  if (empleado && empleado.contractType && empleado.antiguedadYears !== null) {
+    return { employmentType: empleado.contractType, employmentYears: empleado.antiguedadYears };
+  }
+  const boleta = entries.find((e) => e.type === "boleta");
+  if (boleta && boleta.antiguedadYears !== null) {
+    return { employmentType: "honorarios", employmentYears: boleta.antiguedadYears };
+  }
+  const other = entries.find((e) => e.antiguedadYears !== null);
+  if (other) {
+    return { employmentType: "independiente", employmentYears: other.antiguedadYears! };
+  }
+  return null;
+}
+
 /**
  * Reconstruye las fuentes de ingreso del wizard (modo edición) a partir del
  * `income_sources` crudo persistido en la application (ver migración
  * 021_application_income_sources.sql). Si la application es de antes de
  * este cambio (columna null) hace un mejor esfuerzo con un solo sueldo fijo
  * a partir de `customers.monthly_income`, que es lo único que existía antes.
- * Los montos se precargan EXACTOS (ya no hay bandas que aproximar).
+ * Los montos se precargan EXACTOS. `antiguedadYears`/`contractType` no se
+ * persisten hoy (no son parte de `IncomeSource`), así que quedan en null --
+ * el cliente los vuelve a confirmar en modo edición.
  */
 function prefillIncomeSources(
   rawIncomeSources: unknown,
@@ -93,21 +151,7 @@ function prefillIncomeSources(
 export const WIZARD_PAYLOAD_STORAGE_KEY = "wizard-progress";
 
 const TOTAL_STEPS = 3;
-const STEP_LABELS = ["Empleo", "Finanzas", "Ahorro"];
-
-const EMPLOYMENT_OPTIONS: { label: string; description: string; value: WizardEmploymentType }[] = [
-  { label: "Indefinido", description: "Contrato indefinido", value: "indefinido" },
-  { label: "Plazo fijo", description: "Contrato a plazo fijo", value: "plazo_fijo" },
-  { label: "Honorarios", description: "Boletas de honorarios", value: "honorarios" },
-  { label: "Independiente", description: "Trabajo por cuenta propia", value: "independiente" },
-];
-
-const YEARS_OPTIONS: { label: string; value: number }[] = [
-  { label: "Menos de 1 año", value: 0.5 },
-  { label: "1 a 2 años", value: 1.5 },
-  { label: "2 a 5 años", value: 3 },
-  { label: "5 años o más", value: 6 },
-];
+const STEP_LABELS = ["Perfil", "Finanzas", "Ahorro"];
 
 /** Datos del cliente ya recolectados en el registro -- el wizard NO vuelve a
  * pedirlos, solo los reutiliza para armar el payload final de POST /api/leads.
@@ -182,8 +226,7 @@ function WizardPageInner() {
 
         if (isEditMode && customer?.id) {
           // Precarga: busca la application actual del cliente (mismo patrón
-          // de fallback que app/onboarding/initial-proposal/page.tsx) y
-          // mapea sus valores numéricos a la banda más cercana.
+          // de fallback que app/onboarding/initial-proposal/page.tsx).
           try {
             const appsRes = await fetch(`/api/applications?customer_id=${customer.id}&limit=1`);
             if (appsRes.ok) {
@@ -232,23 +275,20 @@ function WizardPageInner() {
 
   function canAdvance(): boolean {
     switch (step) {
-      case 1:
-        return (
-          data.employmentType !== null &&
-          data.employmentYears !== null &&
-          data.professionalLevel !== null
-        );
-      case 2: {
-        if (data.incomeSources.length === 0) return false;
-        if (data.investmentType === null || data.propertyStatus === null) return false;
+      case 1: {
+        if (data.incomeSources.length === 0 || data.professionalLevel === null) return false;
         return data.incomeSources.every((entry) => {
-          if (entry.monthlyAmountCLP === null) return false;
-          if (entry.type === "sueldo_fijo") return entry.hasSignificantBonusIncome !== null;
+          if (entry.antiguedadYears === null) return false;
+          if (entry.type === "sueldo_fijo") return entry.contractType !== null && entry.hasSignificantBonusIncome !== null;
           if (entry.type === "boleta") return entry.isVariableBoleta !== null;
           if (entry.type === "alquiler") return entry.rentalContractMonths !== null;
           if (entry.type === "sociedad") return entry.companyHasLiquidity !== null;
-          return true; // pension: no requiere campo extra (usa la edad ya registrada)
+          return true; // pension: solo antigüedad
         });
+      }
+      case 2: {
+        if (data.investmentType === null || data.propertyStatus === null) return false;
+        return data.incomeSources.every((entry) => entry.monthlyAmountCLP !== null);
       }
       case 3:
         if (data.savingsAmount === null || data.hasExistingDebt === null) return false;
@@ -276,11 +316,10 @@ function WizardPageInner() {
       return;
     }
 
-    // Cada fuente de ingreso declarada (mixto) se resuelve a un IncomeSource
-    // real -- ver lib/income-types.ts. La edad para pensión viene del
-    // registro (profile.age), no se vuelve a preguntar. Los montos ya son
-    // EXACTOS (elegidos en un desplegable, ver lib/amount-options.ts), no
-    // hay bandas/representativos que resolver.
+    // Cada perfil laboral/fuente de ingreso declarado (mixto) se resuelve a
+    // un IncomeSource real -- ver lib/income-types.ts. La edad para pensión
+    // viene del registro (profile.age), no se vuelve a preguntar. Los
+    // montos ya son EXACTOS (elegidos en un desplegable).
     const incomeSources: IncomeSource[] = data.incomeSources.map((entry) => {
       const source: IncomeSource = { type: entry.type, monthlyAmountCLP: entry.monthlyAmountCLP ?? 0 };
       if (entry.type === "sueldo_fijo") source.hasSignificantBonusIncome = entry.hasSignificantBonusIncome ?? false;
@@ -290,6 +329,14 @@ function WizardPageInner() {
       if (entry.type === "sociedad") source.companyHasLiquidity = entry.companyHasLiquidity ?? false;
       return source;
     });
+
+    // Un solo employmentType/employmentYears para el motor de scoring
+    // (factor Estabilidad Laboral) -- ver deriveEmployment más arriba.
+    const derivedEmployment = deriveEmployment(data.incomeSources) ?? {
+      employmentType: "independiente" as WizardEmploymentType,
+      employmentYears: 0,
+    };
+
     const savingsRepresentative = data.savingsAmount;
     const debtRepresentative = data.hasExistingDebt ? (data.totalDebtBalance ?? 0) : 0;
     const avalSalaryRepresentative = data.hasAval ? data.avalMonthlySalary : null;
@@ -310,8 +357,8 @@ function WizardPageInner() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            employmentType: data.employmentType,
-            employmentYears: data.employmentYears,
+            employmentType: derivedEmployment.employmentType,
+            employmentYears: derivedEmployment.employmentYears,
             professionalLevel: data.professionalLevel,
             incomeSources,
             savingsAmount: savingsRepresentative,
@@ -348,8 +395,8 @@ function WizardPageInner() {
       rut: profile.rut,
       incomeSources,
       savingsAmount: savingsRepresentative,
-      employmentType: data.employmentType,
-      employmentYears: data.employmentYears,
+      employmentType: derivedEmployment.employmentType,
+      employmentYears: derivedEmployment.employmentYears,
       professionalLevel: data.professionalLevel,
       hasExistingDebt: data.hasExistingDebt,
       totalDebtBalance: debtRepresentative,
@@ -395,16 +442,7 @@ function WizardPageInner() {
           className="transition-opacity duration-150 ease-out"
           style={{ opacity: transitioning ? 0 : 1 }}
         >
-          {step === 1 && (
-            <StepEmployment
-              employmentType={data.employmentType}
-              employmentYears={data.employmentYears}
-              professionalLevel={data.professionalLevel}
-              onChangeType={(v) => update("employmentType", v)}
-              onChangeYears={(v) => update("employmentYears", v)}
-              onChangeProfessionalLevel={(v) => update("professionalLevel", v)}
-            />
-          )}
+          {step === 1 && <StepProfile data={data} onChange={update} />}
           {step === 2 && <StepFinancialProfile data={data} onChange={update} />}
           {step === 3 && <StepSavings data={data} onChange={update} />}
         </div>
@@ -440,101 +478,15 @@ function WizardPageInner() {
   );
 }
 
-function StepEmployment({
-  employmentType,
-  employmentYears,
-  professionalLevel,
-  onChangeType,
-  onChangeYears,
-  onChangeProfessionalLevel,
-}: {
-  employmentType: WizardEmploymentType | null;
-  employmentYears: number | null;
-  professionalLevel: WizardProfessionalLevel | null;
-  onChangeType: (v: WizardEmploymentType) => void;
-  onChangeYears: (v: number) => void;
-  onChangeProfessionalLevel: (v: WizardProfessionalLevel) => void;
-}) {
-  return (
-    <section className="flex flex-col gap-8">
-      <header className="text-center">
-        <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
-          Cuéntanos sobre tu empleo
-        </h1>
-        <p className="mt-2 text-sm" style={{ color: "var(--text-tertiary)" }}>
-          Tipo de contrato y antigüedad laboral.
-        </p>
-      </header>
-
-      <div>
-        <h2
-          className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide"
-          style={{ color: "var(--text-secondary)" }}
-        >
-          <Briefcase size={16} /> Tipo de contrato
-        </h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {EMPLOYMENT_OPTIONS.map((opt) => (
-            <SelectableCard
-              key={opt.value}
-              label={opt.label}
-              description={opt.description}
-              selected={employmentType === opt.value}
-              onClick={() => onChangeType(opt.value)}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <h2
-          className="mb-3 text-sm font-semibold uppercase tracking-wide"
-          style={{ color: "var(--text-secondary)" }}
-        >
-          Antigüedad laboral
-        </h2>
-        <div className="flex flex-wrap gap-2">
-          {YEARS_OPTIONS.map((opt) => (
-            <SelectableChip
-              key={opt.value}
-              label={opt.label}
-              selected={employmentYears === opt.value}
-              onClick={() => onChangeYears(opt.value)}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <h2
-          className="mb-3 text-sm font-semibold uppercase tracking-wide"
-          style={{ color: "var(--text-secondary)" }}
-        >
-          Nivel profesional
-        </h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {PROFESSIONAL_LEVEL_OPTIONS.map((opt) => (
-            <SelectableCard
-              key={opt.value}
-              label={opt.label}
-              description={opt.description}
-              selected={professionalLevel === opt.value}
-              onClick={() => onChangeProfessionalLevel(opt.value)}
-            />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 /**
- * Selección de tipo(s) de ingreso (mixto -- se puede elegir más de uno) más
- * las preguntas específicas de cada tipo (ver lib/income-types.ts para el
- * detalle de negocio de cada haircut). Reemplaza la antigua pregunta única
- * "¿cuál es tu renta líquida mensual?".
+ * Paso 1: identifica el/los perfil(es) laboral(es) del cliente (empleado,
+ * socio, independiente, pensionado, arrendador -- puede ser más de uno) y
+ * anida ahí sus preguntas cualitativas (contrato + antigüedad si es
+ * empleado, antigüedad para todos, bono/variable/liquidez según
+ * corresponda). El nivel profesional se pregunta una sola vez, aparte,
+ * porque aplica sin importar el perfil elegido.
  */
-function IncomeSourcesSection({
+function StepProfile({
   data,
   onChange,
 }: {
@@ -561,17 +513,23 @@ function IncomeSourcesSection({
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <section className="flex flex-col gap-8">
+      <header className="text-center">
+        <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
+          Cuéntanos sobre tu perfil
+        </h1>
+        <p className="mt-2 text-sm" style={{ color: "var(--text-tertiary)" }}>
+          Identifica tu(s) fuente(s) de ingreso -- puedes elegir más de una si tienes ingresos mixtos.
+        </p>
+      </header>
+
       <div>
         <h2
           className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide"
           style={{ color: "var(--text-secondary)" }}
         >
-          <Wallet size={16} /> ¿Cuáles son tus fuentes de ingreso?
+          <Briefcase size={16} /> ¿Cuál es tu situación laboral?
         </h2>
-        <p className="mb-3 text-xs" style={{ color: "var(--text-tertiary)" }}>
-          Puedes elegir más de una si tienes ingresos mixtos.
-        </p>
         <div className="flex flex-wrap gap-2">
           {INCOME_TYPE_OPTIONS.map((opt) => (
             <SelectableChip
@@ -593,14 +551,37 @@ function IncomeSourcesSection({
               {typeLabel}
             </h3>
 
+            {entry.type === "sueldo_fijo" && (
+              <>
+                <p className="mb-2 text-xs" style={{ color: "var(--text-tertiary)" }}>
+                  Tipo de contrato
+                </p>
+                <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {CONTRACT_TYPE_OPTIONS.map((opt) => (
+                    <SelectableCard
+                      key={opt.value}
+                      label={opt.label}
+                      description={opt.description}
+                      selected={entry.contractType === opt.value}
+                      onClick={() => updateEntry(entry.type, { contractType: opt.value })}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+
             <p className="mb-2 text-xs" style={{ color: "var(--text-tertiary)" }}>
-              ¿Cuál es el monto mensual exacto de este ingreso?
+              ¿Hace cuánto tiempo tienes este ingreso/actividad?
             </p>
-            <div className="mb-4 max-w-xs">
-              <AmountSelect
-                value={entry.monthlyAmountCLP}
-                onChange={(v) => updateEntry(entry.type, { monthlyAmountCLP: v })}
-              />
+            <div className="mb-4 flex flex-wrap gap-2">
+              {YEARS_OPTIONS.map((opt) => (
+                <SelectableChip
+                  key={opt.value}
+                  label={opt.label}
+                  selected={entry.antiguedadYears === opt.value}
+                  onClick={() => updateEntry(entry.type, { antiguedadYears: opt.value })}
+                />
+              ))}
             </div>
 
             {entry.type === "sueldo_fijo" && (
@@ -689,10 +670,34 @@ function IncomeSourcesSection({
           </div>
         );
       })}
-    </div>
+
+      <div>
+        <h2
+          className="mb-3 text-sm font-semibold uppercase tracking-wide"
+          style={{ color: "var(--text-secondary)" }}
+        >
+          Nivel profesional
+        </h2>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {PROFESSIONAL_LEVEL_OPTIONS.map((opt) => (
+            <SelectableCard
+              key={opt.value}
+              label={opt.label}
+              description={opt.description}
+              selected={data.professionalLevel === opt.value}
+              onClick={() => onChange("professionalLevel", opt.value)}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
+/**
+ * Paso 2: SOLO montos exactos (los perfiles ya se identificaron y
+ * calificaron en el Paso 1) más "¿qué buscas?" y estado del inmueble.
+ */
 function StepFinancialProfile({
   data,
   onChange,
@@ -700,18 +705,47 @@ function StepFinancialProfile({
   data: WizardData;
   onChange: <K extends keyof WizardData>(key: K, value: WizardData[K]) => void;
 }) {
+  function updateAmount(type: WizardIncomeType, amount: number) {
+    onChange(
+      "incomeSources",
+      data.incomeSources.map((e) => (e.type === type ? { ...e, monthlyAmountCLP: amount } : e))
+    );
+  }
+
   return (
     <section className="flex flex-col gap-8">
       <header className="text-center">
         <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
-          Tu perfil financiero
+          Tus finanzas
         </h1>
         <p className="mt-2 text-sm" style={{ color: "var(--text-tertiary)" }}>
-          Elige el rango que más se acerque a tu situación.
+          Confirma el monto exacto de cada ingreso que identificaste.
         </p>
       </header>
 
-      <IncomeSourcesSection data={data} onChange={onChange} />
+      <div className="flex flex-col gap-4">
+        {data.incomeSources.map((entry) => {
+          const typeLabel = INCOME_TYPE_OPTIONS.find((o) => o.value === entry.type)?.label ?? entry.type;
+          return (
+            <div key={entry.type}>
+              <h2
+                className="mb-2 text-sm font-semibold uppercase tracking-wide"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                {typeLabel}
+              </h2>
+              <div className="max-w-xs">
+                <AmountSelect
+                  value={entry.monthlyAmountCLP}
+                  onChange={(v) => updateAmount(entry.type, v)}
+                  options={INCOME_AMOUNT_OPTIONS}
+                  placeholder="Monto mensual exacto"
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
       <div>
         <h2
@@ -870,6 +904,7 @@ function StepSavings({
               <AmountSelect
                 value={data.avalMonthlySalary}
                 onChange={(v) => onChange("avalMonthlySalary", v)}
+                options={INCOME_AMOUNT_OPTIONS}
               />
             </div>
 

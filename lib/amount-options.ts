@@ -22,6 +22,23 @@ export function generateAmountOptions(): number[] {
 
 export const AMOUNT_OPTIONS = generateAmountOptions();
 
+/**
+ * Igual que `generateAmountOptions` pero topado en $8.000.000 -- se usa
+ * para montos de INGRESO (sueldo, boleta, pensión, alquiler, sociedad,
+ * renta del aval) para no generar un listado demasiado largo. Ahorro/pie
+ * disponible y saldo de deuda siguen usando `AMOUNT_OPTIONS` (hasta $30M),
+ * ya que un pie disponible puede superar los $8M sin ser un ingreso mensual
+ * irreal.
+ */
+export function generateIncomeAmountOptions(): number[] {
+  const options: number[] = [];
+  for (let v = 0; v <= 2_000_000; v += 50_000) options.push(v);
+  for (let v = 2_250_000; v <= 8_000_000; v += 250_000) options.push(v);
+  return options;
+}
+
+export const INCOME_AMOUNT_OPTIONS = generateIncomeAmountOptions();
+
 /** Formatea un monto CLP para mostrar en el desplegable (ej. "$1.250.000"). */
 export function formatAmountCLP(value: number): string {
   return new Intl.NumberFormat("es-CL", {
