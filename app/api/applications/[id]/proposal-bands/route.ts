@@ -54,12 +54,12 @@ export const GET = withErrorHandling(async (_request: Request, context: { params
   // default "tecnico" (el más conservador) si el cliente no lo declaró.
   const professionalLevel: ProfessionalLevel =
     customer?.professional_level === "profesional" ? "profesional" : "tecnico";
+  // NOTA: `bands` es un indicador CUALITATIVO interno (qué tan probable es
+  // que el banco apruebe, según scoring + nivel profesional) para uso del
+  // equipo (asesor/gerencia/admin) -- ya NO se usa para descontar el
+  // crédito teórico del cliente (ver lib/uf-preevaluation.ts). Se sigue
+  // calculando y devolviendo acá para esa vista interna futura.
   const bands = calculateProposalBands(application.scoring_score ?? 0, professionalLevel);
-
-  // La banda "1" es la de mayor probabilidad de aprobación (menor cantidad
-  // de departamentos comprometidos) -- se usa como referencia conservadora
-  // para el haircut de la pre-evaluación en UF.
-  const mostLikelyBand = bands.find((b) => b.band === "1") ?? bands[0];
 
   // Si el cliente declaró ingreso mixto (wizard nuevo -- ver
   // lib/income-types.ts), el tope de Leverage puede ser más estricto que el
@@ -78,7 +78,6 @@ export const GET = withErrorHandling(async (_request: Request, context: { params
     monthlySalaryCLP: customer?.monthly_income ?? 0,
     totalDebtBalanceCLP: application.total_debt_balance ?? 0,
     savingsAmountCLP: application.savings_amount ?? 0,
-    approvalProbability: mostLikelyBand?.approvalProbability ?? 0,
     avalMonthlySalaryCLP: guarantor?.monthly_income ?? undefined,
     maxLeverageMultipleOverride,
   });

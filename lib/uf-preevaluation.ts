@@ -77,7 +77,6 @@ export interface UFPreEvaluationInput {
   /** Saldo TOTAL de deuda de corto plazo vigente (CLP), no la cuota mensual. */
   totalDebtBalanceCLP: number;
   savingsAmountCLP: number; // pie disponible
-  approvalProbability: number; // 0-100, viene de calculateProposalBands
   /**
    * Renta líquida mensual del aval/codeudor (CLP), si el cliente declaró uno
    * en el wizard. Opcional -- si no viene, el cálculo es idéntico al de
@@ -130,9 +129,6 @@ export function calculateUFPreEvaluation(input: UFPreEvaluationInput): UFPreEval
   const monthlySalaryCLP = safeNonNegative(input.monthlySalaryCLP);
   const totalDebtBalanceCLP = safeNonNegative(input.totalDebtBalanceCLP);
   const savingsAmountCLP = safeNonNegative(input.savingsAmountCLP);
-  const approvalProbability = Number.isFinite(input.approvalProbability)
-    ? Math.min(100, Math.max(0, input.approvalProbability))
-    : 0;
 
   const avalMonthlySalaryCLP = safeNonNegative(input.avalMonthlySalaryCLP ?? 0);
 
@@ -181,12 +177,15 @@ export function calculateUFPreEvaluation(input: UFPreEvaluationInput): UFPreEval
   const numPayments = LOAN_TERM_YEARS * 12;
   const annuityFactor = (1 - Math.pow(1 + monthlyRate, -numPayments)) / monthlyRate;
   const maxLoanCLP = maxMonthlyInstallmentCLP * annuityFactor;
-  const maxLoanUFTheoretical = maxLoanCLP / UF_VALUE_CLP;
 
-  // Haircut conservador: el máximo teórico se pondera por la probabilidad
-  // real de aprobación de la banda más probable, para no mostrarle al
-  // cliente un número optimista que no refleja su riesgo real.
-  const maxLoanUF = safeNonNegative(maxLoanUFTheoretical * (approvalProbability / 100));
+  // La probabilidad de aprobación (banda de riesgo + tope por nivel
+  // profesional, ver lib/proposal-risk.ts) es un indicador CUALITATIVO
+  // interno para el equipo (asesor/gerencia/admin) sobre qué tan probable es
+  // que el banco apruebe -- NO descuenta el crédito teórico que se le
+  // muestra/usa para calificar al cliente. El monto que ve el cliente es
+  // 100% su capacidad de pago real (RRD/Carga Financiera/Leverage), sin
+  // ningún haircut adicional.
+  const maxLoanUF = safeNonNegative(maxLoanCLP / UF_VALUE_CLP);
 
   const pieUF = safeNonNegative(savingsAmountCLP / UF_VALUE_CLP);
 

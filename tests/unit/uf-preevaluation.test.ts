@@ -7,13 +7,11 @@ describe("calculateUFPreEvaluation", () => {
       monthlySalaryCLP: 3_000_000,
       totalDebtBalanceCLP: 0,
       savingsAmountCLP: 10_000_000,
-      approvalProbability: 80,
     });
     const withDebt = calculateUFPreEvaluation({
       monthlySalaryCLP: 3_000_000,
       totalDebtBalanceCLP: 9_000_000,
       savingsAmountCLP: 10_000_000,
-      approvalProbability: 80,
     });
     expect(noDebt.maxLoanUF).toBeGreaterThan(withDebt.maxLoanUF);
   });
@@ -23,31 +21,32 @@ describe("calculateUFPreEvaluation", () => {
       monthlySalaryCLP: 500_000,
       totalDebtBalanceCLP: 0,
       savingsAmountCLP: 1_000_000,
-      approvalProbability: 80,
     });
     const high = calculateUFPreEvaluation({
       monthlySalaryCLP: 5_000_000,
       totalDebtBalanceCLP: 0,
       savingsAmountCLP: 1_000_000,
-      approvalProbability: 80,
     });
     expect(low.maxLoanUF).toBeLessThan(high.maxLoanUF);
   });
 
-  it("una probabilidad de aprobación baja reduce el maxLoanUF respecto a una alta", () => {
-    const lowProb = calculateUFPreEvaluation({
+  it("el maxLoanUF depende solo de la capacidad de pago, no de un factor de probabilidad externo", () => {
+    // La probabilidad de aprobación (lib/proposal-risk.ts) es un indicador
+    // cualitativo interno para el equipo -- NO debe descontar el crédito
+    // teórico del cliente. Dos perfiles con exactamente la misma capacidad
+    // de pago deben dar el mismo maxLoanUF sin importar nada externo a
+    // salario/deuda/ahorro/aval.
+    const a = calculateUFPreEvaluation({
       monthlySalaryCLP: 3_000_000,
       totalDebtBalanceCLP: 0,
       savingsAmountCLP: 5_000_000,
-      approvalProbability: 20,
     });
-    const highProb = calculateUFPreEvaluation({
+    const b = calculateUFPreEvaluation({
       monthlySalaryCLP: 3_000_000,
       totalDebtBalanceCLP: 0,
       savingsAmountCLP: 5_000_000,
-      approvalProbability: 90,
     });
-    expect(lowProb.maxLoanUF).toBeLessThan(highProb.maxLoanUF);
+    expect(a.maxLoanUF).toBe(b.maxLoanUF);
   });
 
   it("el pie en UF corresponde al ahorro dividido por el valor de la UF", () => {
@@ -55,7 +54,6 @@ describe("calculateUFPreEvaluation", () => {
       monthlySalaryCLP: 2_000_000,
       totalDebtBalanceCLP: 0,
       savingsAmountCLP: UF_VALUE_CLP * 100,
-      approvalProbability: 100,
     });
     expect(result.pieUF).toBeCloseTo(100, 5);
   });
@@ -65,7 +63,6 @@ describe("calculateUFPreEvaluation", () => {
       monthlySalaryCLP: 1_800_000,
       totalDebtBalanceCLP: 1_200_000,
       savingsAmountCLP: 3_000_000,
-      approvalProbability: 60,
     });
     expect(result.estimatedPropertyValueUF).toBeCloseTo(result.maxLoanUF + result.pieUF, 6);
   });
@@ -75,7 +72,6 @@ describe("calculateUFPreEvaluation", () => {
       monthlySalaryCLP: 500_000,
       totalDebtBalanceCLP: 20_000_000,
       savingsAmountCLP: 0,
-      approvalProbability: 50,
     });
     expect(result.disqualifiedByLeverage).toBe(true);
     expect(result.maxMonthlyInstallmentCLP).toBe(0);
@@ -88,7 +84,6 @@ describe("calculateUFPreEvaluation", () => {
       monthlySalaryCLP: 1_000_000,
       totalDebtBalanceCLP: 7_000_000, // cuota estimada ~583k, ya solo > 40% del ingreso
       savingsAmountCLP: 0,
-      approvalProbability: 50,
     });
     expect(result.disqualifiedByLeverage).toBe(false); // 7M <= 1M * 8 (tramo <=2M)
     expect(result.maxMonthlyInstallmentCLP).toBeGreaterThanOrEqual(0);
@@ -100,7 +95,6 @@ describe("calculateUFPreEvaluation", () => {
         monthlySalaryCLP: NaN,
         totalDebtBalanceCLP: -100,
         savingsAmountCLP: NaN,
-        approvalProbability: -50,
       })
     ).not.toThrow();
 
@@ -108,7 +102,6 @@ describe("calculateUFPreEvaluation", () => {
       monthlySalaryCLP: NaN,
       totalDebtBalanceCLP: -100,
       savingsAmountCLP: NaN,
-      approvalProbability: 1000,
     });
     expect(result.maxLoanUF).toBeGreaterThanOrEqual(0);
     expect(result.pieUF).toBeGreaterThanOrEqual(0);
@@ -120,13 +113,11 @@ describe("calculateUFPreEvaluation", () => {
       monthlySalaryCLP: 1_500_000,
       totalDebtBalanceCLP: 0,
       savingsAmountCLP: 3_000_000,
-      approvalProbability: 70,
     });
     const withAval = calculateUFPreEvaluation({
       monthlySalaryCLP: 1_500_000,
       totalDebtBalanceCLP: 0,
       savingsAmountCLP: 3_000_000,
-      approvalProbability: 70,
       avalMonthlySalaryCLP: 1_000_000,
     });
     expect(withAval.maxLoanUF).toBeGreaterThan(withoutAval.maxLoanUF);
@@ -138,7 +129,6 @@ describe("calculateUFPreEvaluation", () => {
       monthlySalaryCLP: 2_000_000,
       totalDebtBalanceCLP: 0,
       savingsAmountCLP: 1_000_000,
-      approvalProbability: 70,
     });
     expect(result.disclaimer.length).toBeGreaterThan(10);
   });
