@@ -33,9 +33,9 @@ function StageAlert({ tone, message }: { tone: AlertTone; message: string }) {
   const Icon = config.icon
 
   return (
-    <div className={cn("glass-card flex items-start gap-3 rounded-xl border p-4", config.wrapper)}>
-      <Icon className={cn("mt-0.5 size-5 shrink-0", config.icon_)} aria-hidden="true" />
-      <p className="text-sm leading-relaxed text-text-primary">{message}</p>
+    <div className={cn("glass-card flex items-start gap-2.5 rounded-xl border p-3", config.wrapper)}>
+      <Icon className={cn("mt-0.5 size-4 shrink-0", config.icon_)} aria-hidden="true" />
+      <p className="text-[12.5px] leading-snug text-text-primary">{message}</p>
     </div>
   )
 }

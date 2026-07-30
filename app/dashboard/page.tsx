@@ -130,13 +130,13 @@ export default function DashboardPage() {
     <Layout>
       <Toaster />
       <div className="flex flex-col gap-3.5">
-        <div className="glass-card rounded-2xl p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-col gap-1.5">
-              <span className="text-[11px] font-bold uppercase tracking-wide text-text-tertiary">
+        <div className="glass-card rounded-2xl p-3.5">
+          <div className="flex flex-wrap items-center justify-between gap-2.5">
+            <div className="flex flex-col gap-1">
+              <span className="text-[10.5px] font-bold uppercase tracking-wide text-text-tertiary">
                 Estado de tu proceso
               </span>
-              <span className="text-2xl font-bold tracking-tight text-text-primary">
+              <span className="text-xl font-bold tracking-tight text-text-primary">
                 {application ? stageLabel : "Sin evaluación iniciada"}
               </span>
             </div>
@@ -145,11 +145,11 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {loading && <p className="mt-4 text-sm text-text-tertiary">Cargando tu solicitud...</p>}
-          {error && <p className="mt-4 text-sm text-error">{error}</p>}
+          {loading && <p className="mt-3 text-[12.5px] text-text-tertiary">Cargando tu solicitud...</p>}
+          {error && <p className="mt-3 text-[12.5px] text-error">{error}</p>}
 
           {!loading && (
-            <div className="mt-4">
+            <div className="mt-3">
               <Timeline
                 orientation="horizontal"
                 currentStage={application ? stage : ""}
@@ -161,16 +161,16 @@ export default function DashboardPage() {
         </div>
 
         {!loading && !application && (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2.5">
             <StageAlert
               tone="info"
               message="Aún no has comenzado tu evaluación. Completa el formulario de perfilamiento para ver tu solicitud avanzar por estas etapas."
             />
 
-            <div className="glow-cyan flex flex-col items-start gap-2.5 rounded-2xl border border-neon-cyan/40 bg-neon-cyan/[0.06] p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-col gap-1">
-                <p className="text-sm font-bold text-text-primary">Comienza tu evaluación</p>
-                <p className="text-xs text-text-secondary">
+            <div className="glow-cyan flex flex-col items-start gap-2 rounded-xl border border-neon-cyan/40 bg-neon-cyan/[0.06] p-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-0.5">
+                <p className="text-[13px] font-bold text-text-primary">Comienza tu evaluación</p>
+                <p className="text-[11.5px] text-text-secondary">
                   Responde algunas preguntas y descubre tu categoría de inversión al instante.
                 </p>
               </div>
@@ -194,7 +194,7 @@ export default function DashboardPage() {
         {!loading && application && stage === "SCORING_COMPLETADO" && initialProposalQualifies === false && (
           // Cliente en análisis de perfil que NO califica: dejamos solo la
           // tarjeta ámbar, sin el resto de secciones de progreso.
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2.5">
             <InitialProposalCard
               applicationId={application.id}
               onSelected={loadData}
@@ -204,19 +204,19 @@ export default function DashboardPage() {
         )}
 
         {!loading && application && !(stage === "SCORING_COMPLETADO" && initialProposalQualifies === false) && (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2.5">
             <StageAlert tone={stageContent.alert.tone} message={stageContent.alert.message} />
 
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2 text-xs text-text-tertiary">
+              <div className="flex items-center gap-1.5 text-[11px] text-text-tertiary">
                 <Clock className="size-3.5 shrink-0" aria-hidden="true" />
-                <span>Duración estimada de esta etapa: {stageContent.estimatedDuration}</span>
+                <span>Duración estimada: {stageContent.estimatedDuration}</span>
               </div>
 
               {(stage === "SCORING_COMPLETADO" || stage === "DOCUMENTOS_PENDIENTES") && (
                 <Button
                   variant="outline"
-                  className="min-h-11"
+                  size="sm"
                   render={<Link href="/onboarding/wizard?edit=true" />}
                 >
                   Actualizar mis datos
@@ -228,12 +228,12 @@ export default function DashboardPage() {
                 las acciones (agendar visita, actualizar datos) van como
                 botones secundarios dentro de sus propias cards. */}
             {stageContent.showUploadCta && (
-              <div className="glow-cyan flex flex-col items-start gap-2.5 rounded-2xl border border-neon-cyan/40 bg-neon-cyan/[0.06] p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex flex-col gap-1">
-                  <p className="text-sm font-bold text-text-primary">
+              <div className="glow-cyan flex flex-col items-start gap-2 rounded-xl border border-neon-cyan/40 bg-neon-cyan/[0.06] p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-0.5">
+                  <p className="text-[13px] font-bold text-text-primary">
                     Tu solicitud necesita documentos
                   </p>
-                  <p className="text-xs text-text-secondary">
+                  <p className="text-[11.5px] text-text-secondary">
                     Súbelos ahora para que tu asesor pueda continuar el proceso.
                   </p>
                 </div>

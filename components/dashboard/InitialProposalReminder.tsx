@@ -24,9 +24,9 @@ const PURPOSE_LABELS: Record<string, string> = {
  */
 function InitialProposalReminder({ band, purpose }: { band: string; purpose: string }) {
   return (
-    <div className="glass-card flex items-center gap-3 rounded-xl border border-glass-border p-4">
-      <Building2 className="size-5 shrink-0 text-neon-cyan" />
-      <p className="text-sm text-text-secondary">
+    <div className="glass-card flex items-center gap-2.5 rounded-xl border border-glass-border p-3">
+      <Building2 className="size-4 shrink-0 text-neon-cyan" />
+      <p className="text-[12.5px] leading-snug text-text-secondary">
         Tu propuesta inicial simulada: <span className="font-medium text-text-primary">{BAND_LABELS[band] ?? band}</span>{" "}
         para <span className="font-medium text-text-primary">{PURPOSE_LABELS[purpose] ?? purpose}</span>. Sigue siendo
         una simulación hasta que el banco confirme tras revisar tus documentos.
