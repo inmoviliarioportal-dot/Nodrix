@@ -15,7 +15,7 @@ function DocumentsCard({ documents, onUploadClick }: DocumentsCardProps) {
   const percent = total > 0 ? Math.round((approved / total) * 100) : 0
 
   return (
-    <Card size="sm" className="gap-2.5">
+    <Card size="sm" className="gap-1.5">
       <CardHeader>
         <CardTitle className="text-[13px] font-bold text-text-primary">Documentos</CardTitle>
         <CardAction>
@@ -24,7 +24,7 @@ function DocumentsCard({ documents, onUploadClick }: DocumentsCardProps) {
           </span>
         </CardAction>
       </CardHeader>
-      <CardContent className="flex flex-col gap-2.5">
+      <CardContent className="flex flex-col gap-2">
         {total > 0 && (
           <div className="h-[5px] w-full overflow-hidden rounded-full bg-glass-border">
             <div

@@ -8,7 +8,7 @@ export interface NextStepCardProps {
 /** Card de "próximo paso": mensaje contextual mock según el stage actual. */
 function NextStepCard({ stage }: NextStepCardProps) {
   return (
-    <Card size="sm" className="glass-surface gap-2.5 border-glass-border">
+    <Card size="sm" className="glass-surface gap-1.5 border-glass-border">
       <CardHeader>
         <CardTitle className="text-[13px] font-bold text-text-primary">Próximo paso</CardTitle>
       </CardHeader>

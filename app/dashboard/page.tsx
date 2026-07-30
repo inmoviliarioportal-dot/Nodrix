@@ -129,8 +129,8 @@ export default function DashboardPage() {
   return (
     <Layout>
       <Toaster />
-      <div className="flex flex-col gap-5">
-        <div className="glass-card rounded-2xl p-6">
+      <div className="flex flex-col gap-3.5">
+        <div className="glass-card rounded-2xl p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-col gap-1.5">
               <span className="text-[11px] font-bold uppercase tracking-wide text-text-tertiary">
@@ -149,7 +149,7 @@ export default function DashboardPage() {
           {error && <p className="mt-4 text-sm text-error">{error}</p>}
 
           {!loading && (
-            <div className="mt-6">
+            <div className="mt-4">
               <Timeline
                 orientation="horizontal"
                 currentStage={application ? stage : ""}
@@ -161,13 +161,13 @@ export default function DashboardPage() {
         </div>
 
         {!loading && !application && (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3">
             <StageAlert
               tone="info"
               message="Aún no has comenzado tu evaluación. Completa el formulario de perfilamiento para ver tu solicitud avanzar por estas etapas."
             />
 
-            <div className="glow-cyan flex flex-col items-start gap-3.5 rounded-2xl border border-neon-cyan/40 bg-neon-cyan/[0.06] p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="glow-cyan flex flex-col items-start gap-2.5 rounded-2xl border border-neon-cyan/40 bg-neon-cyan/[0.06] p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-col gap-1">
                 <p className="text-sm font-bold text-text-primary">Comienza tu evaluación</p>
                 <p className="text-xs text-text-secondary">
@@ -194,7 +194,7 @@ export default function DashboardPage() {
         {!loading && application && stage === "SCORING_COMPLETADO" && initialProposalQualifies === false && (
           // Cliente en análisis de perfil que NO califica: dejamos solo la
           // tarjeta ámbar, sin el resto de secciones de progreso.
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3">
             <InitialProposalCard
               applicationId={application.id}
               onSelected={loadData}
@@ -204,29 +204,31 @@ export default function DashboardPage() {
         )}
 
         {!loading && application && !(stage === "SCORING_COMPLETADO" && initialProposalQualifies === false) && (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3">
             <StageAlert tone={stageContent.alert.tone} message={stageContent.alert.message} />
 
-            <div className="flex items-center gap-2 text-xs text-text-tertiary">
-              <Clock className="size-3.5 shrink-0" aria-hidden="true" />
-              <span>Duración estimada de esta etapa: {stageContent.estimatedDuration}</span>
-            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-xs text-text-tertiary">
+                <Clock className="size-3.5 shrink-0" aria-hidden="true" />
+                <span>Duración estimada de esta etapa: {stageContent.estimatedDuration}</span>
+              </div>
 
-            {(stage === "SCORING_COMPLETADO" || stage === "DOCUMENTOS_PENDIENTES") && (
-              <Button
-                variant="outline"
-                className="w-fit"
-                render={<Link href="/onboarding/wizard?edit=true" />}
-              >
-                Actualizar mis datos
-              </Button>
-            )}
+              {(stage === "SCORING_COMPLETADO" || stage === "DOCUMENTOS_PENDIENTES") && (
+                <Button
+                  variant="outline"
+                  className="min-h-11"
+                  render={<Link href="/onboarding/wizard?edit=true" />}
+                >
+                  Actualizar mis datos
+                </Button>
+              )}
+            </div>
 
             {/* Un solo CTA prominente por etapa cuando aplica -- el resto de
                 las acciones (agendar visita, actualizar datos) van como
                 botones secundarios dentro de sus propias cards. */}
             {stageContent.showUploadCta && (
-              <div className="glow-cyan flex flex-col items-start gap-3.5 rounded-2xl border border-neon-cyan/40 bg-neon-cyan/[0.06] p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="glow-cyan flex flex-col items-start gap-2.5 rounded-2xl border border-neon-cyan/40 bg-neon-cyan/[0.06] p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-col gap-1">
                   <p className="text-sm font-bold text-text-primary">
                     Tu solicitud necesita documentos
@@ -266,7 +268,7 @@ export default function DashboardPage() {
                 )}
                 {/* Grid de KPI cards compactas: scoring, documentos, próximo
                     paso y (si corresponde) agendar visita. */}
-                <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                   <ScoringCard scoring={scoring} />
                   <DocumentsCard documents={documents} onUploadClick={() => setUploadOpen(true)} />
                   <PreEvaluationCard

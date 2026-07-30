@@ -66,7 +66,7 @@ function ScheduleVisitCard({ applicationId }: { applicationId: string }) {
 
   if (loading) {
     return (
-      <div className="rounded-[14px] border border-glass-border bg-surface p-[18px]">
+      <div className="rounded-[14px] border border-glass-border bg-surface p-3.5">
         <p className="text-[12.5px] text-text-tertiary">Cargando tus propiedades elegidas...</p>
       </div>
     )
@@ -79,7 +79,7 @@ function ScheduleVisitCard({ applicationId }: { applicationId: string }) {
   if (!properties || properties.length === 0) return null
 
   return (
-    <div className="flex flex-col gap-2.5 rounded-[14px] border border-glass-border bg-surface p-[18px]">
+    <div className="flex flex-col gap-2 rounded-[14px] border border-glass-border bg-surface p-3.5">
       <div>
         <h2 className="text-[13px] font-bold text-text-primary">Agenda tu visita</h2>
         <p className="mt-1 text-[12.5px] leading-relaxed text-text-secondary">
