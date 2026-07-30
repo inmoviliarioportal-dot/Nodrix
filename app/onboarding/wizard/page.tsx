@@ -20,28 +20,7 @@ import {
   type WizardIncomeType,
   type WizardIncomeSourceEntry,
   type WizardProfessionalLevel,
-  type WizardPropertyDestination,
-  type WizardInvestmentType,
 } from "@/lib/wizard-storage";
-
-/**
- * Destino real del inmueble -- reemplaza la vieja pregunta genérica "¿Qué
- * buscas?" (investmentType). Determina qué se pregunta DESPUÉS de la
- * evaluación (housing vs. perfilamiento de rentabilidad) y qué carrusel de
- * propiedades ve el cliente (ver app/onboarding/initial-proposal/page.tsx).
- */
-const PROPERTY_DESTINATION_OPTIONS: { label: string; value: WizardPropertyDestination }[] = [
-  { label: "Vivir", value: "vivir" },
-  { label: "Airbnb", value: "airbnb" },
-  { label: "Alquiler tradicional", value: "alquiler_tradicional" },
-  { label: "Venta a corto plazo", value: "venta_corto_plazo" },
-];
-
-/** vivir -> vivienda_propia; el resto son variantes de rentabilidad -> inversion. */
-function deriveInvestmentType(destination: WizardPropertyDestination | null): WizardInvestmentType | null {
-  if (destination === null) return null;
-  return destination === "vivir" ? "vivienda_propia" : "inversion";
-}
 import type { IncomeSource } from "@/lib/income-types";
 
 /**
@@ -259,8 +238,6 @@ function WizardPageInner() {
                   ...prev,
                   incomeSources: prefillIncomeSources(app.income_sources, customer.monthly_income) ?? prev.incomeSources,
                   professionalLevel: customer.professional_level ?? prev.professionalLevel,
-                  investmentType: customer.investment_type ?? prev.investmentType,
-                  propertyDestination: customer.property_destination ?? prev.propertyDestination,
                   propertyStatus: customer.property_status ?? prev.propertyStatus,
                   savingsAmount: typeof app.savings_amount === "number" ? app.savings_amount : prev.savingsAmount,
                 }));
@@ -309,7 +286,7 @@ function WizardPageInner() {
         });
       }
       case 2: {
-        if (data.propertyDestination === null || data.propertyStatus === null) return false;
+        if (data.propertyStatus === null) return false;
         return data.incomeSources.every((entry) => entry.monthlyAmountCLP !== null);
       }
       case 3:
@@ -386,8 +363,6 @@ function WizardPageInner() {
             savingsAmount: savingsRepresentative,
             hasExistingDebt: data.hasExistingDebt,
             totalDebtBalance: debtRepresentative,
-            investmentType: deriveInvestmentType(data.propertyDestination),
-            propertyDestination: data.propertyDestination,
             propertyStatus: data.propertyStatus,
             hasAval: data.hasAval,
             avalRelationship: data.hasAval ? data.avalRelationship : undefined,
@@ -423,8 +398,6 @@ function WizardPageInner() {
       professionalLevel: data.professionalLevel,
       hasExistingDebt: data.hasExistingDebt,
       totalDebtBalance: debtRepresentative,
-      investmentType: deriveInvestmentType(data.propertyDestination),
-      propertyDestination: data.propertyDestination,
       propertyStatus: data.propertyStatus,
       hasAval: data.hasAval,
       avalRelationship: data.hasAval ? data.avalRelationship : undefined,
@@ -773,25 +746,6 @@ function StepFinancialProfile({
             </div>
           );
         })}
-      </div>
-
-      <div>
-        <h2
-          className="mb-3 text-sm font-semibold uppercase tracking-wide"
-          style={{ color: "var(--text-secondary)" }}
-        >
-          ¿Para qué destinarás el inmueble?
-        </h2>
-        <div className="flex flex-wrap gap-2">
-          {PROPERTY_DESTINATION_OPTIONS.map((opt) => (
-            <SelectableChip
-              key={opt.value}
-              label={opt.label}
-              selected={data.propertyDestination === opt.value}
-              onClick={() => onChange("propertyDestination", opt.value)}
-            />
-          ))}
-        </div>
       </div>
 
       <div>

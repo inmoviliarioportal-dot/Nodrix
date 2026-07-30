@@ -48,7 +48,15 @@ export const WIZARD_STORAGE_KEY = "wizard-progress";
 // el resto -> inversion) para no romper el motor de scoring/pre-evaluación,
 // pero ya no se pregunta directamente. Progreso v9 se descarta igual que en
 // los bumps anteriores.
-const WIZARD_STORAGE_VERSION = 10;
+// v11: `propertyDestination` se elimina del wizard -- ahora se pregunta
+// DESPUÉS de la evaluación (junto a la revelación de UF aprobadas, ver
+// components/dashboard/InitialProposalCard.tsx), donde el cliente puede
+// elegir MÁS DE UN destino a la vez (ej. Airbnb + Alquiler tradicional).
+// `investmentType` ya no se deriva en el wizard tampoco -- se calcula en
+// `POST /api/applications/[id]/select-destinations` a partir de los
+// destinos elegidos. Progreso v10 se descarta igual que en los bumps
+// anteriores.
+const WIZARD_STORAGE_VERSION = 11;
 
 /** Mismos 2 valores EXACTOS que `ProfessionalLevel` en lib/proposal-risk.ts */
 export type WizardProfessionalLevel = "profesional" | "tecnico";
@@ -105,18 +113,6 @@ export function emptyIncomeSourceEntry(type: WizardIncomeType): WizardIncomeSour
   };
 }
 
-/** Mismos 3 valores EXACTOS que antes validaba POST /api/auth/register (ver components/auth/schemas.ts) */
-export type WizardInvestmentType = "inversion" | "vivienda_propia" | "ambos";
-
-/**
- * Destino real que el cliente le dará al inmueble -- reemplaza la pregunta
- * genérica "¿Qué buscas?" (investmentType) por algo más accionable: define
- * qué preferencias se piden DESPUÉS de la evaluación y qué carrusel de
- * propiedades ve el cliente (ver app/onboarding/initial-proposal/page.tsx y
- * components/dashboard/PropertyPreferencesCard.tsx).
- */
-export type WizardPropertyDestination = "vivir" | "airbnb" | "alquiler_tradicional" | "venta_corto_plazo";
-
 /** Mismos 5 valores EXACTOS que antes validaba POST /api/auth/register */
 export type WizardPropertyStatus =
   | "en_verde"
@@ -132,10 +128,8 @@ export interface WizardData {
   incomeSources: WizardIncomeSourceEntry[];
   /** Tope cualitativo sobre la probabilidad de aprobación (ver lib/proposal-risk.ts). */
   professionalLevel: WizardProfessionalLevel | null;
-  // Paso 2: SOLO montos (ver `incomeSources[].monthlyAmountCLP`) + qué busca.
-  /** Derivado de `propertyDestination` (vivir -> vivienda_propia, resto -> inversion). */
-  investmentType: WizardInvestmentType | null;
-  propertyDestination: WizardPropertyDestination | null;
+  // Paso 2: SOLO montos (ver `incomeSources[].monthlyAmountCLP`). El destino
+  // del inmueble ya no se pregunta acá -- ver v11 arriba.
   propertyStatus: WizardPropertyStatus | null;
   // Paso 3
   savingsAmount: number | null;
@@ -160,8 +154,6 @@ export interface WizardProgress {
 export const WIZARD_INITIAL_DATA: WizardData = {
   professionalLevel: null,
   incomeSources: [],
-  investmentType: null,
-  propertyDestination: null,
   propertyStatus: null,
   savingsAmount: null,
   hasExistingDebt: null,

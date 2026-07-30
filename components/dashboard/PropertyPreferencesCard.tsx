@@ -41,14 +41,16 @@ function PropertyPreferencesCard({
   purpose,
   applicationId,
   mode,
-  destination,
+  destinations,
   onAccepted,
 }: {
   purpose: Purpose
   applicationId: string
   mode: Mode
-  /** Solo relevante en mode="investment" -- ver tipo `PropertyDestination` arriba. */
-  destination?: PropertyDestination
+  /** Solo relevante en mode="investment" -- el cliente puede elegir más de un
+   * destino (ej. Airbnb + Alquiler tradicional), ver tipo `PropertyDestination`
+   * arriba. */
+  destinations?: PropertyDestination[]
   onAccepted: () => void
 }) {
   const [propertyType, setPropertyType] = React.useState<PropertyType | null>(null)
@@ -63,7 +65,7 @@ function PropertyPreferencesCard({
   // Airbnb/venta a corto plazo piden el perfilamiento de proximidad ANTES
   // del carrusel -- ver ProximityProfileForm.tsx. `null` = aún no lo llenó
   // (y no aplica si destination no es una de estas dos).
-  const requiresProximityProfile = destination === "airbnb" || destination === "venta_corto_plazo"
+  const requiresProximityProfile = (destinations ?? []).some((d) => d === "airbnb" || d === "venta_corto_plazo")
   const [proximityProfile, setProximityProfile] = React.useState<ProximityProfile | null>(null)
 
   const requestedCarousel = React.useRef(false)
@@ -80,7 +82,7 @@ function PropertyPreferencesCard({
           body: JSON.stringify({
             purpose: "inversion",
             budgetUf,
-            destination,
+            destinations,
             profileHistoric: profile?.historic,
             profileTourist: profile?.tourist,
             profileBusiness: profile?.business,

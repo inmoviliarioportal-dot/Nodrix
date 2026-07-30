@@ -25,8 +25,11 @@ interface RecommendationsBody {
    * cliente en vez de solo por fecha de creación.
    */
   budgetUf?: number;
-  /** Destino declarado en el wizard -- determina si se aplica el
-   * perfilamiento de proximidad (Airbnb/venta a corto plazo, ver más abajo). */
+  /** Destino(s) elegidos por el cliente tras el wizard (puede elegir más de
+   * uno, ej. Airbnb + Alquiler tradicional) -- determina si se aplica el
+   * perfilamiento de proximidad (Airbnb/venta a corto plazo, ver más abajo).
+   * `destination` (singular) se mantiene por compatibilidad. */
+  destinations?: PropertyDestination[];
   destination?: PropertyDestination;
   /** Los 3 parámetros de proximidad que buscan los clientes de Airbnb/venta a
    * corto plazo (ver components/dashboard/ProximityProfileForm.tsx). Si no
@@ -188,8 +191,9 @@ export const POST = withErrorHandling(async (request: Request) => {
     // ver ProximityProfileForm.tsx. Si el cliente no marcó ninguno (o su
     // destino no aplica), el orden es idéntico al de antes (solo precio).
     const { profileHistoric, profileTourist, profileBusiness } = body;
+    const destinationList = body.destinations ?? (body.destination ? [body.destination] : []);
     const applyProximityProfiling =
-      (body.destination === "airbnb" || body.destination === "venta_corto_plazo") &&
+      destinationList.some((d) => d === "airbnb" || d === "venta_corto_plazo") &&
       (profileHistoric || profileTourist || profileBusiness);
 
     function proximityScore(r: PropertyRow): number {

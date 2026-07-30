@@ -159,8 +159,6 @@ export default function ProcessingPage() {
         employmentYears: payload?.employmentYears,
         hasExistingDebt: payload?.hasExistingDebt,
         totalDebtBalance: payload?.totalDebtBalance,
-        investmentType: payload?.investmentType,
-        propertyDestination: payload?.propertyDestination,
         propertyStatus: payload?.propertyStatus,
         hasAval: payload?.hasAval,
         avalRelationship: payload?.avalRelationship,

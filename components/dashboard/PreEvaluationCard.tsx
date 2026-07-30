@@ -39,11 +39,18 @@ function PreEvaluationCard({ applicationId }: PreEvaluationCardProps) {
         setApprovedUf(typeof uf === "number" ? uf : null)
 
         const application = detail?.application
-        const destination = detail?.customer?.property_destination as string | null | undefined
+        const destinationsArr = (detail?.customer?.property_destinations as string[] | null | undefined) ?? null
+        const destinationSingle = detail?.customer?.property_destination as string | null | undefined
+        const investmentDestinations = (destinationsArr ?? (destinationSingle ? [destinationSingle] : [])).filter(
+          (d) => d !== "vivir"
+        )
         const items: string[] = []
         const investmentCount: number = application?.selected_property_ids?.length ?? 0
         if (investmentCount > 0) {
-          const label = destination ? (DESTINATION_LABELS[destination] ?? destination) : "inversión"
+          const label =
+            investmentDestinations.length > 0
+              ? investmentDestinations.map((d) => DESTINATION_LABELS[d] ?? d).join(" + ")
+              : "inversión"
           items.push(`${investmentCount} ${label}`)
         }
         if (application?.accepted_housing_property_id) {

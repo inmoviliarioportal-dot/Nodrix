@@ -39,9 +39,9 @@ export default function InitialProposalPage() {
   const [notFound, setNotFound] = React.useState(false)
   const [step, setStep] = React.useState<Step>("initial-proposal")
   const [purpose, setPurpose] = React.useState<"inversion" | "vivienda_propia" | "ambos" | null>(null)
-  const [destination, setDestination] = React.useState<
-    "vivir" | "airbnb" | "alquiler_tradicional" | "venta_corto_plazo" | undefined
-  >(undefined)
+  const [destinations, setDestinations] = React.useState<
+    ("vivir" | "airbnb" | "alquiler_tradicional" | "venta_corto_plazo")[]
+  >([])
 
   React.useEffect(() => {
     let id: string | null = null
@@ -137,11 +137,12 @@ export default function InitialProposalPage() {
             purpose={purpose}
             applicationId={applicationId}
             mode="investment"
-            destination={destination}
+            destinations={destinations.filter((d) => d !== "vivir")}
             onAccepted={() => {
-              // "ambos" encadena directo a preferencias de vivienda; el
-              // resto (inversión pura) ya terminó y va al cierre.
-              setStep(purpose === "ambos" ? "housing-preferences" : "closing-avatar")
+              // Si además eligió "vivir", encadena directo a preferencias de
+              // vivienda; si no, la propuesta de inversión ya terminó y va
+              // al cierre.
+              setStep(destinations.includes("vivir") ? "housing-preferences" : "closing-avatar")
             }}
           />
         ) : step === "housing-preferences" && purpose ? (
@@ -154,22 +155,14 @@ export default function InitialProposalPage() {
         ) : (
           <InitialProposalCard
             applicationId={applicationId}
-            onSelected={(registeredPurpose, registeredDestination) => {
-              const normalized =
-                registeredPurpose === "vivienda_propia" || registeredPurpose === "ambos"
-                  ? registeredPurpose
-                  : "inversion"
+            onSelected={(selectedDestinations) => {
+              const hasVivir = selectedDestinations.includes("vivir")
+              const hasInvestment = selectedDestinations.some((d) => d !== "vivir")
+              const normalized = hasVivir && hasInvestment ? "ambos" : hasInvestment ? "inversion" : "vivienda_propia"
               setPurpose(normalized)
-              if (
-                registeredDestination === "vivir" ||
-                registeredDestination === "airbnb" ||
-                registeredDestination === "alquiler_tradicional" ||
-                registeredDestination === "venta_corto_plazo"
-              ) {
-                setDestination(registeredDestination)
-              }
-              // "vivienda_propia" no pasa por la propuesta de inversión.
-              setStep(normalized === "vivienda_propia" ? "housing-preferences" : "investment-proposal")
+              setDestinations(selectedDestinations)
+              // "vivienda_propia" pura no pasa por la propuesta de inversión.
+              setStep(hasInvestment ? "investment-proposal" : "housing-preferences")
             }}
           />
         )}
