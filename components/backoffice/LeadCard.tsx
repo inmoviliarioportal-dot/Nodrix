@@ -22,10 +22,11 @@ function isScoringCategory(value: unknown): value is ScoringCategory {
 
 interface LeadCardProps {
   lead: QueueLead
+  animationDelay?: number
 }
 
 /** Tarjeta de un lead en la cola del asesor: identidad, scoring, stage y días en stage. */
-function LeadCard({ lead }: LeadCardProps) {
+function LeadCard({ lead, animationDelay = 0 }: LeadCardProps) {
   const router = useRouter()
   const { application, customer } = lead
 
@@ -39,9 +40,10 @@ function LeadCard({ lead }: LeadCardProps) {
     <Card
       onClick={() => router.push(`/backoffice/${application.id}`)}
       className={cn(
-        "glass-card cursor-pointer rounded-xl border-glass-border transition-all duration-200 hover:border-neon-cyan/30",
+        "glass-card animate-fade-in-up interactive-lift cursor-pointer rounded-xl border-glass-border transition-all duration-200 hover:border-neon-cyan/30",
         category ? CATEGORY_GLOW[category] : ""
       )}
+      style={{ "--animate-delay": `${animationDelay}ms` } as React.CSSProperties}
     >
       <CardHeader className="flex-row items-start justify-between gap-2">
         <div className="flex flex-col gap-0.5">

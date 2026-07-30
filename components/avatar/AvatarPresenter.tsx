@@ -113,7 +113,7 @@ export function AvatarPresenter({
 
   return (
     <main className="bg-deep-ambient flex min-h-screen flex-col items-center justify-center gap-8 px-6">
-      <div className="glass-card flex w-full max-w-md flex-col items-center gap-6 rounded-2xl p-8 text-center">
+      <div className="glass-card animate-fade-in-up flex w-full max-w-md flex-col items-center gap-6 rounded-2xl p-8 text-center">
         {heading && (
           <h1 className="text-2xl font-semibold text-[--text-primary]">{heading}</h1>
         )}

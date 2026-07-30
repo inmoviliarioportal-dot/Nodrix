@@ -75,10 +75,14 @@ export function KpiCards() {
 
   return (
     <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
-      {cards.map((card) => {
+      {cards.map((card, index) => {
         const Icon = card.icon
         return (
-          <div key={card.label} className="glass-surface rounded-2xl p-5">
+          <div
+            key={card.label}
+            className="glass-surface animate-fade-in-up interactive-lift rounded-2xl p-5"
+            style={{ "--animate-delay": `${index * 70}ms` } as React.CSSProperties}
+          >
             <div className="flex items-center justify-between">
               <span className="text-[12.5px] font-semibold text-text-secondary">{card.label}</span>
               <span

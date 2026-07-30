@@ -40,7 +40,7 @@ function AuthCard({
     <div className="flex w-full items-center justify-center py-6 sm:py-10">
       <div
         className={cn(
-          "glass-card grid w-full max-w-4xl grid-cols-1 overflow-hidden rounded-3xl p-0 lg:grid-cols-2",
+          "glass-card animate-fade-in-up grid w-full max-w-4xl grid-cols-1 overflow-hidden rounded-3xl p-0 lg:grid-cols-2",
           className
         )}
       >

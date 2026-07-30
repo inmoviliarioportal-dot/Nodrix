@@ -117,7 +117,7 @@ function DocumentVaultItem({
         : "border-border bg-surface-elevated text-text-tertiary"
 
   return (
-    <div className="glass-card flex flex-col gap-2.5 rounded-xl p-3.5 transition-colors duration-200">
+    <div className="glass-card interactive-lift flex flex-col gap-2.5 rounded-xl p-3.5">
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2.5">
           <div className="flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-surface-elevated">

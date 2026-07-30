@@ -75,7 +75,7 @@ export default function Home() {
       <main className="flex flex-1 flex-col">
         {/* Hero */}
         <section className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-6 py-14 sm:py-16 lg:grid-cols-[1.05fr_1fr] lg:gap-12 lg:py-20">
-          <div className="flex flex-col gap-5">
+          <div className="animate-fade-in-up flex flex-col gap-5">
             <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[#EFE6D4] px-3.5 py-1.5 text-xs font-bold text-[#8A6423]">
               <Sparkles className="size-3.5" aria-hidden="true" />
               Scoring con inteligencia artificial
@@ -92,7 +92,7 @@ export default function Home() {
 
             <div className="flex flex-wrap gap-3">
               <Button
-                className="glow-cyan h-[52px] gap-2 rounded-xl bg-neon-cyan px-6 text-[15px] font-bold text-white hover:bg-neon-cyan/90"
+                className="glow-cyan interactive-lift h-[52px] gap-2 rounded-xl bg-neon-cyan px-6 text-[15px] font-bold text-white hover:bg-neon-cyan/90"
                 render={<Link href="/auth/register" />}
               >
                 Iniciar evaluación gratuita
@@ -100,7 +100,7 @@ export default function Home() {
               </Button>
               <Button
                 variant="outline"
-                className="h-[52px] rounded-xl border-input px-5 text-[15px] font-semibold text-text-primary hover:bg-surface-elevated"
+                className="interactive-lift h-[52px] rounded-xl border-input px-5 text-[15px] font-semibold text-text-primary hover:bg-surface-elevated"
                 render={<Link href="#como-funciona" />}
               >
                 Ver cómo funciona
@@ -125,8 +125,11 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-3.5">
-            <div className="overflow-hidden rounded-[20px]">
+          <div
+            className="animate-fade-in-up flex flex-col gap-3.5"
+            style={{ "--animate-delay": "120ms" } as React.CSSProperties}
+          >
+            <div className="interactive-lift overflow-hidden rounded-[20px]">
               {/* Photo by Francesca Tosolini on Unsplash */}
               <img
                 src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80"
@@ -176,16 +179,19 @@ export default function Home() {
               step={1}
               title="Completa tu perfil"
               description="Un wizard de menos de 3 minutos recoge tu situación laboral, ingresos y ahorro disponible."
+              delay={0}
             />
             <StepCard
               step={2}
               title="Recibe tu scoring al instante"
               description="Calculamos tu categoría (Bronce a Platino) y una propuesta financiera a tu medida."
+              delay={80}
             />
             <StepCard
               step={3}
               title="Conecta con tu asesor"
               description="Sube tus documentos y sigue el avance en tiempo real junto a un asesor dedicado."
+              delay={160}
             />
           </div>
         </section>
@@ -227,10 +233,11 @@ export default function Home() {
                 price: "UF 2.350",
                 rooms: "1D · 1B",
               },
-            ].map((pc) => (
+            ].map((pc, idx) => (
               <div
                 key={pc.title}
-                className="glass-card flex flex-col overflow-hidden rounded-2xl p-0"
+                className="glass-card interactive-lift animate-fade-in-up flex flex-col overflow-hidden rounded-2xl p-0"
+                style={{ "--animate-delay": `${idx * 80}ms` } as React.CSSProperties}
               >
                 <img
                   src={pc.src}

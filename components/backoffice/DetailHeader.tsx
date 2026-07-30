@@ -21,7 +21,7 @@ function DetailHeader({ application, customer }: DetailHeaderProps) {
     : null
 
   return (
-    <div className="glass-card rounded-xl p-5 sm:p-6">
+    <div className="glass-card animate-fade-in rounded-xl p-5 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex flex-col gap-1.5">
           <h1 className="font-heading text-xl font-semibold text-text-primary sm:text-2xl">

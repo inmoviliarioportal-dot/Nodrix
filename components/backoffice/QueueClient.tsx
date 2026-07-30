@@ -249,8 +249,8 @@ export function QueueClient() {
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {leads.map((lead) => (
-                  <LeadCard key={lead.application.id} lead={lead} />
+                {leads.map((lead, index) => (
+                  <LeadCard key={lead.application.id} lead={lead} animationDelay={(index % PAGE_SIZE) * 40} />
                 ))}
               </div>
             )}

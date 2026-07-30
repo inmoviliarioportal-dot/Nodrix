@@ -33,7 +33,7 @@ export function SelectableChip({
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 py-2.5 text-center text-[12.5px] font-semibold transition-all duration-200 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+      className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 py-2.5 text-center text-[12.5px] font-semibold transition-all duration-200 ease-out active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
       style={{
         borderWidth: 1,
         borderStyle: "solid",

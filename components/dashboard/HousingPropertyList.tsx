@@ -66,7 +66,7 @@ function HousingPropertyList({
               type="button"
               onClick={() => setSelectedId(property.id)}
               className={cn(
-                "flex flex-col overflow-hidden rounded-xl border text-left transition-colors duration-200",
+                "interactive-lift flex flex-col overflow-hidden rounded-xl border text-left transition-colors duration-200",
                 isSelected ? "border-neon-cyan bg-neon-cyan/5" : "border-glass-border hover:border-neon-cyan/40"
               )}
             >

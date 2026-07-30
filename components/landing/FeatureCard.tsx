@@ -22,7 +22,7 @@ const GLOW_WRAPPER_CLASS: Record<NonNullable<FeatureCardProps["glow"]>, string> 
  */
 function FeatureCard({ icon: Icon, title, description, glow = "cyan" }: FeatureCardProps) {
   return (
-    <div className="glass-card flex flex-col gap-3 rounded-2xl p-5 transition-transform duration-200 hover:-translate-y-0.5">
+    <div className="glass-card interactive-lift flex flex-col gap-3 rounded-2xl p-5">
       <span
         className={`flex size-9 shrink-0 items-center justify-center rounded-xl border ${GLOW_WRAPPER_CLASS[glow]}`}
       >

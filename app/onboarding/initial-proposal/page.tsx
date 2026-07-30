@@ -125,7 +125,7 @@ export default function InitialProposalPage() {
 
   return (
     <main className="bg-deep-ambient flex min-h-screen flex-col items-center justify-center px-4 py-12">
-      <div className="w-full max-w-3xl">
+      <div className="animate-fade-in-up w-full max-w-3xl">
         <header className="mb-6 text-center">
           <h1 className="text-2xl font-bold text-text-primary">¡Tu análisis está listo!</h1>
           <p className="mt-2 text-sm text-text-tertiary">

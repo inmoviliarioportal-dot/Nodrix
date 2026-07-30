@@ -61,7 +61,10 @@ function PropertyGalleryModal({ open, onOpenChange, propertyName, images, videoU
         <X className="size-5" />
       </button>
 
-      <div className="flex max-h-[85vh] w-full max-w-4xl flex-col gap-3" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="animate-scale-in flex max-h-[85vh] w-full max-w-4xl flex-col gap-3"
+        onClick={(e) => e.stopPropagation()}
+      >
         <p className="text-center text-sm font-medium text-white/80">
           {propertyName} · {index + 1}/{slides.length}
         </p>

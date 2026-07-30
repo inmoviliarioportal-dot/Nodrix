@@ -436,8 +436,11 @@ function WizardPageInner() {
         )}
 
         <div
-          className="transition-opacity duration-150 ease-out"
-          style={{ opacity: transitioning ? 0 : 1 }}
+          className="transition-all duration-150 ease-out"
+          style={{
+            opacity: transitioning ? 0 : 1,
+            transform: transitioning ? "translateY(6px)" : "translateY(0)",
+          }}
         >
           {step === 1 && <StepProfile data={data} onChange={update} />}
           {step === 2 && <StepFinancialProfile data={data} onChange={update} />}

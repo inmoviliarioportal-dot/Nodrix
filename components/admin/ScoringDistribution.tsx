@@ -7,16 +7,17 @@ import { MOCK_SCORING_DISTRIBUTION } from "@/components/admin/types"
  */
 export function ScoringDistribution() {
   return (
-    <div className="glass-surface rounded-2xl p-5">
+    <div className="glass-surface animate-fade-in rounded-2xl p-5">
       <h2 className="text-xs font-bold uppercase tracking-wide text-text-tertiary">
         Por categoría de scoring
       </h2>
 
       <div className="mt-3.5 flex flex-col gap-2">
-        {MOCK_SCORING_DISTRIBUTION.map((item) => (
+        {MOCK_SCORING_DISTRIBUTION.map((item, index) => (
           <div
             key={item.category}
-            className="flex items-center justify-between rounded-lg bg-deep px-2.5 py-2"
+            className="animate-fade-in-up flex items-center justify-between rounded-lg bg-deep px-2.5 py-2"
+            style={{ "--animate-delay": `${index * 60}ms` } as React.CSSProperties}
           >
             <span className="flex items-center gap-2 text-xs font-semibold text-text-secondary">
               <span

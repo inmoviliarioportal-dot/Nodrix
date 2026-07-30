@@ -35,7 +35,7 @@ function ScoringBadge({ category, className, ...props }: ScoringBadgeProps) {
       data-slot="scoring-badge"
       data-category={category}
       className={cn(
-        "inline-flex h-6 w-fit shrink-0 items-center justify-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold tracking-wide whitespace-nowrap uppercase transition-colors duration-200",
+        "animate-scale-in inline-flex h-6 w-fit shrink-0 items-center justify-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold tracking-wide whitespace-nowrap uppercase transition-colors duration-200",
         scoringCategoryStyles[category],
         className
       )}

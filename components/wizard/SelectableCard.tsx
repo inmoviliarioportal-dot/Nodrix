@@ -30,7 +30,7 @@ export function SelectableCard({
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      className="glass-card group relative flex w-full flex-col items-start gap-1 rounded-2xl p-4 text-left transition-all duration-200 ease-out hover:border-[color:var(--neon-cyan)]/40"
+      className="glass-card interactive-lift group relative flex w-full flex-col items-start gap-1 rounded-2xl p-4 text-left transition-all duration-200 ease-out hover:border-[color:var(--neon-cyan)]/40 active:scale-[0.98]"
       style={{
         borderWidth: 1,
         borderColor: selected ? "var(--neon-cyan)" : "var(--glass-border)",

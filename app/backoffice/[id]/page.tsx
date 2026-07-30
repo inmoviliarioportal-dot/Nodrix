@@ -110,7 +110,10 @@ export default function BackofficeApplicationDetailPage() {
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="flex flex-col gap-6">
-            <div className="glass-surface rounded-xl p-5">
+            <div
+              className="glass-surface animate-fade-in-up rounded-xl p-5"
+              style={{ "--animate-delay": "40ms" } as React.CSSProperties}
+            >
               <h2 className="mb-4 font-heading text-sm font-semibold text-text-primary">
                 Línea de tiempo
               </h2>

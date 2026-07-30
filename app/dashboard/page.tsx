@@ -127,7 +127,7 @@ export default function DashboardPage() {
     <Layout>
       <Toaster />
       <div className="flex flex-col gap-3.5">
-        <div className="overflow-hidden rounded-2xl bg-neon-cyan">
+        <div className="animate-fade-in-up overflow-hidden rounded-2xl bg-neon-cyan">
           <div className="grid grid-cols-1 sm:grid-cols-[1.3fr_1fr]">
             <div className="flex flex-col justify-center gap-4 p-5 sm:p-7">
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -187,7 +187,10 @@ export default function DashboardPage() {
         </div>
 
         {!loading && (
-          <div className="glass-card rounded-2xl p-3.5">
+          <div
+            className="glass-card animate-fade-in-up rounded-2xl p-3.5"
+            style={{ "--animate-delay": "80ms" } as React.CSSProperties}
+          >
             <h2 className="mb-2.5 text-[11px] font-bold uppercase tracking-wide text-text-tertiary">
               Línea de tiempo
             </h2>
@@ -304,14 +307,21 @@ export default function DashboardPage() {
               // indica las UF aprobadas y el detalle real de propiedades
               // elegidas (ver components/dashboard/PreEvaluationCard.tsx).
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <DocumentsCard documents={documents} onUploadClick={() => setUploadOpen(true)} />
-                <PreEvaluationCard applicationId={application.id} />
+                <div className="animate-fade-in-up" style={{ "--animate-delay": "0ms" } as React.CSSProperties}>
+                  <DocumentsCard documents={documents} onUploadClick={() => setUploadOpen(true)} />
+                </div>
+                <div className="animate-fade-in-up" style={{ "--animate-delay": "80ms" } as React.CSSProperties}>
+                  <PreEvaluationCard applicationId={application.id} />
+                </div>
                 {/* Agendar visita en paralelo a la subida de documentos --
                     no hay que esperar a "Aprobado previo" para conocer
                     las propiedades que el cliente ya eligió. Tiene más
                     contenido (chips + formulario) -- ocupa el ancho completo. */}
                 {stage === "DOCUMENTOS_PENDIENTES" && application && (
-                  <div className="sm:col-span-2">
+                  <div
+                    className="animate-fade-in-up sm:col-span-2"
+                    style={{ "--animate-delay": "160ms" } as React.CSSProperties}
+                  >
                     <ScheduleVisitCard applicationId={application.id} />
                   </div>
                 )}

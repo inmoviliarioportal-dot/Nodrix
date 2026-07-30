@@ -253,7 +253,7 @@ export default function ProcessingPage() {
 
   if (status === "error") {
     return (
-      <main className="bg-deep-ambient flex min-h-screen flex-col items-center justify-center px-6">
+      <main className="bg-deep-ambient animate-fade-in flex min-h-screen flex-col items-center justify-center px-6">
         <div className="glass-card flex max-w-md flex-col items-center gap-4 rounded-2xl p-8 text-center">
           <AlertTriangle className="size-10 text-[--neon-cyan]" />
           <h1 className="text-xl font-semibold text-[--text-primary]">
@@ -277,7 +277,7 @@ export default function ProcessingPage() {
   }
 
   return (
-    <main className="bg-deep-ambient flex min-h-screen flex-col items-center justify-center gap-8 px-6">
+    <main className="bg-deep-ambient animate-fade-in flex min-h-screen flex-col items-center justify-center gap-8 px-6">
       <ProgressCircle percent={percent} />
       <div className="flex min-h-[3rem] flex-col items-center gap-2 text-center">
         <RotatingMessage />

@@ -51,7 +51,7 @@ function ApplicationsSummary() {
   }, [])
 
   return (
-    <div className="glass-surface rounded-2xl p-5">
+    <div className="glass-surface animate-fade-in rounded-2xl p-5">
       <div className="mb-3.5 flex items-center justify-between">
         <h2 className="text-xs font-bold uppercase tracking-wide text-text-tertiary">
           Solicitudes en curso, por estado
@@ -70,10 +70,11 @@ function ApplicationsSummary() {
       ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="flex flex-col">
-            {STAGE_ORDER.map((stage) => (
+            {STAGE_ORDER.map((stage, index) => (
               <div
                 key={stage}
-                className="flex items-center justify-between border-b border-border py-2.5 last:border-0"
+                className="animate-fade-in-up flex items-center justify-between border-b border-border py-2.5 transition-colors duration-200 last:border-0 hover:bg-surface-elevated/40"
+                style={{ "--animate-delay": `${index * 40}ms` } as React.CSSProperties}
               >
                 <span className="text-[12.5px] text-text-secondary">{STAGE_LABELS[stage] ?? stage}</span>
                 <Link
@@ -90,10 +91,11 @@ function ApplicationsSummary() {
             <h3 className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
               Por scoring
             </h3>
-            {CATEGORY_ORDER.map((category) => (
+            {CATEGORY_ORDER.map((category, index) => (
               <div
                 key={category}
-                className="flex items-center justify-between border-b border-border py-2.5 last:border-0"
+                className="animate-fade-in-up flex items-center justify-between border-b border-border py-2.5 transition-colors duration-200 last:border-0 hover:bg-surface-elevated/40"
+                style={{ "--animate-delay": `${index * 40}ms` } as React.CSSProperties}
               >
                 <span className={`text-[12.5px] font-semibold ${CATEGORY_COLOR[category]}`}>{category}</span>
                 <Link

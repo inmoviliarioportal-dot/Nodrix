@@ -1,3 +1,6 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import { TrendingUpIcon } from "lucide-react"
 
 import { MOCK_TIMELINE } from "@/components/admin/types"
@@ -11,6 +14,12 @@ export function ConversionTimeline() {
   const height = 180
   const padding = 24
   const maxClosures = Math.max(...MOCK_TIMELINE.map((p) => p.closures), 1)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMounted(true))
+    return () => cancelAnimationFrame(id)
+  }, [])
 
   const points = MOCK_TIMELINE.map((p, i) => {
     const x = padding + (i / (MOCK_TIMELINE.length - 1)) * (width - padding * 2)
@@ -27,7 +36,7 @@ export function ConversionTimeline() {
   const trendUp = Number(trendPct) >= 0
 
   return (
-    <div className="glass-card rounded-2xl p-5">
+    <div className="glass-card animate-fade-in rounded-2xl p-5">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-text-primary">Timeline de conversión</h3>
@@ -52,8 +61,28 @@ export function ConversionTimeline() {
               <stop offset="100%" stopColor="var(--neon-cyan)" stopOpacity="0" />
             </linearGradient>
           </defs>
-          <path d={areaPath} fill="url(#timelineFill)" />
-          <path d={linePath} fill="none" stroke="var(--neon-cyan)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+          <path
+            d={areaPath}
+            fill="url(#timelineFill)"
+            style={{
+              opacity: mounted ? 1 : 0,
+              transition: "opacity 400ms ease-out",
+            }}
+          />
+          <path
+            d={linePath}
+            fill="none"
+            stroke="var(--neon-cyan)"
+            strokeWidth={2}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            style={{
+              opacity: mounted ? 1 : 0,
+              transform: mounted ? "scaleY(1)" : "scaleY(0.85)",
+              transformOrigin: "bottom",
+              transition: "opacity 400ms ease-out, transform 400ms ease-out",
+            }}
+          />
         </svg>
       </div>
       <div className="mt-1 flex justify-between text-[11px] text-text-tertiary">

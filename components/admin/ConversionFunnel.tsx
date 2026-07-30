@@ -1,3 +1,7 @@
+"use client"
+
+import { useEffect, useState } from "react"
+
 import { MOCK_FUNNEL } from "@/components/admin/types"
 
 /**
@@ -8,9 +12,15 @@ import { MOCK_FUNNEL } from "@/components/admin/types"
  */
 export function ConversionFunnel() {
   const maxCount = MOCK_FUNNEL[0]?.count ?? 1
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMounted(true))
+    return () => cancelAnimationFrame(id)
+  }, [])
 
   return (
-    <div className="glass-surface rounded-2xl p-5">
+    <div className="glass-surface animate-fade-in rounded-2xl p-5">
       <h2 className="text-xs font-bold uppercase tracking-wide text-text-tertiary">
         Funnel de conversión
       </h2>
@@ -34,8 +44,8 @@ export function ConversionFunnel() {
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-dark-tertiary">
                 <div
-                  className="h-full rounded-full bg-neon-cyan transition-all duration-300"
-                  style={{ width: `${widthPct}%` }}
+                  className="h-full rounded-full bg-neon-cyan transition-all duration-300 ease-out"
+                  style={{ width: mounted ? `${widthPct}%` : "0%" }}
                 />
               </div>
             </div>

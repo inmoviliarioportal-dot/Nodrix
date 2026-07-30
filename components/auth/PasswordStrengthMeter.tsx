@@ -25,7 +25,7 @@ function PasswordStrengthMeter({ password }: { password: string }) {
   const { score, label } = getPasswordStrength(password)
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="animate-fade-in flex flex-col gap-1">
       <div className="flex gap-1">
         {[0, 1, 2, 3].map((index) => (
           <div

@@ -66,7 +66,7 @@ function StateTransition({ application, onUpdated }: StateTransitionProps) {
   }
 
   return (
-    <Card className="glass-card border-glass-border">
+    <Card className="glass-card animate-fade-in border-glass-border">
       <CardHeader>
         <CardTitle>Cambiar estado</CardTitle>
       </CardHeader>

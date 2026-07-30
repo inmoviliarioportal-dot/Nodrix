@@ -20,7 +20,7 @@ export function TopLeadsTable() {
   }
 
   return (
-    <div className="glass-card rounded-2xl p-5">
+    <div className="glass-card animate-fade-in rounded-2xl p-5">
       <h3 className="text-sm font-semibold text-text-primary">Top 10 leads</h3>
       <p className="text-xs text-text-tertiary">Leads con mayor prioridad de seguimiento</p>
 
@@ -37,7 +37,10 @@ export function TopLeadsTable() {
           </thead>
           <tbody>
             {MOCK_TOP_LEADS.map((lead) => (
-              <tr key={lead.id} className="border-b border-border/60 last:border-0">
+              <tr
+                key={lead.id}
+                className="interactive-lift border-b border-border/60 transition-colors duration-200 last:border-0 hover:bg-surface-elevated/60"
+              >
                 <td className="py-2.5 pr-3">
                   <div className="font-medium text-text-primary">{lead.client}</div>
                   <div className="text-xs text-text-tertiary">{lead.id}</div>

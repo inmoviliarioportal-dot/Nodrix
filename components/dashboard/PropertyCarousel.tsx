@@ -91,7 +91,7 @@ function PropertyCarousel({
                 type="button"
                 onClick={() => toggleSelected(property.id)}
                 className={cn(
-                  "flex w-64 shrink-0 snap-start flex-col overflow-hidden rounded-xl border text-left transition-colors duration-200",
+                  "interactive-lift flex w-64 shrink-0 snap-start flex-col overflow-hidden rounded-xl border text-left transition-colors duration-200",
                   isSelected ? "border-neon-cyan bg-neon-cyan/5" : "border-glass-border hover:border-neon-cyan/40"
                 )}
               >

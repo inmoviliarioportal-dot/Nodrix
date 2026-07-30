@@ -57,7 +57,9 @@ export default function ProposalPage() {
       )}
 
       {properties ? (
-        <ComboCard properties={properties} onSelect={handleSelect} />
+        <div className="animate-fade-in-up w-full">
+          <ComboCard properties={properties} onSelect={handleSelect} />
+        </div>
       ) : (
         <div className="flex flex-col items-center gap-3 text-text-secondary">
           <Loader2 className="h-6 w-6 animate-spin" />

@@ -45,7 +45,10 @@ function GuideVideoOverlay({ title, videoUrl, stageKey }: { title: string; video
           aria-label={title}
           onClick={() => setOpen(false)}
         >
-          <div className="relative w-full max-w-xl" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="animate-scale-in relative w-full max-w-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               type="button"
               onClick={() => setOpen(false)}

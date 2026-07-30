@@ -57,7 +57,7 @@ function StageTimeline({ currentStage, stageHistory }: StageTimelineProps) {
             {!isLast && (
               <div
                 className={cn(
-                  "absolute left-[15px] top-8 h-[calc(100%-1rem)] w-px",
+                  "absolute left-[15px] top-8 h-[calc(100%-1rem)] w-px transition-colors duration-300",
                   isCompleted ? "bg-neon-green/50" : "bg-border"
                 )}
                 aria-hidden
@@ -66,11 +66,11 @@ function StageTimeline({ currentStage, stageHistory }: StageTimelineProps) {
 
             <div className="relative z-10 flex shrink-0 items-center justify-center">
               {isCompleted ? (
-                <span className="flex size-8 items-center justify-center rounded-full border border-neon-green/40 bg-neon-green/10 text-neon-green">
+                <span className="animate-scale-in flex size-8 items-center justify-center rounded-full border border-neon-green/40 bg-neon-green/10 text-neon-green transition-colors duration-300">
                   <CheckCircle2 className="size-5" aria-hidden />
                 </span>
               ) : isCurrent ? (
-                <span className="glow-purple flex size-8 items-center justify-center rounded-full border border-neon-purple bg-neon-purple/10 text-neon-purple">
+                <span className="glow-purple animate-scale-in flex size-8 items-center justify-center rounded-full border border-neon-purple bg-neon-purple/10 text-neon-purple transition-colors duration-300">
                   <span className="relative flex size-2.5">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-neon-purple opacity-75 motion-reduce:hidden" />
                     <span className="relative inline-flex size-2.5 rounded-full bg-neon-purple" />

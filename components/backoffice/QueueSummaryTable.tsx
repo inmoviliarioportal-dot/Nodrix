@@ -69,7 +69,7 @@ function QueueSummaryTable({ applications, onDrilldown }: QueueSummaryTableProps
   }
 
   return (
-    <div className="glass-surface overflow-x-auto rounded-2xl border border-glass-border p-4">
+    <div className="glass-surface animate-fade-in overflow-x-auto rounded-2xl border border-glass-border p-4">
       <table className="w-full min-w-[720px] border-collapse text-sm">
         <thead>
           <tr className="border-b border-glass-border text-left text-xs font-medium uppercase tracking-wide text-text-tertiary">
@@ -95,7 +95,7 @@ function QueueSummaryTable({ applications, onDrilldown }: QueueSummaryTableProps
             const isExpanded = expanded === stage
             return (
               <Fragment key={stage}>
-                <tr className="border-b border-glass-border/50 hover:bg-neon-cyan/[0.03]">
+                <tr className="border-b border-glass-border/50 transition-colors duration-200 hover:bg-neon-cyan/[0.03]">
                   <td className="py-1.5 text-center">
                     <button
                       type="button"

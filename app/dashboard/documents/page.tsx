@@ -90,7 +90,7 @@ export default function DashboardDocumentsPage() {
     <Layout>
       <Toaster />
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
-        <div className="glass-surface flex flex-col gap-1 rounded-2xl p-6">
+        <div className="glass-surface animate-fade-in-up flex flex-col gap-1 rounded-2xl p-6">
           <h1 className="font-heading text-2xl font-semibold tracking-tight text-text-primary">
             Bóveda documental
           </h1>
@@ -129,15 +129,20 @@ export default function DashboardDocumentsPage() {
 
         {!loading && application && (
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-            {DOCUMENT_TYPES.map((docType) => (
-              <DocumentVaultItem
+            {DOCUMENT_TYPES.map((docType, idx) => (
+              <div
                 key={docType.value}
-                typeValue={docType.value}
-                typeLabel={docType.label}
-                applicationId={application.id}
-                document={documentForType(docType.value)}
-                onUploaded={loadData}
-              />
+                className="animate-fade-in-up"
+                style={{ "--animate-delay": `${idx * 60}ms` } as React.CSSProperties}
+              >
+                <DocumentVaultItem
+                  typeValue={docType.value}
+                  typeLabel={docType.label}
+                  applicationId={application.id}
+                  document={documentForType(docType.value)}
+                  onUploaded={loadData}
+                />
+              </div>
             ))}
           </div>
         )}
