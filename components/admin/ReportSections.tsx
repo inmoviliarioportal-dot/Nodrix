@@ -23,25 +23,25 @@ export function ReportSections() {
         <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div>
             <p className="text-xs text-text-tertiary">Total leads</p>
-            <p className="text-xl font-semibold text-text-primary" style={{ fontVariantNumeric: "tabular-nums" }}>
+            <p className="font-heading text-xl font-semibold text-text-primary" style={{ fontVariantNumeric: "tabular-nums" }}>
               {totalLeads}
             </p>
           </div>
           <div>
             <p className="text-xs text-text-tertiary">Cerrados</p>
-            <p className="text-xl font-semibold text-neon-green" style={{ fontVariantNumeric: "tabular-nums" }}>
+            <p className="font-heading text-xl font-semibold text-neon-green" style={{ fontVariantNumeric: "tabular-nums" }}>
               {totalClosed}
             </p>
           </div>
           <div>
             <p className="text-xs text-text-tertiary">Conversión</p>
-            <p className="text-xl font-semibold text-text-primary" style={{ fontVariantNumeric: "tabular-nums" }}>
+            <p className="font-heading text-xl font-semibold text-text-primary" style={{ fontVariantNumeric: "tabular-nums" }}>
               {MOCK_KPI_SUMMARY.conversionRate.toFixed(1)}%
             </p>
           </div>
           <div>
             <p className="text-xs text-text-tertiary">Días prom. a cierre</p>
-            <p className="text-xl font-semibold text-text-primary" style={{ fontVariantNumeric: "tabular-nums" }}>
+            <p className="font-heading text-xl font-semibold text-text-primary" style={{ fontVariantNumeric: "tabular-nums" }}>
               {MOCK_KPI_SUMMARY.avgDaysToClose}
             </p>
           </div>
@@ -134,7 +134,7 @@ export function ReportSections() {
         {/* Revenue projection */}
         <section className="glass-surface rounded-2xl p-5 print:border-0 print:bg-transparent">
           <h3 className="text-sm font-semibold text-text-primary">Proyección de ingresos (mock)</h3>
-          <p className="mt-3 text-2xl font-semibold text-gold" style={{ fontVariantNumeric: "tabular-nums" }}>
+          <p className="mt-3 font-heading text-2xl font-semibold text-gold" style={{ fontVariantNumeric: "tabular-nums" }}>
             {formatCLP(MOCK_KPI_SUMMARY.revenueThisMonth)}
           </p>
           <p className="mt-1 text-xs text-text-tertiary">
@@ -147,15 +147,15 @@ export function ReportSections() {
           <h3 className="text-sm font-semibold text-text-primary">Inventario de propiedades</h3>
           <div className="mt-3 grid grid-cols-3 gap-3 text-center">
             <div>
-              <p className="text-lg font-semibold text-text-primary">{MOCK_PROPERTIES_INVENTORY.disponibles}</p>
+              <p className="font-heading text-lg font-semibold text-text-primary">{MOCK_PROPERTIES_INVENTORY.disponibles}</p>
               <p className="text-xs text-text-tertiary">Disponibles</p>
             </div>
             <div>
-              <p className="text-lg font-semibold text-text-primary">{MOCK_PROPERTIES_INVENTORY.reservadas}</p>
+              <p className="font-heading text-lg font-semibold text-text-primary">{MOCK_PROPERTIES_INVENTORY.reservadas}</p>
               <p className="text-xs text-text-tertiary">Reservadas</p>
             </div>
             <div>
-              <p className="text-lg font-semibold text-text-primary">{MOCK_PROPERTIES_INVENTORY.vendidas}</p>
+              <p className="font-heading text-lg font-semibold text-text-primary">{MOCK_PROPERTIES_INVENTORY.vendidas}</p>
               <p className="text-xs text-text-tertiary">Vendidas</p>
             </div>
           </div>

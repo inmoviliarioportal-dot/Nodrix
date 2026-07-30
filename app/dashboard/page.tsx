@@ -127,35 +127,78 @@ export default function DashboardPage() {
     <Layout>
       <Toaster />
       <div className="flex flex-col gap-3.5">
-        <div className="glass-card rounded-2xl p-3.5">
-          <div className="flex flex-wrap items-center justify-between gap-2.5">
-            <div className="flex flex-col gap-1">
-              <span className="text-[10.5px] font-bold uppercase tracking-wide text-text-tertiary">
-                Estado de tu proceso
-              </span>
-              <span className="text-xl font-bold tracking-tight text-text-primary">
-                {application ? stageLabel : "Sin evaluación iniciada"}
-              </span>
+        <div className="overflow-hidden rounded-2xl bg-neon-cyan">
+          <div className="grid grid-cols-1 sm:grid-cols-[1.3fr_1fr]">
+            <div className="flex flex-col justify-center gap-4 p-5 sm:p-7">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10.5px] font-bold uppercase tracking-wide text-white/60">
+                    Estado de tu proceso
+                  </span>
+                  <span className="font-heading text-xl font-semibold text-white sm:text-2xl">
+                    {application ? stageLabel : "Sin evaluación iniciada"}
+                  </span>
+                </div>
+                {scoring && isScoringCategory(scoring.category) && (
+                  <ScoringBadge category={scoring.category} />
+                )}
+              </div>
+
+              {loading && <p className="text-[12.5px] text-white/70">Cargando tu solicitud...</p>}
+              {error && <p className="text-[12.5px] text-status-error">{error}</p>}
+
+              {!loading && application && (
+                <div className="flex flex-col gap-2">
+                  {(() => {
+                    const idx = CLIENT_TIMELINE_STAGES.indexOf(stage as ApplicationStage)
+                    const completed = idx >= 0 ? idx : 0
+                    const total = CLIENT_TIMELINE_STAGES.length
+                    const pct = total > 0 ? Math.round((completed / total) * 100) : 0
+                    return (
+                      <>
+                        <div className="flex items-center justify-between text-[12px] text-white/70">
+                          <span>
+                            {completed} de {total} pasos completados
+                          </span>
+                          <span className="font-semibold text-white">{pct}%</span>
+                        </div>
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-white/15">
+                          <div
+                            className="h-full rounded-full bg-gold transition-all duration-500"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </>
+                    )
+                  })()}
+                </div>
+              )}
             </div>
-            {scoring && isScoringCategory(scoring.category) && (
-              <ScoringBadge category={scoring.category} />
-            )}
+            <div
+              className="hidden min-h-[150px] bg-cover bg-center sm:block"
+              style={{
+                backgroundImage:
+                  "url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80')",
+              }}
+              role="img"
+              aria-label="Foto de la propiedad de interés"
+            />
           </div>
-
-          {loading && <p className="mt-3 text-[12.5px] text-text-tertiary">Cargando tu solicitud...</p>}
-          {error && <p className="mt-3 text-[12.5px] text-error">{error}</p>}
-
-          {!loading && (
-            <div className="mt-3">
-              <Timeline
-                orientation="horizontal"
-                currentStage={application ? stage : ""}
-                stages={CLIENT_TIMELINE_STAGES}
-                labels={STAGE_MARKETING_LABELS}
-              />
-            </div>
-          )}
         </div>
+
+        {!loading && (
+          <div className="glass-card rounded-2xl p-3.5">
+            <h2 className="mb-2.5 text-[11px] font-bold uppercase tracking-wide text-text-tertiary">
+              Línea de tiempo
+            </h2>
+            <Timeline
+              orientation="horizontal"
+              currentStage={application ? stage : ""}
+              stages={CLIENT_TIMELINE_STAGES}
+              labels={STAGE_MARKETING_LABELS}
+            />
+          </div>
+        )}
 
         {!loading && !application && (
           <div className="flex flex-col gap-2.5">

@@ -66,7 +66,7 @@ function PreEvaluationCard({ applicationId }: PreEvaluationCardProps) {
   }, [applicationId])
 
   return (
-    <div className="glass-surface flex flex-col gap-1.5 rounded-xl border border-glass-border p-3">
+    <div className="glass-card flex flex-col gap-1.5 rounded-xl p-3">
       <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-text-tertiary">
         <TrendingUp className="size-3.5 text-neon-cyan" aria-hidden="true" />
         Pre-evaluación
@@ -75,7 +75,7 @@ function PreEvaluationCard({ applicationId }: PreEvaluationCardProps) {
         <p className="text-[12px] text-text-tertiary">Cargando...</p>
       ) : (
         <>
-          <p className="text-[12px] leading-snug text-text-secondary">
+          <p className="font-heading text-[13px] leading-snug text-text-primary">
             {approvedUf != null
               ? `${Math.round(approvedUf).toLocaleString("es-CL")} UF aprobadas`
               : "Pendiente revisión."}

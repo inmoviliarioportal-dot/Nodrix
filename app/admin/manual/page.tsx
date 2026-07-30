@@ -161,10 +161,10 @@ export default function AdminManualPage() {
     <>
       <Toaster />
       <div className="flex flex-col gap-6">
-        <div className="flex items-start gap-3 rounded-lg border border-status-warning/40 bg-status-warning/10 px-4 py-3">
-          <TriangleAlertIcon className="mt-0.5 size-5 shrink-0 text-status-warning" />
+        <div className="flex items-start gap-3 rounded-lg border border-warning/40 bg-warning/10 px-4 py-3">
+          <TriangleAlertIcon className="mt-0.5 size-5 shrink-0 text-warning" />
           <p className="text-sm text-text-secondary">
-            <span className="font-semibold text-status-warning">Operación Manual (Release 1)</span>
+            <span className="font-semibold text-warning">Operación Manual (Release 1)</span>
             {" "}— esta página permite cambiar estados de solicitudes y documentos directamente,
             sin necesidad de tocar Supabase. Se automatiza y se restringe por rol en Release 2.
           </p>
@@ -172,7 +172,7 @@ export default function AdminManualPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Actualizar estado de solicitud</CardTitle>
+            <CardTitle className="font-heading">Actualizar estado de solicitud</CardTitle>
             <CardDescription>
               Selecciona una solicitud y su nuevo estado dentro del flujo.
             </CardDescription>
@@ -224,7 +224,7 @@ export default function AdminManualPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Actualizar estado de documento</CardTitle>
+            <CardTitle className="font-heading">Actualizar estado de documento</CardTitle>
             <CardDescription>
               Documentos de la solicitud seleccionada arriba.
             </CardDescription>
@@ -276,7 +276,7 @@ export default function AdminManualPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Cambios recientes</CardTitle>
+            <CardTitle className="font-heading">Cambios recientes</CardTitle>
           </CardHeader>
           <CardContent>
             {recentChanges.length === 0 ? (

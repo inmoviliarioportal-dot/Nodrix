@@ -76,7 +76,7 @@ function CheckDropdown<T extends string>({
         {options.map((option) => (
           <label
             key={option}
-            className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-text-secondary transition-colors duration-150 hover:bg-white/5 hover:text-text-primary"
+            className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-text-secondary transition-colors duration-150 hover:bg-neon-cyan/5 hover:text-text-primary"
           >
             <input
               type="checkbox"

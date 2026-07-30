@@ -73,7 +73,7 @@ function ApplicationsSummary() {
             {STAGE_ORDER.map((stage) => (
               <div
                 key={stage}
-                className="flex items-center justify-between border-b border-white/[0.06] py-2.5 last:border-0"
+                className="flex items-center justify-between border-b border-border py-2.5 last:border-0"
               >
                 <span className="text-[12.5px] text-text-secondary">{STAGE_LABELS[stage] ?? stage}</span>
                 <Link
@@ -93,7 +93,7 @@ function ApplicationsSummary() {
             {CATEGORY_ORDER.map((category) => (
               <div
                 key={category}
-                className="flex items-center justify-between border-b border-white/[0.06] py-2.5 last:border-0"
+                className="flex items-center justify-between border-b border-border py-2.5 last:border-0"
               >
                 <span className={`text-[12.5px] font-semibold ${CATEGORY_COLOR[category]}`}>{category}</span>
                 <Link

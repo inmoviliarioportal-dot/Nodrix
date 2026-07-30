@@ -38,9 +38,8 @@ export function SelectableChip({
         borderWidth: 1,
         borderStyle: "solid",
         borderColor: selected ? "var(--neon-cyan)" : "var(--glass-border)",
-        backgroundColor: selected ? "rgba(34,211,238,0.1)" : "var(--glass)",
+        backgroundColor: selected ? "rgba(22,50,79,0.08)" : "var(--surface)",
         color: selected ? "var(--neon-cyan)" : "var(--text-secondary)",
-        boxShadow: selected ? "0 0 12px var(--neon-cyan-glow)" : "none",
         outlineColor: "var(--neon-cyan)",
       }}
     >

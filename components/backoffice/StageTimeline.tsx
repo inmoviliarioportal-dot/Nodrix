@@ -77,7 +77,7 @@ function StageTimeline({ currentStage, stageHistory }: StageTimelineProps) {
                   </span>
                 </span>
               ) : (
-                <span className="flex size-8 items-center justify-center rounded-full border border-border bg-dark-tertiary text-xs font-semibold text-text-tertiary">
+                <span className="flex size-8 items-center justify-center rounded-full border border-border bg-surface text-xs font-semibold text-text-tertiary">
                   {index + 1}
                 </span>
               )}

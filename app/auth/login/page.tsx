@@ -84,7 +84,11 @@ export default function LoginPage() {
   return (
     <Layout className="bg-deep-ambient">
       <Toaster />
-      <AuthCard title="Iniciar sesión" description="Ingresa tus credenciales para continuar">
+      <AuthCard
+        title="Bienvenido de nuevo"
+        description="Ingresa tus credenciales para continuar"
+        quote="Claridad total sobre mi capacidad de inversión."
+      >
         <form className="flex flex-col gap-5" onSubmit={handleSubmit} noValidate>
           <Field data-invalid={!!errors.email}>
             <FieldLabel htmlFor="email">Correo electrónico</FieldLabel>
@@ -107,7 +111,7 @@ export default function LoginPage() {
               <FieldLabel htmlFor="password">Contraseña</FieldLabel>
               <Link
                 href="/auth/forgot-password"
-                className="text-xs text-text-tertiary transition-colors duration-200 hover:text-neon-cyan"
+                className="text-xs font-medium text-text-tertiary transition-colors duration-200 hover:text-neon-cyan"
               >
                 ¿Olvidaste tu contraseña?
               </Link>
@@ -129,17 +133,17 @@ export default function LoginPage() {
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="glow-cyan min-h-11 w-full bg-neon-cyan text-deep hover:bg-neon-cyan/90"
+            className="glow-cyan min-h-11 w-full rounded-[11px] bg-neon-cyan text-sm font-bold text-deep hover:bg-neon-cyan/90"
           >
             {isSubmitting ? "Ingresando..." : "Entrar"}
           </Button>
         </form>
 
-        <p className="text-center text-sm text-text-secondary">
+        <p className="pt-5 text-center text-[12.5px] text-text-tertiary">
           ¿No tienes cuenta?{" "}
           <Link
             href="/auth/register"
-            className="font-medium text-neon-cyan transition-colors duration-200 hover:underline"
+            className="font-bold text-neon-cyan transition-colors duration-200 hover:underline"
           >
             Regístrate
           </Link>

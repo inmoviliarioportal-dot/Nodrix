@@ -91,7 +91,7 @@ export default function DashboardDocumentsPage() {
       <Toaster />
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
         <div className="glass-surface flex flex-col gap-1 rounded-2xl p-6">
-          <h1 className="text-xl font-bold tracking-tight text-text-primary">
+          <h1 className="font-heading text-2xl font-semibold tracking-tight text-text-primary">
             Bóveda documental
           </h1>
           <p className="mb-3 text-[13px] text-text-secondary">
@@ -105,7 +105,7 @@ export default function DashboardDocumentsPage() {
                 <span>
                   {approvedCount}/{totalCount} documentos aprobados
                 </span>
-                <span className="tabular-nums font-semibold text-text-primary">{progressPct}%</span>
+                <span className="font-heading tabular-nums font-semibold text-text-primary">{progressPct}%</span>
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-elevated">
                 <div

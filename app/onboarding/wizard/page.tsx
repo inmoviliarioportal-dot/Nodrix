@@ -488,9 +488,9 @@ function WizardPageInner() {
             type="button"
             onClick={handleNext}
             disabled={!canAdvance() || submitting}
-            className="glow-purple rounded-xl px-8 py-3 text-sm font-semibold transition-all duration-200 ease-out disabled:cursor-not-allowed disabled:opacity-30"
+            className="glow-cyan rounded-xl px-8 py-3 text-sm font-semibold transition-all duration-200 ease-out disabled:cursor-not-allowed disabled:opacity-30"
             style={{
-              backgroundColor: "var(--neon-purple)",
+              backgroundColor: "var(--neon-cyan)",
               color: "var(--deep)",
             }}
           >
@@ -539,7 +539,7 @@ function StepProfile({
   return (
     <section className="flex flex-col gap-8">
       <header className="text-center">
-        <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
+        <h1 className="font-heading text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>
           Cuéntanos sobre tu perfil
         </h1>
         <p className="mt-2 text-sm" style={{ color: "var(--text-tertiary)" }}>
@@ -570,7 +570,11 @@ function StepProfile({
       {data.incomeSources.map((entry) => {
         const typeLabel = INCOME_TYPE_OPTIONS.find((o) => o.value === entry.type)?.label ?? entry.type;
         return (
-          <div key={entry.type} className="rounded-xl border p-4" style={{ borderColor: "var(--glass-border)" }}>
+          <div
+            key={entry.type}
+            className="glass-card rounded-xl p-4"
+            style={{ borderColor: "var(--glass-border)" }}
+          >
             <h3 className="mb-3 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
               {typeLabel}
             </h3>
@@ -739,7 +743,7 @@ function StepFinancialProfile({
   return (
     <section className="flex flex-col gap-8">
       <header className="text-center">
-        <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
+        <h1 className="font-heading text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>
           Tus finanzas
         </h1>
         <p className="mt-2 text-sm" style={{ color: "var(--text-tertiary)" }}>
@@ -822,7 +826,7 @@ function StepSavings({
   return (
     <section className="flex flex-col gap-8">
       <header className="text-center">
-        <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
+        <h1 className="font-heading text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>
           Último paso
         </h1>
         <p className="mt-2 text-sm" style={{ color: "var(--text-tertiary)" }}>

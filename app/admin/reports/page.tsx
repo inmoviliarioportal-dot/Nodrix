@@ -41,7 +41,7 @@ export default function AdminReportsPage() {
                 <ArrowLeftIcon className="size-5" />
               </Link>
               <div>
-                <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Reportes</h1>
+                <h1 className="font-heading text-2xl font-semibold tracking-tight text-text-primary">Reportes</h1>
                 <p className="text-sm text-text-tertiary">
                   Reportes ejecutivos exportables — data mock, Release 3
                 </p>

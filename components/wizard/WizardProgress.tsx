@@ -37,15 +37,14 @@ export function WizardProgress({ step, totalSteps, labels }: WizardProgressProps
                     borderStyle: "solid",
                     borderColor: color,
                     color: done ? "var(--deep)" : active ? "var(--neon-cyan)" : "var(--text-tertiary)",
-                    backgroundColor: done ? "var(--neon-cyan)" : "transparent",
-                    boxShadow: active ? "0 0 10px var(--neon-cyan-glow)" : "none",
+                    backgroundColor: done ? "var(--neon-cyan)" : "var(--surface)",
                   }}
                 >
                   {done ? <Check size={11} strokeWidth={3} /> : n}
                 </span>
                 {labels?.[n - 1] ? (
                   <span
-                    className="text-[12.5px] font-semibold"
+                    className="font-heading text-[12.5px] font-semibold"
                     style={{ color: done || active ? "var(--text-primary)" : "var(--text-tertiary)" }}
                   >
                     {labels[n - 1]}

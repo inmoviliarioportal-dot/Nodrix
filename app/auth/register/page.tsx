@@ -92,19 +92,11 @@ export default function RegisterPage() {
   return (
     <Layout className="bg-deep-ambient">
       <Toaster />
-      <div className="flex flex-col gap-2 pt-4 text-center">
-        <h1 className="text-2xl font-semibold text-text-primary sm:text-3xl">
-          Invierte en propiedades inteligentes
-        </h1>
-        <p className="text-sm text-text-secondary">
-          Crea tu cuenta para comenzar a postular y hacer seguimiento de tu inversión.
-        </p>
-      </div>
-
       <AuthCard
-        className="max-w-2xl"
-        title="Crear cuenta"
-        description="Completa tus datos para registrarte"
+        className="max-w-5xl"
+        title="Crea tu cuenta"
+        description="Completa tus datos para comenzar a postular y hacer seguimiento de tu inversión"
+        quote="Invierte en propiedades inteligentes."
       >
         <form className="flex flex-col gap-5" onSubmit={handleSubmit} noValidate>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -265,17 +257,17 @@ export default function RegisterPage() {
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="glow-cyan min-h-11 w-full bg-neon-cyan text-deep hover:bg-neon-cyan/90"
+            className="glow-cyan min-h-11 w-full rounded-[11px] bg-neon-cyan text-sm font-bold text-deep hover:bg-neon-cyan/90"
           >
             {isSubmitting ? "Creando cuenta..." : "Registrarse"}
           </Button>
         </form>
 
-        <p className="text-center text-sm text-text-secondary">
+        <p className="pt-5 text-center text-[12.5px] text-text-tertiary">
           ¿Ya tienes cuenta?{" "}
           <Link
             href="/auth/login"
-            className="font-medium text-neon-cyan transition-colors duration-200 hover:underline"
+            className="font-bold text-neon-cyan transition-colors duration-200 hover:underline"
           >
             Inicia sesión
           </Link>

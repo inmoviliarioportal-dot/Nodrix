@@ -79,7 +79,11 @@ export default function ResetPasswordPage() {
   return (
     <Layout className="bg-deep-ambient">
       <Toaster />
-      <AuthCard title="Restablecer contraseña" description="Ingresa tu nueva contraseña">
+      <AuthCard
+        title="Restablecer contraseña"
+        description="Ingresa tu nueva contraseña"
+        quote="Tu inversión, siempre bajo tu control."
+      >
         {!ready ? (
           <p className="text-center text-sm text-text-tertiary">
             Verificando enlace de recuperación...
@@ -116,7 +120,7 @@ export default function ResetPasswordPage() {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="glow-cyan w-full bg-neon-cyan text-deep hover:bg-neon-cyan/90"
+              className="glow-cyan min-h-11 w-full rounded-[11px] bg-neon-cyan text-sm font-bold text-deep hover:bg-neon-cyan/90"
             >
               {isSubmitting ? "Guardando..." : "Restablecer contraseña"}
             </Button>

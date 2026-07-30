@@ -39,7 +39,7 @@ function LeadCard({ lead }: LeadCardProps) {
     <Card
       onClick={() => router.push(`/backoffice/${application.id}`)}
       className={cn(
-        "glass-card cursor-pointer rounded-xl border-glass-border transition-all duration-200 hover:bg-white/[0.06]",
+        "glass-card cursor-pointer rounded-xl border-glass-border transition-all duration-200 hover:border-neon-cyan/30",
         category ? CATEGORY_GLOW[category] : ""
       )}
     >

@@ -26,13 +26,13 @@ export function ConversionFunnel() {
                   {stage.label}
                 </span>
                 <span
-                  className="font-semibold text-text-primary"
+                  className="font-heading font-semibold text-text-primary"
                   style={{ fontVariantNumeric: "tabular-nums" }}
                 >
                   {stage.count}
                 </span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
+              <div className="h-2 overflow-hidden rounded-full bg-dark-tertiary">
                 <div
                   className="h-full rounded-full bg-neon-cyan transition-all duration-300"
                   style={{ width: `${widthPct}%` }}

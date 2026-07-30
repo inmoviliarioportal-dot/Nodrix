@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Eye, FileText, Check, X } from "lucide-react"
+import { Eye, FileText, Check, X, CheckCircle2, AlertTriangle } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -121,11 +121,20 @@ function DocumentsSection({ documents, onDocumentsChange }: DocumentsSectionProp
                     ?.validation
                   if (!validation) return null
                   if (validation.valid) {
-                    return <span className="text-xs text-neon-green">✓ Pre-validado por OCR</span>
+                    return (
+                      <span className="flex items-center gap-1 text-xs text-neon-green">
+                        <CheckCircle2 className="size-3" />
+                        Pre-validado por OCR
+                      </span>
+                    )
                   }
                   return (
-                    <span className="text-xs text-error" title={validation.reasons.join(" — ")}>
-                      ⚠ OCR: {validation.reasons[0]}
+                    <span
+                      className="flex items-center gap-1 text-xs text-error"
+                      title={validation.reasons.join(" — ")}
+                    >
+                      <AlertTriangle className="size-3" />
+                      OCR: {validation.reasons[0]}
                     </span>
                   )
                 })()}

@@ -24,7 +24,7 @@ export default function AdminDashboardPage() {
         <div className="mx-auto flex max-w-6xl flex-col gap-6">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-text-primary">
+              <h1 className="font-heading text-2xl font-semibold tracking-tight text-text-primary">
                 Dashboard Ejecutivo
               </h1>
               <p className="text-sm text-text-tertiary">

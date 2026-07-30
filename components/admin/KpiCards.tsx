@@ -23,6 +23,19 @@ function accentClass(accent: KpiCardDef["accent"]) {
   }
 }
 
+function iconBgClass(accent: KpiCardDef["accent"]) {
+  switch (accent) {
+    case "cyan":
+      return "bg-neon-cyan/10"
+    case "purple":
+      return "bg-neon-purple/10"
+    case "green":
+      return "bg-neon-green/10"
+    default:
+      return "bg-gold/10"
+  }
+}
+
 /**
  * Top 4 KPI cards del Admin Dashboard — cards compactas y neutras
  * (`glass-surface`), con UN solo acento de color por card aplicado solo al
@@ -68,10 +81,14 @@ export function KpiCards() {
           <div key={card.label} className="glass-surface rounded-2xl p-5">
             <div className="flex items-center justify-between">
               <span className="text-[12.5px] font-semibold text-text-secondary">{card.label}</span>
-              <Icon className={`size-[17px] shrink-0 ${accentClass(card.accent)}`} aria-hidden="true" />
+              <span
+                className={`flex size-[34px] shrink-0 items-center justify-center rounded-lg ${iconBgClass(card.accent)}`}
+              >
+                <Icon className={`size-4 ${accentClass(card.accent)}`} aria-hidden="true" />
+              </span>
             </div>
             <p
-              className="mt-3 text-[26px] font-bold leading-none tracking-tight text-text-primary"
+              className="mt-3 font-heading text-[27px] font-semibold leading-none tracking-tight text-text-primary"
               style={{ fontVariantNumeric: "tabular-nums" }}
             >
               {card.value}

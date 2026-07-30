@@ -1,48 +1,49 @@
 import Link from "next/link"
 import {
   ArrowRight,
-  BadgeCheck,
-  Users,
   Sparkles,
-  ShieldCheck,
-  TrendingUp,
-  LayoutDashboard,
-  Wand2,
+  CircleCheckBig,
   Quote,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { TrustBadge } from "@/components/landing/TrustBadge"
 import { StatTile } from "@/components/landing/StatTile"
 import { StepCard } from "@/components/landing/StepCard"
-import { FeatureCard } from "@/components/landing/FeatureCard"
 
 /**
- * Landing de Atracción — rediseñada con la skill UI/UX Pro Max.
+ * Landing de Atracción — rediseñada para calzar con el mockup de referencia
+ * del negocio ("Nodrix - Rediseño Completo.html", pantalla Landing).
  *
- * Sistema elegido (ver explicación completa entregada al usuario):
- * - Estilo: dark premium + glassmorphism (mantiene la identidad ya validada
- *   en el resto de la plataforma — Portal Cliente, Backoffice, Admin —
- *   pero reestructurado con secciones de contenido reales en vez de un
- *   hero solitario).
- * - Paleta: fondo casi-negro (`--deep`) + 4 acentos semánticos ya definidos
- *   en tokens.md — cian (análisis/tech), púrpura (asesoría humana), verde
- *   (seguridad/aprobación) y oro (`--gold`, resultados/premium) — validado
- *   contra la paleta de referencia "Fintech/Trust" (navy + gold + purple).
- * - Tipografía: Lexend (titulares) + Source Sans 3 (cuerpo) — "Corporate
- *   Trust" pairing: geométrica y de alta legibilidad, pensada para
- *   fintech/banca/seguros, evita el tono "boutique inmobiliario de lujo"
- *   de una serif clásica y encaja con el resto de la UI orientada a datos.
+ * Estructura: header con logo navy+oro y nav, hero de dos columnas (copy +
+ * imagen de propiedad con card flotante de resultado de scoring), franja de
+ * stats sobre fondo navy sólido, sección "Cómo funciona" de 3 pasos con
+ * badges numerados navy, grid de 3 propiedades destacadas, testimonio final
+ * y footer — todo con la paleta "real estate editorial" (navy #16324F +
+ * oro #B8863C sobre fondo cálido) documentada en tokens.md.
  */
 export default function Home() {
   return (
     <div className="bg-deep-ambient flex min-h-screen flex-col">
-      <header className="sticky top-0 z-40 border-b border-glass-border bg-deep/80 backdrop-blur-md">
-        <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-6">
-          <span className="font-heading text-lg font-semibold tracking-tight text-text-primary">
-            Nodrix
-          </span>
-          <nav className="flex items-center gap-6 text-sm text-text-secondary">
+      <header className="sticky top-0 z-40 border-b border-glass-border bg-surface">
+        <div className="mx-auto flex h-[72px] w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-6">
+          <div className="flex shrink-0 items-center gap-2.5">
+            <svg width="36" height="36" viewBox="0 0 34 34" aria-hidden="true">
+              <rect width="34" height="34" rx="9" fill="#16324F" />
+              <path
+                d="M9 19l6-6 4 3 6-7"
+                stroke="#B8863C"
+                strokeWidth="2.3"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path d="M9 23.5h16" stroke="#B8863C" strokeWidth="2.3" strokeLinecap="round" />
+            </svg>
+            <span className="font-heading text-xl font-semibold tracking-tight text-text-primary">
+              Nodrix
+            </span>
+          </div>
+          <nav className="flex shrink-0 flex-wrap items-center gap-7 text-sm font-semibold text-text-secondary">
             <Link
               href="#como-funciona"
               className="hidden transition-colors duration-200 hover:text-text-primary sm:inline"
@@ -50,10 +51,10 @@ export default function Home() {
               Cómo funciona
             </Link>
             <Link
-              href="#features"
+              href="#propiedades"
               className="hidden transition-colors duration-200 hover:text-text-primary sm:inline"
             >
-              Plataforma
+              Propiedades
             </Link>
             <Link
               href="/auth/login"
@@ -61,199 +62,240 @@ export default function Home() {
             >
               Iniciar sesión
             </Link>
+            <Button
+              className="h-10 rounded-[10px] bg-neon-cyan px-5 text-[13.5px] font-bold text-white hover:bg-neon-cyan/90"
+              render={<Link href="/auth/register" />}
+            >
+              Comenzar
+            </Button>
           </nav>
         </div>
       </header>
 
       <main className="flex flex-1 flex-col">
         {/* Hero */}
-        <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center gap-8 px-6 py-14 text-center sm:py-20">
-          <div className="flex flex-col items-center gap-5">
-            <span className="glass-card inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-medium text-neon-purple">
+        <section className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-6 py-14 sm:py-16 lg:grid-cols-[1.05fr_1fr] lg:gap-12 lg:py-20">
+          <div className="flex flex-col gap-5">
+            <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[#EFE6D4] px-3.5 py-1.5 text-xs font-bold text-[#8A6423]">
               <Sparkles className="size-3.5" aria-hidden="true" />
-              Análisis con inteligencia artificial
+              Scoring con inteligencia artificial
             </span>
 
-            <h1 className="font-heading max-w-xl text-[2.75rem] leading-[1.1] font-semibold tracking-tight text-text-primary">
-              Tu futuro patrimonio{" "}
-              <span className="text-neon-cyan text-glow-cyan">empieza aquí</span>
+            <h1 className="font-heading max-w-lg text-4xl leading-[1.12] font-semibold tracking-tight text-text-primary sm:text-[46px]">
+              Encuentra y financia tu próxima propiedad con claridad total
             </h1>
 
-            <p className="max-w-md text-sm leading-relaxed text-text-secondary sm:text-base">
-              Evalúa tu capacidad de inversión inmobiliaria en minutos. Nuestro motor
-              de scoring analiza tu perfil y te muestra oportunidades reales,
-              respaldadas por datos y acompañadas por un asesor experto.
+            <p className="max-w-md text-base leading-relaxed text-text-secondary">
+              Evaluamos tu capacidad de inversión en minutos, te mostramos oportunidades reales
+              según tu perfil y te acompañamos con un asesor humano hasta el cierre.
             </p>
-          </div>
 
-          <div className="flex flex-col items-center gap-3 sm:flex-row">
-            <Button
-              className="glow-cyan h-11 gap-2 rounded-xl bg-neon-cyan px-7 text-sm font-semibold text-deep hover:bg-neon-cyan/90"
-              render={<Link href="/auth/register" />}
-            >
-              Empezar evaluación
-              <ArrowRight className="size-4" aria-hidden="true" />
-            </Button>
-            <Button
-              variant="ghost"
-              className="h-11 gap-2 rounded-xl px-5 text-sm font-medium text-text-secondary hover:bg-white/5 hover:text-text-primary"
-              render={<Link href="#como-funciona" />}
-            >
-              Ver cómo funciona
-            </Button>
-          </div>
-
-          <div className="grid w-full max-w-xl grid-cols-1 gap-2.5 pt-1 sm:grid-cols-3">
-            <TrustBadge icon={Users} label="Miles de inversionistas" glow="cyan" />
-            <TrustBadge icon={TrendingUp} label="Análisis con IA" glow="purple" />
-            <TrustBadge icon={ShieldCheck} label="100% seguro" glow="green" />
-          </div>
-        </section>
-
-        {/* Barra de confianza / stats */}
-        <section className="border-y border-glass-border bg-surface/60">
-          <div className="mx-auto grid w-full max-w-4xl grid-cols-2 gap-3 px-6 py-8 sm:grid-cols-4">
-            <StatTile value="+1.200" label="Solicitudes evaluadas" glow="cyan" />
-            <StatTile value="94%" label="Precisión del scoring" glow="purple" />
-            <StatTile value="48h" label="Tiempo de respuesta" glow="green" />
-            <StatTile value="100%" label="Datos encriptados" glow="gold" />
-          </div>
-        </section>
-
-        {/* Cómo funciona */}
-        <section id="como-funciona" className="mx-auto w-full max-w-4xl px-6 py-16 sm:py-20">
-          <div className="mb-9 flex flex-col items-center gap-2 text-center">
-            <span className="text-xs font-semibold tracking-wide text-neon-cyan uppercase">
-              Cómo funciona
-            </span>
-            <h2 className="font-heading text-2xl font-semibold text-text-primary sm:text-3xl">
-              De tu perfil a tu propuesta, en tres pasos
-            </h2>
-            <p className="max-w-lg text-sm text-text-secondary">
-              Sin formularios eternos ni respuestas genéricas — cada paso está
-              diseñado para llegar rápido a una propuesta real.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
-            <StepCard
-              step={1}
-              icon={Wand2}
-              title="Completa tu perfil"
-              description="Un wizard de menos de 2 minutos recoge tus datos financieros clave: renta, ahorro y propósito de inversión."
-            />
-            <StepCard
-              step={2}
-              icon={TrendingUp}
-              title="Recibe tu scoring al instante"
-              description="Nuestro motor determinístico calcula tu categoría (Bronce a Platino) y te muestra una propuesta de inversión a medida."
-            />
-            <StepCard
-              step={3}
-              icon={Users}
-              title="Conecta con tu asesor"
-              description="Sube tus documentos desde tu portal y sigue el avance de tu solicitud junto a un asesor asignado en tiempo real."
-            />
-          </div>
-        </section>
-
-        {/* Features */}
-        <section id="features" className="border-y border-glass-border bg-surface/60">
-          <div className="mx-auto w-full max-w-4xl px-6 py-16 sm:py-20">
-            <div className="mb-9 flex flex-col items-center gap-2 text-center">
-              <span className="text-xs font-semibold tracking-wide text-neon-purple uppercase">
-                La plataforma
-              </span>
-              <h2 className="font-heading text-2xl font-semibold text-text-primary sm:text-3xl">
-                Todo lo que necesitas para invertir con confianza
-              </h2>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                className="glow-cyan h-[52px] gap-2 rounded-xl bg-neon-cyan px-6 text-[15px] font-bold text-white hover:bg-neon-cyan/90"
+                render={<Link href="/auth/register" />}
+              >
+                Iniciar evaluación gratuita
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </Button>
+              <Button
+                variant="outline"
+                className="h-[52px] rounded-xl border-input px-5 text-[15px] font-semibold text-text-primary hover:bg-surface-elevated"
+                render={<Link href="#como-funciona" />}
+              >
+                Ver cómo funciona
+              </Button>
             </div>
 
-            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-              <FeatureCard
-                icon={TrendingUp}
-                title="Scoring inteligente"
-                description="Un motor de reglas determinístico —no una caja negra— evalúa renta, ahorro, estabilidad laboral y carga financiera."
-                glow="cyan"
-              />
-              <FeatureCard
-                icon={LayoutDashboard}
-                title="Portal de seguimiento"
-                description="Visualiza el estado de tu solicitud en tiempo real, desde la recepción hasta el cierre de la operación."
-                glow="purple"
-              />
-              <FeatureCard
-                icon={ShieldCheck}
-                title="Seguridad de nivel bancario"
-                description="Tus documentos y datos financieros viajan cifrados y se almacenan bajo los mismos estándares que usan los bancos."
-                glow="green"
-              />
-              <FeatureCard
-                icon={BadgeCheck}
-                title="Asesoría personalizada"
-                description="Un asesor humano acompaña cada solicitud aprobada, disponible por chat directo desde tu portal."
-                glow="gold"
-              />
+            <div className="flex items-center gap-4 pt-1.5">
+              <div className="flex">
+                <span className="-mr-2 flex size-[30px] items-center justify-center rounded-full border-2 border-surface bg-[#DCE6EA] text-[10px] font-bold text-neon-cyan">
+                  MF
+                </span>
+                <span className="-mr-2 flex size-[30px] items-center justify-center rounded-full border-2 border-surface bg-[#EFE6D4] text-[10px] font-bold text-[#8A6423]">
+                  JS
+                </span>
+                <span className="flex size-[30px] items-center justify-center rounded-full border-2 border-surface bg-[#DEEFE3] text-[10px] font-bold text-[#2E8B63]">
+                  RT
+                </span>
+              </div>
+              <span className="text-xs text-text-tertiary">
+                +1.200 inversionistas ya evaluaron su perfil
+              </span>
             </div>
           </div>
-        </section>
 
-        {/* Social proof */}
-        <section className="mx-auto w-full max-w-2xl px-6 py-16 sm:py-20">
-          <div className="glass-card flex flex-col items-center gap-5 rounded-2xl p-6 text-center sm:p-8">
-            <Quote className="size-7 text-neon-cyan" aria-hidden="true" />
-            <p className="font-heading max-w-lg text-base leading-relaxed text-text-primary sm:text-lg">
-              "En menos de una semana tuve claridad total sobre mi capacidad de
-              inversión y una propuesta concreta. El seguimiento en el portal
-              hizo que todo se sintiera transparente."
-            </p>
-            <div className="flex items-center gap-3">
-              <span className="glow-purple flex size-10 items-center justify-center rounded-full border border-neon-purple bg-neon-purple/10 text-sm font-semibold text-neon-purple">
-                MF
+          <div className="flex flex-col gap-3.5">
+            <div className="overflow-hidden rounded-[20px]">
+              {/* Photo by Francesca Tosolini on Unsplash */}
+              <img
+                src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80"
+                alt="Fachada de propiedad destacada"
+                className="h-[340px] w-full object-cover"
+              />
+            </div>
+            <div className="glass-card flex gap-3.5 rounded-2xl p-4">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-[11px] bg-[#EFE6D4]">
+                <CircleCheckBig className="size-5 text-[#8A6423]" aria-hidden="true" />
               </span>
-              <div className="text-left">
-                <p className="text-sm font-medium text-text-primary">María Fernanda R.</p>
-                <p className="text-xs text-text-tertiary">Inversionista, categoría Oro</p>
+              <div>
+                <div className="text-[13.5px] font-bold text-text-primary">
+                  Categoría Oro asignada
+                </div>
+                <div className="mt-0.5 text-xs text-text-tertiary">
+                  Perfil evaluado en 4 minutos, con propuesta financiera lista.
+                </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* CTA final */}
-        <section className="border-t border-glass-border bg-surface/60">
-          <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-5 px-6 py-16 text-center sm:py-20">
-            <h2 className="font-heading max-w-xl text-2xl font-semibold text-text-primary sm:text-3xl">
-              Descubre tu categoría de inversión en menos de 2 minutos
+        {/* Franja de stats sobre fondo navy */}
+        <section className="mt-2 bg-neon-cyan">
+          <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-5 px-6 py-11 text-center sm:grid-cols-4">
+            <StatTile value="+1.200" label="Solicitudes evaluadas" onDark />
+            <StatTile value="94%" label="Precisión del scoring" onDark />
+            <StatTile value="48h" label="Tiempo de respuesta" onDark />
+            <StatTile value="100%" label="Datos encriptados" onDark />
+          </div>
+        </section>
+
+        {/* Cómo funciona */}
+        <section id="como-funciona" className="mx-auto w-full max-w-6xl px-6 pt-16 sm:pt-20">
+          <div className="mb-10 flex flex-col items-center gap-2.5 text-center">
+            <span className="text-xs font-bold tracking-wide text-gold uppercase">
+              Cómo funciona
+            </span>
+            <h2 className="font-heading text-3xl font-semibold text-text-primary">
+              De tu perfil a tu propuesta, en tres pasos
             </h2>
-            <p className="max-w-md text-sm text-text-secondary">
-              Sin compromiso, sin costo. Solo necesitas responder algunas preguntas
-              sobre tu situación financiera.
+          </div>
+
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+            <StepCard
+              step={1}
+              title="Completa tu perfil"
+              description="Un wizard de menos de 3 minutos recoge tu situación laboral, ingresos y ahorro disponible."
+            />
+            <StepCard
+              step={2}
+              title="Recibe tu scoring al instante"
+              description="Calculamos tu categoría (Bronce a Platino) y una propuesta financiera a tu medida."
+            />
+            <StepCard
+              step={3}
+              title="Conecta con tu asesor"
+              description="Sube tus documentos y sigue el avance en tiempo real junto a un asesor dedicado."
+            />
+          </div>
+        </section>
+
+        {/* Propiedades destacadas */}
+        <section id="propiedades" className="mx-auto w-full max-w-6xl px-6 pt-16 sm:pt-20">
+          <div className="mb-8 flex flex-col items-center gap-2.5 text-center">
+            <span className="text-xs font-bold tracking-wide text-gold uppercase">
+              Propiedades
+            </span>
+            <h2 className="font-heading text-3xl font-semibold text-text-primary">
+              Oportunidades para tu categoría
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+            {[
+              {
+                src: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
+                title: "Depto. Vista al Parque",
+                tag: "Oro",
+                location: "Providencia, Santiago",
+                price: "UF 4.200",
+                rooms: "2D · 2B",
+              },
+              {
+                src: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80",
+                title: "Casa Los Robles",
+                tag: "Platino",
+                location: "Chicureo, Colina",
+                price: "UF 8.900",
+                rooms: "4D · 3B",
+              },
+              {
+                src: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80",
+                title: "Studio Centro Cívico",
+                tag: "Plata",
+                location: "Santiago Centro",
+                price: "UF 2.350",
+                rooms: "1D · 1B",
+              },
+            ].map((pc) => (
+              <div
+                key={pc.title}
+                className="glass-card flex flex-col overflow-hidden rounded-2xl p-0"
+              >
+                <img
+                  src={pc.src}
+                  alt={pc.title}
+                  className="h-[170px] w-full object-cover"
+                />
+                <div className="flex flex-col gap-2 p-[18px]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[14.5px] font-bold text-text-primary">{pc.title}</span>
+                    <span className="rounded-full bg-[#EFE6D4] px-2.5 py-0.5 text-[10.5px] font-bold tracking-wide text-[#8A6423] uppercase">
+                      {pc.tag}
+                    </span>
+                  </div>
+                  <p className="text-xs text-text-tertiary">{pc.location}</p>
+                  <div className="mt-1 flex items-center justify-between border-t border-glass-border pt-1.5">
+                    <span className="font-heading text-[17px] font-semibold text-text-primary">
+                      {pc.price}
+                    </span>
+                    <span className="text-xs text-text-tertiary">{pc.rooms}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Testimonio final */}
+        <section className="mx-auto mt-[72px] w-full max-w-3xl px-6">
+          <div className="glass-card flex flex-col items-center gap-4 rounded-[20px] p-10 text-center">
+            <Quote className="size-6 text-gold" aria-hidden="true" />
+            <p className="font-heading max-w-lg text-lg leading-relaxed text-text-primary italic">
+              "En menos de una semana tuve claridad total sobre mi capacidad de inversión y una
+              propuesta concreta."
             </p>
-            <Button
-              className="glow-cyan h-11 gap-2 rounded-xl bg-neon-cyan px-7 text-sm font-semibold text-deep hover:bg-neon-cyan/90"
-              render={<Link href="/auth/register" />}
-            >
-              Empezar evaluación
-              <ArrowRight className="size-4" aria-hidden="true" />
-            </Button>
+            <div className="flex items-center gap-2.5">
+              <span className="flex size-[38px] items-center justify-center rounded-full bg-[#EFE6D4] text-xs font-bold text-[#8A6423]">
+                MF
+              </span>
+              <div className="text-left">
+                <p className="text-[13px] font-bold text-text-primary">María Fernanda R.</p>
+                <p className="text-[11.5px] text-text-tertiary">Inversionista, categoría Oro</p>
+              </div>
+            </div>
           </div>
         </section>
       </main>
 
-      <footer className="border-t border-glass-border">
-        <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-4 px-6 py-8 text-center sm:flex-row sm:justify-between sm:text-left">
-          <span className="font-heading text-sm font-semibold text-text-primary">Nodrix</span>
-          <nav className="flex items-center gap-6 text-xs text-text-tertiary">
-            <Link href="/auth/login" className="transition-colors duration-200 hover:text-text-primary">
-              Iniciar sesión
-            </Link>
-            <Link href="/auth/register" className="transition-colors duration-200 hover:text-text-primary">
-              Crear cuenta
-            </Link>
-          </nav>
-          <span className="text-xs text-text-tertiary">
-            © {new Date().getFullYear()} Nodrix — Plataforma Inmobiliaria Inteligente
+      <footer className="mt-[72px] border-t border-glass-border">
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-7 text-[12.5px] text-text-tertiary">
+          <span className="flex items-center gap-2 font-bold text-text-primary">
+            <svg width="22" height="22" viewBox="0 0 34 34" aria-hidden="true">
+              <rect width="34" height="34" rx="9" fill="#16324F" />
+              <path
+                d="M9 19l6-6 4 3 6-7"
+                stroke="#B8863C"
+                strokeWidth="2.3"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path d="M9 23.5h16" stroke="#B8863C" strokeWidth="2.3" strokeLinecap="round" />
+            </svg>
+            Nodrix
           </span>
+          <span>© {new Date().getFullYear()} Nodrix — Plataforma Inmobiliaria Inteligente</span>
         </div>
       </footer>
     </div>

@@ -1,28 +1,22 @@
-import type { LucideIcon } from "lucide-react"
-
 interface StepCardProps {
   step: number
-  icon: LucideIcon
   title: string
   description: string
 }
 
 /**
- * Tarjeta de paso para la sección "Cómo funciona". El número + ícono hacen
- * eco visual del componente Timeline (mismo lenguaje de "paso numerado"
- * usado en el dashboard del cliente), reforzando consistencia de marca.
+ * Tarjeta de paso para la sección "Cómo funciona" — replica el patrón del
+ * mockup de referencia: badge numerado sólido navy (Newsreader) + título +
+ * descripción, sobre card blanca con borde cálido.
  */
-function StepCard({ step, icon: Icon, title, description }: StepCardProps) {
+function StepCard({ step, title, description }: StepCardProps) {
   return (
-    <div className="relative flex flex-col gap-2 rounded-2xl border border-glass-border p-5">
-      <div className="flex items-center gap-2">
-        <span className="font-heading text-xs font-bold text-neon-cyan">
-          {String(step).padStart(2, "0")}
-        </span>
-        <Icon className="size-4 text-text-tertiary" aria-hidden="true" />
-      </div>
-      <h3 className="font-heading text-base font-semibold text-text-primary">{title}</h3>
-      <p className="text-xs leading-relaxed text-text-secondary">{description}</p>
+    <div className="glass-card flex flex-col gap-3 rounded-2xl p-6">
+      <span className="font-heading flex size-10 items-center justify-center rounded-xl bg-neon-cyan text-base font-semibold text-white">
+        {String(step).padStart(2, "0")}
+      </span>
+      <h3 className="font-heading mt-1 text-base font-bold text-text-primary">{title}</h3>
+      <p className="text-xs leading-relaxed text-text-tertiary">{description}</p>
     </div>
   )
 }

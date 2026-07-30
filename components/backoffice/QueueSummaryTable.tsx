@@ -95,7 +95,7 @@ function QueueSummaryTable({ applications, onDrilldown }: QueueSummaryTableProps
             const isExpanded = expanded === stage
             return (
               <Fragment key={stage}>
-                <tr className="border-b border-glass-border/50 hover:bg-white/[0.03]">
+                <tr className="border-b border-glass-border/50 hover:bg-neon-cyan/[0.03]">
                   <td className="py-1.5 text-center">
                     <button
                       type="button"
@@ -153,7 +153,7 @@ function QueueSummaryTable({ applications, onDrilldown }: QueueSummaryTableProps
                 </tr>
 
                 {isExpanded && (
-                  <tr className="border-b border-glass-border/50 bg-white/[0.02]">
+                  <tr className="border-b border-glass-border/50 bg-neon-cyan/[0.02]">
                     <td />
                     <td colSpan={SCORING_CATEGORIES.length + 2} className="py-2 pr-2">
                       <div className="flex flex-wrap gap-4 text-xs text-text-tertiary">

@@ -53,16 +53,18 @@ export default function ForgotPasswordPage() {
       <AuthCard
         title="Recuperar contraseña"
         description="Te enviaremos un enlace para restablecer tu contraseña"
+        quote="Un paso simple para volver a tu cuenta."
       >
         {sent ? (
           <div className="flex flex-col gap-4 text-center">
             <p className="text-sm text-text-secondary">
-              Si <span className="text-text-primary">{email}</span> tiene una cuenta con
-              nosotros, recibirás un correo con instrucciones para restablecer tu contraseña.
+              Si <span className="font-semibold text-text-primary">{email}</span> tiene una
+              cuenta con nosotros, recibirás un correo con instrucciones para restablecer tu
+              contraseña.
             </p>
             <Link
               href="/auth/login"
-              className="text-sm font-medium text-neon-cyan transition-colors duration-200 hover:underline"
+              className="text-sm font-bold text-neon-cyan transition-colors duration-200 hover:underline"
             >
               Volver a iniciar sesión
             </Link>
@@ -87,15 +89,15 @@ export default function ForgotPasswordPage() {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="glow-cyan w-full bg-neon-cyan text-deep hover:bg-neon-cyan/90"
+              className="glow-cyan min-h-11 w-full rounded-[11px] bg-neon-cyan text-sm font-bold text-deep hover:bg-neon-cyan/90"
             >
               {isSubmitting ? "Enviando..." : "Enviar enlace de recuperación"}
             </Button>
 
-            <p className="text-center text-sm text-text-secondary">
+            <p className="pt-1 text-center text-[12.5px] text-text-tertiary">
               <Link
                 href="/auth/login"
-                className="font-medium text-neon-cyan transition-colors duration-200 hover:underline"
+                className="font-bold text-neon-cyan transition-colors duration-200 hover:underline"
               >
                 Volver a iniciar sesión
               </Link>

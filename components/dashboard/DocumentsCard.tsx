@@ -15,7 +15,7 @@ function DocumentsCard({ documents, onUploadClick }: DocumentsCardProps) {
   const percent = total > 0 ? Math.round((approved / total) * 100) : 0
 
   return (
-    <div className="flex flex-col gap-1.5 rounded-xl border border-glass-border p-3">
+    <div className="glass-card flex flex-col gap-1.5 rounded-xl p-3">
       <div className="flex items-center justify-between gap-2">
         <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-text-tertiary">
           <FileCheck2 className="size-3.5 text-neon-cyan" aria-hidden="true" />

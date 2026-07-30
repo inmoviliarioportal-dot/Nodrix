@@ -360,7 +360,7 @@ export default function AdminPropertiesPage() {
                       className={cn(
                         "rounded-full border px-2 py-0.5 text-xs font-medium",
                         property.available
-                          ? "border-status-success/40 bg-status-success/10 text-status-success"
+                          ? "border-success/40 bg-success/10 text-success"
                           : "border-text-tertiary/40 bg-text-tertiary/10 text-text-tertiary"
                       )}
                     >
@@ -375,7 +375,7 @@ export default function AdminPropertiesPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-7 px-2 text-xs text-status-error"
+                        className="h-7 px-2 text-xs text-error"
                         onClick={() => remove(property)}
                       >
                         Eliminar
