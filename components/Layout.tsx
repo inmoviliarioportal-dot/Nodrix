@@ -46,13 +46,25 @@ function Layout({
       className={cn("flex min-h-screen flex-col bg-background text-foreground", className)}
       {...props}
     >
-      <header className="border-b border-border bg-surface/60 backdrop-blur-md">
+      <header className="border-b border-border bg-surface">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 px-6">
           <div className="flex items-center gap-7">
             <Link
               href="/"
-              className="text-base font-bold tracking-tight text-text-primary transition-colors duration-200 hover:text-gold"
+              className="flex items-center gap-2 font-heading text-base font-semibold tracking-tight text-text-primary transition-colors duration-200 hover:text-gold"
             >
+              <svg width="26" height="26" viewBox="0 0 34 34" aria-hidden="true">
+                <rect width="34" height="34" rx="9" fill="var(--blue-accent)" />
+                <path
+                  d="M9 19l6-6 4 3 6-7"
+                  stroke="var(--gold)"
+                  strokeWidth="2.3"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path d="M9 23.5h16" stroke="var(--gold)" strokeWidth="2.3" strokeLinecap="round" />
+              </svg>
               {brand}
             </Link>
             <nav className="flex items-center gap-1 text-sm">

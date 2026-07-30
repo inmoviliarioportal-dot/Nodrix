@@ -89,44 +89,51 @@
 }
 
 /*
- * Dark mode premium minimalista es el ÚNICO tema del MVP (sin toggle light/light-dark).
- * Los tokens shadcn (--background, --card, etc.) se fijan directamente a la paleta
- * custom en :root para que todos los componentes shadcn hereden el tema oscuro
- * sin necesitar la clase `.dark`. Se conserva `.dark` con los mismos valores por
- * compatibilidad con utilidades `dark:` que puedan usarse en el resto del código.
+ * Rediseño v3 — identidad "real-estate editorial": navy + oro sobre base
+ * cálida (ver .claude/design-system/tokens.md). Único tema del MVP (sin
+ * toggle claro/oscuro). Se remapean los MISMOS nombres de variable que el
+ * sistema neón/glassmorphism anterior (--neon-cyan, --deep, --glass-border,
+ * etc.) para que TODO el código existente (dashboard, wizard, backoffice,
+ * admin) herede la nueva paleta sin tener que tocar cada archivo -- los
+ * agentes de rediseño solo ajustan estructura/copy puntual, no color.
+ * Se conserva `.dark` con los mismos valores (no hay modo oscuro real en el
+ * MVP) por compatibilidad con utilidades `dark:` preexistentes.
  */
 :root {
-  /* Paleta base */
-  --dark-primary: #0f0f1e;
-  --dark-secondary: #1a1a2e;
-  --dark-tertiary: #252540;
-  --gold: #d4af37;
-  --blue-accent: #4f46e5;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --error: #ef4444;
-  --text-primary: #f3f4f6;
-  --text-secondary: #d1d5db;
-  --text-tertiary: #9ca3af;
+  /* Paleta base -- fondo cálido, tarjetas blancas, texto navy */
+  --dark-primary: #f7f5f0; /* fondo de página (antes casi-negro) */
+  --dark-secondary: #ffffff; /* fondo de card (antes superficie oscura) */
+  --dark-tertiary: #efe6d4; /* hover/tint sutil (antes superficie elevada oscura) */
+  --gold: #b8863c;
+  --blue-accent: #16324f; /* navy -- reemplaza el índigo como color "primary" */
+  --success: #2e8b63;
+  --warning: #b8863c;
+  --error: #c0392b;
+  --text-primary: #16324f; /* navy -- titulares y texto fuerte */
+  --text-secondary: #4b5563; /* texto de cuerpo */
+  --text-tertiary: #6c7787; /* texto atenuado/caption */
 
-  /* Categorías de scoring */
+  /* Categorías de scoring (paleta metálica, independiente del acento de marca) */
   --bronce: #b08d57;
-  --plata: #c0c0c0;
-  --oro: #d4af37;
-  --platino: #e5e4e2;
+  --plata: #9aa0a8;
+  --oro: #b8863c;
+  --platino: #8a8f98;
 
-  /* Sistema Neón / Glassmorphism */
-  --deep: #05060a;
-  --surface: #0b0e16;
-  --surface-elevated: #10141f;
-  --glass: rgba(255, 255, 255, 0.04);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --neon-cyan: #22d3ee;
-  --neon-purple: #a78bfa;
-  --neon-green: #34d399;
-  --neon-cyan-glow: rgba(34, 211, 238, 0.35);
-  --neon-purple-glow: rgba(167, 139, 250, 0.35);
-  --neon-green-glow: rgba(52, 211, 153, 0.35);
+  /* Acentos -- mismos nombres que el sistema anterior, reasignados:
+     "neon-cyan" = acento primario de marca (navy, CTAs/bordes activos),
+     "neon-purple" = acento secundario (ciruela apagado, IA/premium/BLACK),
+     "neon-green" = éxito/rentabilidad (verde). */
+  --deep: #f7f5f0;
+  --surface: #ffffff;
+  --surface-elevated: #ffffff;
+  --glass: #ffffff;
+  --glass-border: #e4dfd3;
+  --neon-cyan: #16324f;
+  --neon-purple: #5c4a72;
+  --neon-green: #2e8b63;
+  --neon-cyan-glow: rgba(22, 50, 79, 0.16);
+  --neon-purple-glow: rgba(92, 74, 114, 0.16);
+  --neon-green-glow: rgba(46, 139, 99, 0.16);
 
   --background: var(--dark-primary);
   --foreground: var(--text-primary);
@@ -135,30 +142,30 @@
   --popover: var(--dark-secondary);
   --popover-foreground: var(--text-primary);
   --primary: var(--blue-accent);
-  --primary-foreground: var(--text-primary);
+  --primary-foreground: #ffffff;
   --secondary: var(--dark-tertiary);
   --secondary-foreground: var(--text-primary);
-  --muted: var(--dark-secondary);
+  --muted: #f0ede4;
   --muted-foreground: var(--text-tertiary);
   --accent: var(--dark-tertiary);
   --accent-foreground: var(--text-primary);
   --destructive: var(--error);
-  --border: #374151;
-  --input: #374151;
+  --border: #e4dfd3;
+  --input: #d8d2c2;
   --ring: var(--blue-accent);
   --chart-1: var(--gold);
   --chart-2: var(--blue-accent);
   --chart-3: var(--success);
   --chart-4: var(--warning);
   --chart-5: var(--error);
-  --radius: 0.5rem;
+  --radius: 0.75rem;
   --sidebar: var(--dark-secondary);
   --sidebar-foreground: var(--text-primary);
   --sidebar-primary: var(--blue-accent);
-  --sidebar-primary-foreground: var(--text-primary);
+  --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: var(--dark-tertiary);
   --sidebar-accent-foreground: var(--text-primary);
-  --sidebar-border: #374151;
+  --sidebar-border: #e4dfd3;
   --sidebar-ring: var(--blue-accent);
 }
 
@@ -170,16 +177,16 @@
   --popover: var(--dark-secondary);
   --popover-foreground: var(--text-primary);
   --primary: var(--blue-accent);
-  --primary-foreground: var(--text-primary);
+  --primary-foreground: #ffffff;
   --secondary: var(--dark-tertiary);
   --secondary-foreground: var(--text-primary);
-  --muted: var(--dark-secondary);
+  --muted: #f0ede4;
   --muted-foreground: var(--text-tertiary);
   --accent: var(--dark-tertiary);
   --accent-foreground: var(--text-primary);
   --destructive: var(--error);
-  --border: #374151;
-  --input: #374151;
+  --border: #e4dfd3;
+  --input: #d8d2c2;
   --ring: var(--blue-accent);
   --chart-1: var(--gold);
   --chart-2: var(--blue-accent);
@@ -189,10 +196,10 @@
   --sidebar: var(--dark-secondary);
   --sidebar-foreground: var(--text-primary);
   --sidebar-primary: var(--blue-accent);
-  --sidebar-primary-foreground: var(--text-primary);
+  --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: var(--dark-tertiary);
   --sidebar-accent-foreground: var(--text-primary);
-  --sidebar-border: #374151;
+  --sidebar-border: #e4dfd3;
   --sidebar-ring: var(--blue-accent);
 }
 
@@ -209,52 +216,48 @@
 }
 
 /*
- * Utilidades Glassmorphism / Neón — rediseño v2.
- * Referencia de uso en .claude/design-system/tokens.md. Reutilizar estas
- * clases en vez de reinventar blur/glow por componente, para mantener
- * consistencia visual entre Landing, Wizard, Proposal, Vault y Dashboard.
+ * Utilidades de superficie/elevación — rediseño v3 (editorial navy + oro).
+ * Mismos nombres de clase que el sistema anterior (glass-card, glow-cyan,
+ * etc.) para que el markup existente no requiera cambios: antes producían
+ * blur/glow de neón sobre fondo oscuro, ahora producen tarjetas blancas
+ * planas con borde cálido y sombra muy sutil sobre el fondo off-white --
+ * ver .claude/design-system/tokens.md.
  */
 @layer utilities {
   .glass-card {
-    background: var(--glass);
+    background: var(--surface);
     border: 1px solid var(--glass-border);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 1px 2px rgba(20, 30, 40, 0.04);
   }
 
   .glass-surface {
     background: var(--surface);
     border: 1px solid var(--glass-border);
+    box-shadow: 0 1px 2px rgba(20, 30, 40, 0.03);
   }
 
-  /* Fondo base con leve gradiente radial ambiental (nunca #000 puro). */
+  /* Fondo de página cálido y plano (sin gradientes de neón). */
   .bg-deep-ambient {
-    background: radial-gradient(
-        ellipse 80% 50% at 50% -20%,
-        rgba(167, 139, 250, 0.08),
-        transparent
-      ),
-      radial-gradient(ellipse 60% 40% at 90% 100%, rgba(34, 211, 238, 0.06), transparent),
-      var(--deep);
+    background: var(--deep);
   }
 
+  /* Sombra de elevación sutil para CTAs primarios (ya no es un "glow" de
+     neón -- una sombra suave teñida del color de acento). */
   .glow-cyan {
-    box-shadow: 0 0 24px 0 var(--neon-cyan-glow);
+    box-shadow: 0 4px 14px -4px var(--neon-cyan-glow);
   }
   .glow-purple {
-    box-shadow: 0 0 24px 0 var(--neon-purple-glow);
+    box-shadow: 0 4px 14px -4px var(--neon-purple-glow);
   }
   .glow-green {
-    box-shadow: 0 0 24px 0 var(--neon-green-glow);
+    box-shadow: 0 4px 14px -4px var(--neon-green-glow);
   }
 
-  .text-glow-cyan {
-    text-shadow: 0 0 16px var(--neon-cyan-glow);
-  }
-  .text-glow-purple {
-    text-shadow: 0 0 16px var(--neon-purple-glow);
-  }
+  /* Los números clave ya no llevan glow de texto -- la serif editorial
+     (Newsreader) + el color de acento son suficiente jerarquía visual. */
+  .text-glow-cyan,
+  .text-glow-purple,
   .text-glow-green {
-    text-shadow: 0 0 16px var(--neon-green-glow);
+    text-shadow: none;
   }
 }

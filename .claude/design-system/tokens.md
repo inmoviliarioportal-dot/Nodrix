@@ -1,58 +1,111 @@
-# Design System v2 — Rediseño Visual (Dark Glassmorphism + Neón)
+# Design System v3 — Rediseño "Real Estate Editorial" (Navy + Oro)
 
 > Fuente de verdad de tokens: `app/globals.css` (`:root`). Este documento es la
 > referencia de USO para agentes — no dupliques valores hardcodeados, siempre
-> consume las clases/tokens de abajo.
+> consume las clases/tokens de abajo. Reemplaza al v2 (dark glassmorphism/neón).
 
 ## Contexto de marca
 
-Plataforma de inversión inmobiliaria inteligente. El diseño debe transmitir:
-**modernidad, análisis de datos y confianza algorítmica** — profesional y
-robusto, NO "gamer"/cyberpunk. Evitar neón saturado puro (#00FFFF, #FF00FF)
-como texto/fondo — falla WCAG y rompe la sensación de "hecho por profesionales".
+Plataforma de inversión inmobiliaria. El diseño debe transmitir **solidez,
+patrimonio y confianza editorial** — como una publicación inmobiliaria premium,
+NO un dashboard "fintech oscuro"/"gamer". Fondo cálido y luminoso, tarjetas
+blancas con borde sutil, tipografía serif editorial en titulares/cifras, oro
+como acento (nunca como color de fondo grande), fotografía de propiedad como
+protagonista donde haya espacio.
 
-## Paleta
+Referencia visual aportada por el negocio:
+`Rediseño/Mejora de sitio Nodrix V2/Nodrix - Rediseño Completo.html` (mockup
+interactivo de 8 pantallas: Landing, Login/Registro, Wizard, Dashboard,
+Documentos, Admin/Gerencia, Backoffice).
+
+## Paleta (mismos NOMBRES de variable que el sistema v2, valores nuevos —
+## así todo el código existente hereda el rediseño sin tocar cada archivo)
 
 | Token CSS | Valor | Uso |
 |---|---|---|
-| `--deep` | `#05060A` | Fondo base de pantallas full-bleed (Landing, Wizard, AI Processing, Proposal) |
-| `--surface` | `#0B0E16` | Fondo de secciones/paneles no-glass |
-| `--surface-elevated` | `#10141F` | Elementos elevados (inputs, dropdowns) |
-| `--glass` | `rgba(255,255,255,0.04)` | Fondo de tarjetas glassmorphism |
-| `--glass-border` | `rgba(255,255,255,0.08)` | Borde de tarjetas glass |
-| `--neon-cyan` | `#22D3EE` | Acento primario — CTAs, links activos, dato "positivo/neutral" |
-| `--neon-purple` | `#A78BFA` | Acento secundario — IA/procesamiento, elementos "inteligentes" |
-| `--neon-green` | `#34D399` | Acento de éxito/rentabilidad — números financieros positivos, checks |
-| `--neon-*-glow` | `rgba(*, 0.35)` | Glow (box-shadow/text-shadow), SIEMPRE sutil, nunca el color plano como fondo grande |
+| `--deep` | `#F7F5F0` | Fondo de página (cálido, off-white) — antes casi-negro |
+| `--surface` / `--surface-elevated` | `#FFFFFF` | Fondo de card/panel/input |
+| `--glass-border` / `--border` | `#E4DFD3` | Borde de cards, inputs, header |
+| `--input` | `#D8D2C2` | Borde de inputs específicamente |
+| `--neon-cyan` | `#16324F` (navy) | Acento PRIMARIO — CTAs, bordes activos, iconos, `--primary` |
+| `--neon-purple` | `#5C4A72` (ciruela apagado) | Acento secundario — IA/procesamiento, categoría BLACK |
+| `--neon-green` | `#2E8B63` | Éxito/rentabilidad — checks, números positivos |
+| `--gold` | `#B8863C` | Acento de marca — badges, subtítulos "eyebrow", categoría ORO, íconos destacados |
+| `--text-primary` | `#16324F` (navy) | Titulares y texto fuerte |
+| `--text-secondary` | `#4B5563` | Texto de cuerpo |
+| `--text-tertiary` | `#6C7787` | Texto atenuado / captions |
 
-Colores heredados de Release 1 que se mantienen (NO tocar su semántica):
-`--gold` (#D4AF37, categoría scoring ORO/PLATINO), `--bronce`, `--plata`,
-`--oro`, `--platino` (badges de categoría de scoring — dominio propio, no son
-parte del sistema neón de UI general).
+Las clases Tailwind derivadas (`bg-neon-cyan`, `text-neon-cyan`,
+`border-neon-cyan/40`, `bg-deep`, `text-deep`, `bg-surface`,
+`border-glass-border`, `text-text-primary`, etc.) ya reflejan estos valores —
+**no hace falta cambiar className por className**, solo revisar que la
+combinación siga teniendo sentido visual (ver sección de gotchas abajo).
 
-## Clases utilitarias (`app/globals.css`, `@layer utilities`)
+## Tipografía
 
-- `.bg-deep-ambient` — fondo full-bleed con gradiente radial ambiental sutil (usar en pantallas hero: Landing, AI Processing, Proposal)
-- `.glass-card` — tarjeta glassmorphism (blur 20px + borde translúcido) — usar para TODAS las cards flotantes sobre fondo ambiental
-- `.glass-surface` — superficie sólida con borde translúcido (sin blur) — usar para paneles internos de dashboard/vault donde no hay imagen de fondo detrás
-- `.glow-cyan` / `.glow-purple` / `.glow-green` — box-shadow de glow, para botones primarios y elementos que deben "guiar el ojo"
-- `.text-glow-cyan` / `.text-glow-purple` / `.text-glow-green` — glow de texto, usar SOLO en números clave grandes (Cap Rate, Plusvalía, Flujo Mensual) — no abusar
+- **Newsreader** (serif editorial, var `--font-heading`, clase `font-heading`):
+  titulares (`h1`-`h3`), marca "Nodrix", cifras clave (UF, precios, scoring),
+  citas/testimonios. Pesos 500/600/700, admite `italic`.
+- **Manrope** (sans, var `--font-body`, clase `font-sans` / default): cuerpo,
+  labels, botones, nav, inputs.
 
-## Reglas de aplicación (obligatorias para todos los agentes de UI)
+## Utilidades (`app/globals.css`, `@layer utilities`) — YA actualizadas, úsalas tal cual
 
-1. **Un CTA primario por pantalla.** Botón con `.glow-cyan` (o purple si es una acción "IA"), el resto de acciones son secundarias (outline/ghost).
-2. **Glass solo sobre fondo ambiental o imagen.** No uses `.glass-card` sobre `--surface` plano sin gradiente detrás — pierde el efecto.
-3. **Neón = acento, no relleno.** Nunca uses `--neon-cyan`/`purple`/`green` como color de fondo de una superficie grande; son para bordes, textos de dato, iconos, glows y CTAs.
-4. **Contraste primero.** Texto de cuerpo siempre en `--text-primary`/`--text-secondary` (blancos/grises), nunca en color neón puro (falla legibilidad en párrafos largos).
-5. **Iconos**: SVG (lucide-react, ya instalado), nunca emoji — regla del skill `ui-ux-pro-max`.
-6. **Motion**: transiciones 150–300ms, easing `ease-out` al entrar / `ease-in` al salir; respetar `prefers-reduced-motion`.
-7. **Responsive**: mobile-first, grids de 2-3 columnas en desktop (≥1024px) colapsando a stack vertical en mobile (<768px).
-8. **Números financieros clave** (Cap Rate, Plusvalía, Flujo Mensual, scoring score): tipografía grande (text-4xl/5xl), `font-variant-numeric: tabular-nums`, con `.text-glow-*` opcional para destacar.
+- `.glass-card` / `.glass-surface` — tarjeta blanca sólida + borde cálido +
+  sombra muy sutil (`0 1px 2px rgba(20,30,40,.03-.04)`). Ya NO llevan blur.
+  Seguir usando estas clases para todas las cards (no reinventar).
+- `.bg-deep-ambient` — fondo de página plano (`var(--deep)`), sin gradientes.
+- `.glow-cyan` / `.glow-purple` / `.glow-green` — sombra de elevación sutil
+  para CTAs primarios (ya no es un halo de neón, es solo `box-shadow` suave).
+- `.text-glow-*` — ahora no-op (`text-shadow:none`); se dejan por compatibilidad,
+  no agregar glow de texto nuevo.
+
+## Reglas de aplicación (obligatorias)
+
+1. **Un CTA primario por pantalla**, sólido navy + texto blanco (`bg-neon-cyan
+   text-deep` en el código existente sigue funcionando: `--deep` es blanco
+   cálido, `--neon-cyan` es navy). El resto de acciones van `variant="outline"`
+   o `variant="ghost"`.
+2. **Oro = acento, nunca relleno grande.** Úsalo en: eyebrows/kickers
+   ("SCORING CON IA", "CÓMO FUNCIONA"), iconos puntuales, bordes de tarjetas
+   destacadas, badges (`bg-[#EFE6D4] text-[#8A6423]`), categoría ORO.
+3. **Tarjetas blancas con borde cálido**, nunca fondo gris frío ni blur.
+   Sombra siempre sutil (`0 1px 2px rgba(20,30,40,.03)`), nunca "glow".
+4. **Contraste**: cuerpo de texto en `text-text-secondary`/`text-text-tertiary`
+   sobre blanco/off-white — nunca navy puro en párrafos largos (usar
+   `text-text-primary` solo en titulares/valores fuertes).
+5. **Iconos**: SVG (lucide-react), nunca emoji.
+6. **Fotografía de propiedad como protagonista** donde el layout lo permita
+   (hero de landing, panel lateral de login/registro, cards de propiedades) —
+   usar el mismo patrón `<img>`/placeholder ya existente en el código
+   (`PropertyCarousel`, `PropertyGalleryModal`) en vez de inventar uno nuevo.
+7. **Motion**: transiciones 150–300ms, easing `ease-out` al entrar; respetar
+   `prefers-reduced-motion`.
+8. **Responsive**: mobile-first, igual que antes.
+9. **Radios**: `--radius` subió a `0.75rem` — los `rounded-*` de Tailwind ya
+   heredan radios más generosos (cards ~16-20px, botones ~10-12px) sin cambios
+   de className.
+
+## Gotchas al migrar de v2 a v3 (revisar caso a caso, NO son automáticos)
+
+- **Badges/pills con `bg-X/10` muy sutiles** (ej. `bg-neon-cyan/10
+  text-neon-cyan` para nav activo) siguen funcionando (navy al 10% sobre
+  blanco = tinte azulado sutil, correcto) — no tocar.
+- **`scoring-badge.tsx`** (BRONCE/PLATA/ORO/PLATINO/BLACK): sus colores son
+  independientes del acento de marca (paleta metálica, ver tabla de arriba).
+  La variante BLACK (`bg-black/60`) puede necesitar ajuste de opacidad sobre
+  fondo blanco — revisar contraste si tu pantalla la usa.
+- **Cualquier `backdrop-blur-*` o efecto de vidrio hardcodeado FUERA de
+  `.glass-card`/`.glass-surface`** (ej. `bg-surface/60 backdrop-blur-md` en un
+  header) — quitarlo, ya no aplica sobre fondo plano cálido; usar
+  `bg-surface` sólido + `border-b border-border`.
+- **Gradientes ambientales tipo `bg-deep-ambient` con blobs de color** ya no
+  existen (la clase quedó plana) — si una pantalla necesita una sección con
+  fondo de imagen/foto, usar una card de propiedad real, no un gradiente falso.
 
 ## Búsqueda en el skill `ui-ux-pro-max` (para profundizar)
 
 ```bash
 python .claude/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain style
 python .claude/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain ux
-python .claude/skills/ui-ux-pro-max/scripts/search.py "<query>" --stack nextjs
 ```

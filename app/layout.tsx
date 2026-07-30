@@ -1,25 +1,26 @@
 import type { Metadata } from "next";
-import { Lexend, Source_Sans_3, Geist_Mono } from "next/font/google";
+import { Newsreader, Manrope, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 /**
- * Pareo tipográfico "Corporate Trust" (ver explicación en README de diseño /
- * conversación con el usuario): Lexend para titulares — geométrica, diseñada
- * para máxima legibilidad, transmite un carácter tech-premium sin caer en el
- * lujo ornamental de una serif inmobiliaria clásica. Source Sans 3 para
- * cuerpo de texto — neutra, extremadamente legible en párrafos largos y
- * números tabulares, estándar de facto en fintech/banca.
+ * Rediseño v3 — identidad "real-estate editorial" (navy + oro sobre base
+ * cálida, ver .claude/design-system/tokens.md y Rediseño/Mejora de sitio
+ * Nodrix V2/*.html, la referencia visual aportada por el negocio). Newsreader
+ * (serif editorial) para titulares y cifras destacadas -- transmite
+ * solidez/patrimonio, no "gamer"/fintech genérico. Manrope para cuerpo/UI --
+ * neutra, muy legible, la misma familia usada en el mockup de referencia.
  */
-const lexend = Lexend({
+const newsreader = Newsreader({
   variable: "--font-heading",
   subsets: ["latin"],
   weight: ["500", "600", "700"],
+  style: ["normal", "italic"],
 });
 
-const sourceSans = Source_Sans_3({
+const manrope = Manrope({
   variable: "--font-body",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -41,7 +42,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${lexend.variable} ${sourceSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${newsreader.variable} ${manrope.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
