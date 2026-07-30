@@ -16,7 +16,6 @@ import { DocumentsCard } from "@/components/dashboard/DocumentsCard"
 import { DocumentUploadModal } from "@/components/dashboard/DocumentUploadModal"
 import { FinalProposalCard } from "@/components/dashboard/FinalProposalCard"
 import { InitialProposalCard } from "@/components/dashboard/InitialProposalCard"
-import { InitialProposalReminder } from "@/components/dashboard/InitialProposalReminder"
 import { PreEvaluationCard } from "@/components/dashboard/PreEvaluationCard"
 import { ScheduleVisitCard } from "@/components/dashboard/ScheduleVisitCard"
 import { StageAlert } from "@/components/dashboard/StageAlert"
@@ -257,30 +256,23 @@ export default function DashboardPage() {
                 onQualificationChange={setInitialProposalQualifies}
               />
             ) : (
-              <>
-                {application?.initial_proposal_band && application?.initial_proposal_purpose && (
-                  <InitialProposalReminder
-                    band={application.initial_proposal_band}
-                    purpose={application.initial_proposal_purpose}
-                  />
+              // Ya no se muestra el recordatorio de "propuesta inicial
+              // simulada" -- redundante con PreEvaluationCard, que ahora
+              // indica las UF aprobadas y el detalle real de propiedades
+              // elegidas (ver components/dashboard/PreEvaluationCard.tsx).
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <DocumentsCard documents={documents} onUploadClick={() => setUploadOpen(true)} />
+                <PreEvaluationCard applicationId={application.id} />
+                {/* Agendar visita en paralelo a la subida de documentos --
+                    no hay que esperar a "Aprobado previo" para conocer
+                    las propiedades que el cliente ya eligió. Tiene más
+                    contenido (chips + formulario) -- ocupa el ancho completo. */}
+                {stage === "DOCUMENTOS_PENDIENTES" && application && (
+                  <div className="sm:col-span-2">
+                    <ScheduleVisitCard applicationId={application.id} />
+                  </div>
                 )}
-                {/* Grid de KPI cards compactas: documentos + pre-evaluación
-                    (UF aprobadas + qué eligió el cliente), y (si corresponde)
-                    agendar visita ocupando el ancho completo. */}
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <DocumentsCard documents={documents} onUploadClick={() => setUploadOpen(true)} />
-                  <PreEvaluationCard applicationId={application.id} />
-                  {/* Agendar visita en paralelo a la subida de documentos --
-                      no hay que esperar a "Aprobado previo" para conocer
-                      las propiedades que el cliente ya eligió. Tiene más
-                      contenido (chips + formulario) -- ocupa el ancho completo. */}
-                  {stage === "DOCUMENTOS_PENDIENTES" && application && (
-                    <div className="sm:col-span-2">
-                      <ScheduleVisitCard applicationId={application.id} />
-                    </div>
-                  )}
-                </div>
-              </>
+              </div>
             )}
             {stage === "PRE_EVALUACION_COMPLETADA" && application && (
               <ComunaOffersCard applicationId={application.id} />
