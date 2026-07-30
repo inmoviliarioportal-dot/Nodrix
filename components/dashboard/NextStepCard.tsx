@@ -1,21 +1,21 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ArrowRightCircle } from "lucide-react"
+
 import { nextStepForStage } from "./types"
 
 export interface NextStepCardProps {
   stage: string
 }
 
-/** Card de "próximo paso": mensaje contextual mock según el stage actual. */
+/** Tile compacto de "próximo paso": mensaje contextual mock según el stage actual. */
 function NextStepCard({ stage }: NextStepCardProps) {
   return (
-    <Card size="sm" className="glass-surface gap-1.5 border-glass-border">
-      <CardHeader>
-        <CardTitle className="text-[13px] font-bold text-text-primary">Próximo paso</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-[12.5px] leading-relaxed text-text-secondary">{nextStepForStage(stage)}</p>
-      </CardContent>
-    </Card>
+    <div className="glass-surface flex flex-col gap-1.5 rounded-xl border border-glass-border p-3">
+      <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-text-tertiary">
+        <ArrowRightCircle className="size-3.5 text-neon-cyan" aria-hidden="true" />
+        Próximo paso
+      </span>
+      <p className="line-clamp-2 text-[12px] leading-snug text-text-secondary">{nextStepForStage(stage)}</p>
+    </div>
   )
 }
 

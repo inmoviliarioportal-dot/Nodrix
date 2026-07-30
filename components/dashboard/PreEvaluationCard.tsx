@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { TrendingUp } from "lucide-react"
 
 export interface PreEvaluationCardProps {
   minUf?: number | null
@@ -6,28 +6,23 @@ export interface PreEvaluationCardProps {
 }
 
 /**
- * Card de pre-evaluación financiera (rango UF). Funcionalidad real de cálculo
- * es Release 2 — en Release 1 mostramos el rango si ya vino en la
- * application, o un estado "pendiente revisión" mock.
+ * Tile compacto de pre-evaluación financiera (rango UF). Funcionalidad real
+ * de cálculo es Release 2 -- en Release 1 mostramos el rango si ya vino en
+ * la application, o un estado "pendiente revisión" mock.
  */
 function PreEvaluationCard({ minUf, maxUf }: PreEvaluationCardProps) {
   const hasRange = typeof minUf === "number" && typeof maxUf === "number"
 
   return (
-    <Card size="sm" className="glass-surface gap-1.5 border-glass-border">
-      <CardHeader>
-        <CardTitle className="text-[13px] font-bold text-text-primary">Pre-evaluación</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {hasRange ? (
-          <p className="text-[12.5px] leading-relaxed text-text-secondary">
-            Rango estimado: {minUf.toLocaleString("es-CL")} — {maxUf!.toLocaleString("es-CL")} UF
-          </p>
-        ) : (
-          <p className="text-[12.5px] text-text-tertiary">Pendiente revisión.</p>
-        )}
-      </CardContent>
-    </Card>
+    <div className="glass-surface flex flex-col gap-1.5 rounded-xl border border-glass-border p-3">
+      <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-text-tertiary">
+        <TrendingUp className="size-3.5 text-neon-cyan" aria-hidden="true" />
+        Pre-evaluación
+      </span>
+      <p className="line-clamp-2 text-[12px] leading-snug text-text-secondary">
+        {hasRange ? `${minUf.toLocaleString("es-CL")} — ${maxUf!.toLocaleString("es-CL")} UF` : "Pendiente revisión."}
+      </p>
+    </div>
   )
 }
 

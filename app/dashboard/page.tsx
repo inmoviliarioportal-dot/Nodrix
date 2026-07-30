@@ -267,8 +267,9 @@ export default function DashboardPage() {
                   />
                 )}
                 {/* Grid de KPI cards compactas: scoring, documentos, próximo
-                    paso y (si corresponde) agendar visita. */}
-                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    paso y (si corresponde) agendar visita -- hasta 3 por fila
+                    en desktop para minimizar el scroll vertical. */}
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   <ScoringCard scoring={scoring} />
                   <DocumentsCard documents={documents} onUploadClick={() => setUploadOpen(true)} />
                   <PreEvaluationCard
@@ -278,9 +279,12 @@ export default function DashboardPage() {
                   <NextStepCard stage={stage} />
                   {/* Agendar visita en paralelo a la subida de documentos --
                       no hay que esperar a "Aprobado previo" para conocer
-                      las propiedades que el cliente ya eligió. */}
+                      las propiedades que el cliente ya eligió. Tiene más
+                      contenido (chips + formulario) -- ocupa el ancho completo. */}
                   {stage === "DOCUMENTOS_PENDIENTES" && application && (
-                    <ScheduleVisitCard applicationId={application.id} />
+                    <div className="sm:col-span-2 lg:col-span-3">
+                      <ScheduleVisitCard applicationId={application.id} />
+                    </div>
                   )}
                 </div>
               </>

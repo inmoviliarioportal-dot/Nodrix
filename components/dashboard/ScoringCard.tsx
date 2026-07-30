@@ -1,4 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Gauge } from "lucide-react"
+
 import { ScoringBadge, type ScoringCategory } from "@/components/ui/scoring-badge"
 import type { ScoringResult } from "./types"
 
@@ -10,28 +11,23 @@ function isScoringCategory(value: unknown): value is ScoringCategory {
   return value === "BRONCE" || value === "PLATA" || value === "ORO" || value === "PLATINO" || value === "BLACK"
 }
 
-/** Card de scoring: categoría + explicación, o estado "pendiente" si aún no se calculó. */
+/** Tile compacto de scoring: categoría + explicación (2 líneas máx), o "pendiente" si aún no se calculó. */
 function ScoringCard({ scoring }: ScoringCardProps) {
   const hasScoring = !!scoring && isScoringCategory(scoring.category)
 
   return (
-    <Card size="sm" className="glass-surface gap-1.5 border-glass-border">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between gap-2 text-[13px] font-bold text-text-primary">
+    <div className="glass-surface flex flex-col gap-1.5 rounded-xl border border-glass-border p-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-text-tertiary">
+          <Gauge className="size-3.5 text-neon-cyan" aria-hidden="true" />
           Scoring
-          {hasScoring && <ScoringBadge category={scoring!.category} />}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {hasScoring ? (
-          <p className="line-clamp-3 whitespace-pre-line text-[12.5px] leading-relaxed text-text-secondary">
-            {scoring!.explanation}
-          </p>
-        ) : (
-          <p className="text-[12.5px] text-text-tertiary">Pendiente de evaluación.</p>
-        )}
-      </CardContent>
-    </Card>
+        </span>
+        {hasScoring && <ScoringBadge category={scoring!.category} />}
+      </div>
+      <p className="line-clamp-2 text-[12px] leading-snug text-text-secondary">
+        {hasScoring ? scoring!.explanation : "Pendiente de evaluación."}
+      </p>
+    </div>
   )
 }
 
