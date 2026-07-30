@@ -17,9 +17,7 @@ import { DocumentUploadModal } from "@/components/dashboard/DocumentUploadModal"
 import { FinalProposalCard } from "@/components/dashboard/FinalProposalCard"
 import { InitialProposalCard } from "@/components/dashboard/InitialProposalCard"
 import { InitialProposalReminder } from "@/components/dashboard/InitialProposalReminder"
-import { NextStepCard } from "@/components/dashboard/NextStepCard"
 import { PreEvaluationCard } from "@/components/dashboard/PreEvaluationCard"
-import { ScoringCard } from "@/components/dashboard/ScoringCard"
 import { ScheduleVisitCard } from "@/components/dashboard/ScheduleVisitCard"
 import { StageAlert } from "@/components/dashboard/StageAlert"
 import { GuideVideoOverlay } from "@/components/dashboard/GuideVideoOverlay"
@@ -266,23 +264,18 @@ export default function DashboardPage() {
                     purpose={application.initial_proposal_purpose}
                   />
                 )}
-                {/* Grid de KPI cards compactas: scoring, documentos, próximo
-                    paso y (si corresponde) agendar visita -- hasta 3 por fila
-                    en desktop para minimizar el scroll vertical. */}
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  <ScoringCard scoring={scoring} />
+                {/* Grid de KPI cards compactas: documentos + pre-evaluación
+                    (UF aprobadas + qué eligió el cliente), y (si corresponde)
+                    agendar visita ocupando el ancho completo. */}
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <DocumentsCard documents={documents} onUploadClick={() => setUploadOpen(true)} />
-                  <PreEvaluationCard
-                    minUf={application?.pre_evaluation_min_uf}
-                    maxUf={application?.pre_evaluation_max_uf}
-                  />
-                  <NextStepCard stage={stage} />
+                  <PreEvaluationCard applicationId={application.id} />
                   {/* Agendar visita en paralelo a la subida de documentos --
                       no hay que esperar a "Aprobado previo" para conocer
                       las propiedades que el cliente ya eligió. Tiene más
                       contenido (chips + formulario) -- ocupa el ancho completo. */}
                   {stage === "DOCUMENTOS_PENDIENTES" && application && (
-                    <div className="sm:col-span-2 lg:col-span-3">
+                    <div className="sm:col-span-2">
                       <ScheduleVisitCard applicationId={application.id} />
                     </div>
                   )}
