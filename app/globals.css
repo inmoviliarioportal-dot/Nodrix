@@ -261,3 +261,97 @@
     text-shadow: none;
   }
 }
+
+/*
+ * Vocabulario de animación compartido — usar ESTAS clases/keyframes en vez de
+ * inventar transiciones nuevas por componente, para que todo el sitio se
+ * mueva con el mismo ritmo. Duración 150-300ms, easing ease-out al entrar,
+ * respeta prefers-reduced-motion (ver bloque final). Ver .claude/design-system/tokens.md.
+ */
+@layer utilities {
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  @keyframes shimmer {
+    from {
+      background-position: -200% 0;
+    }
+    to {
+      background-position: 200% 0;
+    }
+  }
+
+  /* Entrada de página/sección: usar en el contenedor raíz de una vista o en
+     cada card de una lista (con stagger vía --animate-delay inline). */
+  .animate-fade-in {
+    animation: fade-in 400ms ease-out both;
+  }
+  .animate-fade-in-up {
+    animation: fade-in-up 400ms ease-out both;
+    animation-delay: var(--animate-delay, 0ms);
+  }
+  .animate-scale-in {
+    animation: scale-in 200ms ease-out both;
+  }
+
+  /* Hover/press feedback estándar para tarjetas y filas clickeables. */
+  .interactive-lift {
+    transition:
+      transform 200ms ease-out,
+      box-shadow 200ms ease-out,
+      border-color 200ms ease-out;
+  }
+  .interactive-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px -8px rgba(22, 50, 79, 0.18);
+  }
+  .interactive-lift:active {
+    transform: translateY(0);
+  }
+
+  /* Placeholder de carga (skeleton) coherente con la paleta cálida. */
+  .skeleton-shimmer {
+    background: linear-gradient(90deg, var(--dark-tertiary) 25%, #f7f2e6 50%, var(--dark-tertiary) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-fade-in-up,
+  .animate-scale-in,
+  .skeleton-shimmer,
+  .interactive-lift {
+    animation: none !important;
+    transition: none !important;
+  }
+  .interactive-lift:hover {
+    transform: none;
+  }
+}
