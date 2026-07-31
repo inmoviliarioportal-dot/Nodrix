@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { AlertTriangle } from "lucide-react"
+import { AlertTriangle, BadgeCheck, Home, Building2, KeyRound, Timer, Lock, Sparkles, ArrowRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { SelectableChip } from "@/components/wizard/SelectableChip"
@@ -25,11 +25,11 @@ interface UFPreEvaluation {
 
 type Destination = "vivir" | "airbnb" | "alquiler_tradicional" | "venta_corto_plazo"
 
-const DESTINATION_OPTIONS: { label: string; value: Destination }[] = [
-  { label: "Vivir", value: "vivir" },
-  { label: "Airbnb", value: "airbnb" },
-  { label: "Alquiler tradicional", value: "alquiler_tradicional" },
-  { label: "Venta a corto plazo", value: "venta_corto_plazo" },
+const DESTINATION_OPTIONS: { label: string; value: Destination; icon: typeof Home }[] = [
+  { label: "Vivir", value: "vivir", icon: Home },
+  { label: "Airbnb", value: "airbnb", icon: KeyRound },
+  { label: "Alquiler tradicional", value: "alquiler_tradicional", icon: Building2 },
+  { label: "Venta a corto plazo", value: "venta_corto_plazo", icon: Timer },
 ]
 
 /**
@@ -174,37 +174,51 @@ function InitialProposalCard({
   }
 
   return (
-    <div className="glass-card flex flex-col gap-6 rounded-2xl p-6">
-      <div>
-        <h2 className="font-heading text-sm font-semibold uppercase tracking-wide text-text-tertiary">
-          Tu propuesta inicial
-        </h2>
-        <p className="mt-1 text-sm text-text-secondary">
-          ¡Excelente! Has completado tu pre-evaluación. Es un resultado <strong>estimado</strong>, no una aprobación
-          bancaria: queda sujeta a confirmación una vez que envíes tus documentos.
-        </p>
+    <div className="glass-card flex flex-col gap-6 rounded-2xl p-6 sm:p-7">
+      <div className="flex items-start gap-3">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-neon-cyan/10 text-neon-cyan">
+          <BadgeCheck className="size-5" aria-hidden="true" />
+        </span>
+        <div>
+          <h2 className="font-heading text-sm font-semibold uppercase tracking-wide text-text-tertiary">
+            Tu propuesta inicial
+          </h2>
+          <p className="mt-1 text-sm text-text-secondary">
+            ¡Excelente! Con la información que nos entregaste, ya tenemos una propuesta inicial para ti. Este
+            resultado es <strong className="text-text-primary">estimado</strong> y se confirmará una vez que subas
+            tus documentos.
+          </p>
+        </div>
       </div>
 
       {ufPreEvaluation && (
-        <div className="rounded-xl border border-neon-cyan/30 bg-neon-cyan/5 p-5 text-center">
-          <p className="text-xs font-semibold uppercase tracking-wide text-text-tertiary">Tienes aprobadas</p>
-          <p className="font-heading text-4xl font-semibold text-neon-cyan sm:text-5xl">
-            {Math.round(ufPreEvaluation.estimatedPropertyValueUF).toLocaleString("es-CL")} UF
+        <div className="relative overflow-hidden rounded-2xl border border-neon-cyan/25 bg-gradient-to-br from-neon-cyan/[0.06] to-gold/[0.06] p-6 text-center sm:p-8">
+          <p className="flex items-center justify-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-neon-cyan">
+            <Sparkles className="size-3.5" aria-hidden="true" />
+            Monto estimado disponible
           </p>
-          <p className="mt-2 text-xs text-text-tertiary">{ufPreEvaluation.disclaimer}</p>
+          <p className="font-heading mt-1 text-5xl font-semibold text-text-primary sm:text-6xl">
+            {Math.round(ufPreEvaluation.estimatedPropertyValueUF).toLocaleString("es-CL")}
+            <span className="ml-1.5 text-2xl text-neon-cyan sm:text-3xl">UF</span>
+          </p>
+          <p className="mt-3 text-sm font-medium text-text-secondary">
+            Ahora vamos a mostrarte opciones que sí pueden calzar contigo.
+          </p>
+          <p className="mt-3 text-xs leading-relaxed text-text-tertiary">{ufPreEvaluation.disclaimer}</p>
         </div>
       )}
 
       <div>
-        <h3 className="text-sm font-semibold text-text-primary">¿Para qué destinarás el inmueble?</h3>
+        <h3 className="font-heading text-base font-semibold text-text-primary">¿Para qué quieres tu inmueble?</h3>
         <p className="mt-1 text-xs text-text-tertiary">
-          Puedes elegir más de una opción -- según lo que marques te mostraremos las propiedades más adecuadas.
+          Selecciona una o más opciones para recomendarte oportunidades más alineadas a tu objetivo.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {DESTINATION_OPTIONS.map((opt) => (
             <SelectableChip
               key={opt.value}
               label={opt.label}
+              icon={opt.icon}
               selected={destinations.includes(opt.value)}
               onClick={() => toggleDestination(opt.value)}
               showCheckWhenSelected
@@ -214,12 +228,19 @@ function InitialProposalCard({
       </div>
 
       <Button
-        className="glow-cyan w-fit gap-2 bg-neon-cyan text-deep hover:bg-neon-cyan/90"
+        className="glow-cyan w-full gap-2 rounded-full bg-neon-cyan text-deep hover:bg-neon-cyan/90 sm:w-fit sm:self-center sm:px-8"
         disabled={isSubmitting || destinations.length === 0}
         onClick={handleContinue}
       >
-        {isSubmitting ? "Guardando..." : "Continuar"}
+        <Sparkles className="size-4" aria-hidden="true" />
+        {isSubmitting ? "Guardando..." : "Ver mis opciones"}
+        <ArrowRight className="size-4" aria-hidden="true" />
       </Button>
+
+      <p className="flex items-center justify-center gap-1.5 text-[11.5px] text-text-tertiary">
+        <Lock className="size-3" aria-hidden="true" />
+        Tu información está segura y protegida.
+      </p>
     </div>
   )
 }

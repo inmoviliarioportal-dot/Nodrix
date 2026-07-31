@@ -2,10 +2,44 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
+import { CheckCircle2, Sparkles } from "lucide-react"
 
 import { InitialProposalCard } from "@/components/dashboard/InitialProposalCard"
 import { PropertyPreferencesCard } from "@/components/dashboard/PropertyPreferencesCard"
 import { AvatarPresenter } from "@/components/avatar/AvatarPresenter"
+
+const TRACKER_STEPS = ["Pre-evaluación completada", "Define tu objetivo", "Sube tus documentos"]
+
+/** Mini-tracker de 3 pasos que acompaña el cierre del wizard -- puramente
+ * visual, no gobierna navegación (eso lo sigue haciendo `step`/`Step` más
+ * abajo). `currentIndex` 1 = recién llegó a elegir su objetivo, 2 = ya lo
+ * eligió y está viendo/aceptando propiedades (el siguiente paso real es
+ * subir documentos). */
+function StepTracker({ currentIndex }: { currentIndex: number }) {
+  return (
+    <div className="glass-card mx-auto mb-8 flex w-fit flex-wrap items-center gap-2 rounded-full px-3 py-2 sm:gap-3">
+      {TRACKER_STEPS.map((label, i) => (
+        <React.Fragment key={label}>
+          {i > 0 && <span className="h-px w-5 shrink-0 bg-glass-border sm:w-8" aria-hidden="true" />}
+          <span className="flex items-center gap-1.5 whitespace-nowrap px-1 text-[12.5px] font-medium">
+            <span
+              className={
+                i < currentIndex
+                  ? "flex size-5 items-center justify-center rounded-full bg-neon-green text-white"
+                  : i === currentIndex
+                    ? "flex size-5 items-center justify-center rounded-full bg-neon-cyan text-white"
+                    : "flex size-5 items-center justify-center rounded-full border border-glass-border text-text-tertiary"
+              }
+            >
+              {i < currentIndex ? <CheckCircle2 className="size-3.5" aria-hidden="true" /> : i + 1}
+            </span>
+            <span className={i === currentIndex ? "text-text-primary" : "text-text-tertiary"}>{label}</span>
+          </span>
+        </React.Fragment>
+      ))}
+    </div>
+  )
+}
 
 const OUTPUT_KEY = "onboarding-result"
 
@@ -123,15 +157,31 @@ export default function InitialProposalPage() {
     )
   }
 
+  const trackerIndex = step === "initial-proposal" ? 1 : 2
+
   return (
     <main className="bg-deep-ambient flex min-h-screen flex-col items-center justify-center px-4 py-12">
       <div className="animate-fade-in-up w-full max-w-3xl">
-        <header className="mb-6 text-center">
-          <h1 className="text-2xl font-bold text-text-primary">¡Tu análisis está listo!</h1>
-          <p className="mt-2 text-sm text-text-tertiary">
-            Antes de subir tus documentos, elige tu propuesta inicial.
+        <header className="relative mb-8 flex flex-col items-center text-center">
+          <Sparkles
+            className="absolute -top-1 left-[18%] size-5 text-gold/70 sm:left-[22%]"
+            aria-hidden="true"
+          />
+          <Sparkles
+            className="absolute top-6 right-[16%] size-4 text-neon-cyan/50 sm:right-[20%]"
+            aria-hidden="true"
+          />
+          <span className="glow-green mb-4 flex size-16 items-center justify-center rounded-full border border-neon-green/30 bg-neon-green/10">
+            <CheckCircle2 className="size-8 text-neon-green" aria-hidden="true" />
+          </span>
+          <h1 className="font-heading text-3xl font-semibold text-text-primary sm:text-4xl">¡Vas muy bien!</h1>
+          <p className="mt-2 max-w-md text-sm text-text-secondary">
+            Tu pre-evaluación ya está lista. Estás más cerca de tu próxima propiedad.
           </p>
         </header>
+
+        <StepTracker currentIndex={trackerIndex} />
+
         {step === "investment-proposal" && purpose ? (
           <PropertyPreferencesCard
             purpose={purpose}
