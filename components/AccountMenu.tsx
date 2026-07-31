@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { User, Pencil, KeyRound, LogOut } from "lucide-react"
+import { User, Pencil, KeyRound, LogOut, ChevronDown } from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -73,10 +73,13 @@ function AccountMenu() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger
-          className="glow-cyan flex size-8 items-center justify-center rounded-full border border-neon-cyan/40 bg-neon-cyan/10 text-xs font-semibold text-neon-cyan transition-transform duration-150 hover:scale-105"
+          className="flex items-center gap-1.5 rounded-full transition-transform duration-150 hover:scale-105"
           aria-label="Menú de cuenta"
         >
-          {initialsFrom(name, email)}
+          <span className="flex size-8 items-center justify-center rounded-full border border-glass-border bg-dark-tertiary text-xs font-semibold text-neon-cyan">
+            {initialsFrom(name, email)}
+          </span>
+          <ChevronDown className="size-3.5 text-text-tertiary" aria-hidden="true" />
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuLabel>

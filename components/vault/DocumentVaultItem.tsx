@@ -116,24 +116,24 @@ function DocumentVaultItem({
         ? "border-status-error/40 bg-status-error/10 text-status-error"
         : status === "pendiente"
           ? "border-gold/40 bg-gold/10 text-gold"
-          : "border-border bg-surface-elevated text-text-tertiary"
+          : "border-gold/30 bg-gold/10 text-gold"
 
   return (
     <div className="glass-card interactive-lift flex flex-col gap-2.5 rounded-2xl p-4">
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2.5">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-neon-cyan/10">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-dark-tertiary">
             <FileTextIcon className="size-4.5 text-neon-cyan" />
           </div>
           <span className="truncate text-sm font-semibold text-text-primary">{typeLabel}</span>
         </div>
         <span
           className={cn(
-            "shrink-0 rounded-full border px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wide",
+            "shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold",
             statusPillClass
           )}
         >
-          {status ? (DOCUMENT_STATUS_LABELS[status] ?? status) : "Sin subir"}
+          {status ? (DOCUMENT_STATUS_LABELS[status] ?? status) : "Pendiente"}
         </span>
       </div>
 

@@ -74,7 +74,7 @@ function PreEvaluationCard({ applicationId }: PreEvaluationCardProps) {
 
   return (
     <div className="glass-card relative flex items-start gap-3 overflow-hidden rounded-2xl p-4">
-      <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-neon-cyan/10 text-neon-cyan">
+      <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-dark-tertiary text-neon-cyan">
         <TrendingUp className="size-5" aria-hidden="true" />
       </span>
       <div className="flex min-w-0 flex-col gap-1">

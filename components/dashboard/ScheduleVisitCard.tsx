@@ -81,7 +81,7 @@ function ScheduleVisitCard({ applicationId }: { applicationId: string }) {
   return (
     <div className="glass-card flex flex-col gap-3 rounded-2xl p-4">
       <div className="flex items-center gap-2.5">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-neon-cyan/10 text-neon-cyan">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-dark-tertiary text-neon-cyan">
           <CalendarCheck className="size-4.5" aria-hidden="true" />
         </span>
         <div>

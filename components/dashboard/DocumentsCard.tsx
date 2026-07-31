@@ -16,7 +16,7 @@ function DocumentsCard({ documents, onUploadClick }: DocumentsCardProps) {
   return (
     <div className="glass-card flex items-center justify-between gap-3 rounded-2xl p-4">
       <div className="flex items-start gap-3">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-neon-cyan/10 text-neon-cyan">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-dark-tertiary text-neon-cyan">
           <FileText className="size-5" aria-hidden="true" />
         </span>
         <div className="flex flex-col gap-1">

@@ -23,6 +23,8 @@ export interface LayoutProps extends React.ComponentProps<"div"> {
 const DEFAULT_NAV_LINKS: LayoutNavLink[] = [
   { href: "/dashboard", label: "Panel", icon: LayoutDashboard },
   { href: "/dashboard/documents", label: "Documentos", icon: FileText },
+  { href: "/#asesoria", label: "Asesoría" },
+  { href: "/#recursos", label: "Recursos" },
 ]
 
 /**
@@ -54,7 +56,7 @@ function Layout({
               className="flex items-center gap-2 font-heading text-base font-semibold tracking-tight text-text-primary transition-colors duration-200 hover:text-gold"
             >
               <svg width="26" height="26" viewBox="0 0 34 34" aria-hidden="true">
-                <rect width="34" height="34" rx="9" fill="var(--blue-accent)" />
+                <rect width="34" height="34" rx="9" fill="var(--text-primary)" />
                 <path
                   d="M9 19l6-6 4 3 6-7"
                   stroke="var(--gold)"
@@ -67,7 +69,7 @@ function Layout({
               </svg>
               {brand}
             </Link>
-            <nav className="flex items-center gap-1 text-sm">
+            <nav className="flex items-center gap-5 text-sm">
               {navLinks.map((link) => {
                 const isActive = pathname === link.href
                 const Icon = link.icon
@@ -76,10 +78,10 @@ function Layout({
                     key={link.href}
                     href={link.href}
                     className={cn(
-                      "hidden items-center gap-1.5 rounded-lg px-3 py-2 text-[13.5px] font-medium transition-colors duration-200 sm:flex",
+                      "hidden items-center gap-1.5 border-b-2 px-1 py-2 text-[13.5px] font-medium transition-colors duration-200 sm:flex",
                       isActive
-                        ? "bg-neon-cyan/10 text-neon-cyan"
-                        : "text-text-tertiary hover:text-text-primary"
+                        ? "border-neon-cyan text-neon-cyan"
+                        : "border-transparent text-text-tertiary hover:text-text-primary"
                     )}
                     aria-current={isActive ? "page" : undefined}
                   >

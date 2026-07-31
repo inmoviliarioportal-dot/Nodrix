@@ -4,6 +4,7 @@ import * as React from "react"
 import { FolderLock, Lightbulb, ShieldCheck, Lock, Cloud, FileText } from "lucide-react"
 
 import { Layout } from "@/components/Layout"
+import { Sparkle, BuildingsIllustration } from "@/components/wizard/WizardChrome"
 import { Button } from "@/components/ui/button"
 import { Toaster } from "@/components/ui/sonner"
 import { DocumentVaultItem } from "@/components/vault/DocumentVaultItem"
@@ -94,7 +95,7 @@ export default function DashboardDocumentsPage() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
         <div className="glass-surface animate-fade-in-up flex flex-col gap-4 rounded-2xl p-6 sm:p-7">
           <div className="flex items-start gap-3">
-            <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-neon-cyan/10 text-neon-cyan">
+            <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-dark-tertiary text-neon-cyan">
               <FolderLock className="size-6" aria-hidden="true" />
             </span>
             <div>
@@ -171,8 +172,10 @@ export default function DashboardDocumentsPage() {
             </div>
 
             {/* Panel lateral de seguridad -- puramente informativo, sin lógica de datos. */}
-            <aside className="glow-purple flex flex-col gap-4 rounded-2xl bg-dark-tertiary p-5">
-              <span className="flex size-14 items-center justify-center self-start rounded-full bg-neon-purple/15 text-neon-purple">
+            <aside className="relative flex flex-col gap-4 overflow-hidden rounded-2xl bg-dark-tertiary p-5">
+              <Sparkle size={14} className="absolute right-5 top-4" />
+              <Sparkle size={10} className="absolute left-14 top-8 opacity-70" />
+              <span className="flex size-14 items-center justify-center self-start rounded-full bg-surface text-neon-cyan shadow-sm">
                 <ShieldCheck className="size-6" aria-hidden="true" />
               </span>
               <div>
@@ -185,18 +188,21 @@ export default function DashboardDocumentsPage() {
               </div>
               <ul className="flex flex-col gap-3">
                 <li className="flex items-start gap-2.5 text-[12.5px] text-text-secondary">
-                  <Lock className="mt-0.5 size-4 shrink-0 text-neon-purple" aria-hidden="true" />
+                  <Lock className="mt-0.5 size-4 shrink-0 text-neon-cyan" aria-hidden="true" />
                   Acceso restringido y protegido
                 </li>
                 <li className="flex items-start gap-2.5 text-[12.5px] text-text-secondary">
-                  <ShieldCheck className="mt-0.5 size-4 shrink-0 text-neon-purple" aria-hidden="true" />
+                  <ShieldCheck className="mt-0.5 size-4 shrink-0 text-neon-cyan" aria-hidden="true" />
                   Cifrado de extremo a extremo
                 </li>
                 <li className="flex items-start gap-2.5 text-[12.5px] text-text-secondary">
-                  <Cloud className="mt-0.5 size-4 shrink-0 text-neon-purple" aria-hidden="true" />
+                  <Cloud className="mt-0.5 size-4 shrink-0 text-neon-cyan" aria-hidden="true" />
                   Respaldo seguro y continuo
                 </li>
               </ul>
+              <div className="mt-1 flex justify-end">
+                <BuildingsIllustration />
+              </div>
             </aside>
           </div>
         )}
