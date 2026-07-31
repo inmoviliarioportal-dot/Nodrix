@@ -69,14 +69,14 @@ function DestinationChip({
       className={
         "inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2.5 text-[13.5px] font-semibold transition-all duration-200 ease-out active:scale-[0.98] " +
         (selected
-          ? "border-[#2563EB] bg-[#EFF3FF] text-[#1E1B4B]"
-          : "border-[#E2E8F0] bg-white text-[#334155] hover:border-[#C7D2FE]")
+          ? "border-neon-cyan bg-neon-cyan/[0.06] text-text-primary"
+          : "border-glass-border bg-surface text-text-secondary hover:border-neon-cyan/40")
       }
     >
-      <Icon size={16} strokeWidth={2} className={selected ? "text-[#2563EB]" : "text-[#94A3B8]"} />
+      <Icon size={16} strokeWidth={2} className={selected ? "text-neon-cyan" : "text-text-tertiary"} />
       {label}
       {selected && (
-        <span className="flex size-4 items-center justify-center rounded-full bg-[#2563EB] text-white">
+        <span className="flex size-4 items-center justify-center rounded-full bg-neon-cyan text-white">
           <Check size={10} strokeWidth={3} />
         </span>
       )}
@@ -226,46 +226,46 @@ function InitialProposalCard({
   }
 
   return (
-    <div className="flex flex-col gap-6 rounded-3xl border border-[#EEF0FF] bg-white p-6 shadow-[0_20px_50px_-24px_rgba(30,27,75,0.25)] sm:p-8">
+    <div className="glass-card flex flex-col gap-6 rounded-3xl p-6 sm:p-8">
       <div className="flex items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-[#DBEAFE] text-[#2563EB]">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-dark-tertiary text-neon-cyan">
           <Home className="size-5" aria-hidden="true" />
         </span>
         <div>
-          <h2 className="text-[11.5px] font-bold tracking-wide text-[#2563EB] uppercase">Tu propuesta inicial</h2>
-          <p className="mt-1 text-sm leading-relaxed text-[#475569]">
-            ¡Excelente! Con la información que nos entregaste, ya tenemos una propuesta inicial para ti. Este
-            resultado es <strong className="text-[#1E1B4B]">estimado</strong> y se confirmará una vez que subas tus
-            documentos.
+          <h2 className="font-heading text-base font-semibold text-text-primary">Tu propuesta inicial</h2>
+          <p className="mt-1 text-sm leading-relaxed text-text-secondary">
+            Con la información que nos entregaste, ya tenemos una estimación inicial para orientarte mejor. Este
+            resultado es <strong className="text-text-primary">referencial</strong> y se confirmará una vez que subas
+            tus documentos.
           </p>
         </div>
       </div>
 
       {ufPreEvaluation && (
-        <div className="relative overflow-hidden rounded-2xl border border-[#DBEAFE] bg-gradient-to-br from-[#EFF6FF] to-[#EEF2FF] p-6 text-center sm:p-8">
-          <p className="flex items-center justify-center gap-1.5 text-[13px] font-semibold text-[#2563EB]">
+        <div className="relative overflow-hidden rounded-2xl bg-dark-tertiary p-6 text-center sm:p-8">
+          <p className="flex items-center justify-center gap-1.5 text-[13px] font-semibold text-neon-cyan">
             <ShieldCheck className="size-4" aria-hidden="true" />
             Monto estimado disponible
           </p>
-          <p className="mt-1 text-5xl font-extrabold tracking-tight text-[#1E1B4B] sm:text-6xl">
+          <p className="font-heading mt-1 text-5xl font-extrabold tracking-tight text-text-primary sm:text-6xl">
             {Math.round(ufPreEvaluation.estimatedPropertyValueUF).toLocaleString("es-CL")}
-            <span className="ml-1.5 text-2xl text-[#2563EB] sm:text-3xl">UF</span>
+            <span className="ml-1.5 text-2xl text-neon-cyan sm:text-3xl">UF</span>
           </p>
-          <p className="mt-3 text-[15px] font-semibold text-[#2563EB]">
+          <p className="mt-3 text-[15px] font-semibold text-neon-cyan">
             Ahora vamos a mostrarte opciones que sí pueden calzar contigo.
           </p>
-          <p className="mt-3 text-xs leading-relaxed text-[#64748B]">{ufPreEvaluation.disclaimer}</p>
+          <p className="mt-3 text-xs leading-relaxed text-text-tertiary">{ufPreEvaluation.disclaimer}</p>
         </div>
       )}
 
       <div>
         <div className="flex items-center gap-2.5">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-[#FFEDD5] text-[#EA580C]">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-gold/10 text-gold">
             <Target className="size-4.5" aria-hidden="true" />
           </span>
-          <h3 className="text-base font-bold text-[#1E1B4B]">¿Para qué quieres tu inmueble?</h3>
+          <h3 className="font-heading text-base font-semibold text-text-primary">¿Para qué quieres tu inmueble?</h3>
         </div>
-        <p className="mt-1.5 text-xs text-[#64748B]">
+        <p className="mt-1.5 text-xs text-text-tertiary">
           Selecciona una o más opciones para recomendarte oportunidades más alineadas a tu objetivo.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -281,25 +281,17 @@ function InitialProposalCard({
         </div>
       </div>
 
-      <div className="flex items-center justify-center gap-3">
-        <span
-          className="hidden -rotate-6 text-[13px] font-medium text-[#94A3B8] italic sm:block"
-          aria-hidden="true"
-        >
-          ¡Sigamos!
-        </span>
-        <Button
-          className="w-full gap-2 rounded-full bg-gradient-to-r from-[#2563EB] to-[#4F46E5] text-white shadow-[0_10px_24px_-8px_rgba(37,99,235,0.55)] hover:brightness-105 sm:w-fit sm:px-8"
-          disabled={isSubmitting || destinations.length === 0}
-          onClick={handleContinue}
-        >
-          <Sparkles className="size-4" aria-hidden="true" />
-          {isSubmitting ? "Guardando..." : "Ver mis opciones"}
-          <ArrowRight className="size-4" aria-hidden="true" />
-        </Button>
-      </div>
+      <Button
+        className="glow-cyan w-full gap-2 rounded-full bg-neon-cyan text-white hover:bg-neon-cyan/90 sm:w-fit sm:self-center sm:px-8"
+        disabled={isSubmitting || destinations.length === 0}
+        onClick={handleContinue}
+      >
+        <Sparkles className="size-4" aria-hidden="true" />
+        {isSubmitting ? "Guardando..." : "Ver mis opciones"}
+        <ArrowRight className="size-4" aria-hidden="true" />
+      </Button>
 
-      <p className="flex items-center justify-center gap-1.5 text-[11.5px] text-[#94A3B8]">
+      <p className="flex items-center justify-center gap-1.5 text-[11.5px] text-text-tertiary">
         <Lock className="size-3" aria-hidden="true" />
         Tu información está segura y protegida.
       </p>
