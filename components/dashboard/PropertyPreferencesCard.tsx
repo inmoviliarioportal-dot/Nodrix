@@ -11,6 +11,12 @@ import { PropertyCarousel, type PropertyRecommendation } from "@/components/dash
 import { HousingPropertyList } from "@/components/dashboard/HousingPropertyList"
 import { ProximityProfileForm, type ProximityProfile } from "@/components/dashboard/ProximityProfileForm"
 
+interface PropertyCarouselGroup {
+  destination: string
+  label: string
+  properties: PropertyRecommendation[]
+}
+
 type PropertyType = "casa" | "departamento"
 type Purpose = "inversion" | "vivienda_propia" | "ambos"
 type Mode = "investment" | "housing"
@@ -59,7 +65,11 @@ function PropertyPreferencesCard({
   const [comuna, setComuna] = React.useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [isAccepting, setIsAccepting] = React.useState(false)
-  const [carousel, setCarousel] = React.useState<PropertyRecommendation[] | null>(null)
+  const [carouselGroups, setCarouselGroups] = React.useState<PropertyCarouselGroup[] | null>(null)
+  // Selección COMPARTIDA entre todos los carruseles (uno por destino
+  // elegido) -- el cliente puede elegir propiedades de más de un carrusel
+  // antes de confirmar todo junto con un solo botón.
+  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set())
   const [housingProperties, setHousingProperties] = React.useState<PropertyRecommendation[] | null>(null)
 
   // Airbnb/venta a corto plazo piden el perfilamiento de proximidad ANTES
@@ -69,6 +79,15 @@ function PropertyPreferencesCard({
   const [proximityProfile, setProximityProfile] = React.useState<ProximityProfile | null>(null)
 
   const requestedCarousel = React.useRef(false)
+
+  function toggleSelected(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   function fetchCarousel(profile: ProximityProfile | null) {
     setIsSubmitting(true)
@@ -96,7 +115,7 @@ function PropertyPreferencesCard({
           return
         }
         const data = await res.json()
-        setCarousel(data?.carousel ?? [])
+        setCarouselGroups(data?.carousels ?? [])
       })
       .finally(() => setIsSubmitting(false))
   }
@@ -150,15 +169,16 @@ function PropertyPreferencesCard({
     }
   }
 
-  async function handleAcceptInvestmentSelection(selected: PropertyRecommendation[]) {
+  async function handleAcceptInvestmentSelection() {
+    if (selectedIds.size === 0) return
     setIsAccepting(true)
     try {
       const res = await fetch(`/api/applications/${applicationId}/accept-property-proposal`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          departmentCount: selected.length,
-          propertyIds: selected.map((p) => p.id),
+          departmentCount: selectedIds.size,
+          propertyIds: Array.from(selectedIds),
         }),
       })
       if (!res.ok) {
@@ -203,15 +223,41 @@ function PropertyPreferencesCard({
     if (requiresProximityProfile && proximityProfile === null) {
       return <ProximityProfileForm onSubmit={handleProximityProfileSubmit} isSubmitting={isSubmitting} />
     }
-    if (!carousel) {
+    if (!carouselGroups) {
       return (
         <div className="glass-card flex flex-col items-center gap-3 rounded-2xl p-6">
           <p className="text-sm text-text-tertiary">Buscando las propiedades más adecuadas para ti...</p>
         </div>
       )
     }
+    // Un carrusel POR CADA destino que el cliente eligió (ej. Airbnb +
+    // Alquiler tradicional) -- comparten un solo set de selección y un solo
+    // botón de confirmación al final, para que el cliente vea claramente
+    // qué opciones calzan con cada objetivo antes de decidir.
     return (
-      <PropertyCarousel properties={carousel} onAccept={handleAcceptInvestmentSelection} isSubmitting={isAccepting} />
+      <div className="flex flex-col gap-5">
+        {carouselGroups.map((group) => (
+          <PropertyCarousel
+            key={group.destination}
+            title={`Para ${group.label.toLowerCase()}`}
+            description="Selecciona una o más propiedades. Puedes revisar la galería de cada una antes de decidir."
+            properties={group.properties}
+            selectedIds={selectedIds}
+            onToggle={toggleSelected}
+          />
+        ))}
+        <Button
+          className="glow-cyan w-fit self-center gap-2 bg-neon-cyan text-deep hover:bg-neon-cyan/90"
+          disabled={selectedIds.size === 0 || isAccepting}
+          onClick={handleAcceptInvestmentSelection}
+        >
+          {isAccepting
+            ? "Guardando..."
+            : selectedIds.size === 0
+              ? "Selecciona al menos una propiedad"
+              : `Confirmar selección (${selectedIds.size})`}
+        </Button>
+      </div>
     )
   }
 

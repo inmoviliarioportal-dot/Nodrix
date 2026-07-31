@@ -56,6 +56,8 @@ interface PropertyRow {
   near_historic_center: boolean | null;
   near_tourist_zone: boolean | null;
   near_business_district: boolean | null;
+  target_destinations: string[] | null;
+  amenities: string[] | null;
 }
 
 export interface PropertyRecommendation {
@@ -72,12 +74,28 @@ export interface PropertyRecommendation {
    * la galería flotante que el cliente puede abrir antes de aceptar. */
   images: string[];
   videoUrl: string | null;
+  /** Servicios/comodidades (piscina, gimnasio, etc.) -- ver lib/property-amenities.ts.
+   * Se muestran como íconos con tooltip en el carrusel (ver PropertyCarousel.tsx). */
+  amenities: string[];
+}
+
+export interface PropertyCarouselGroup {
+  destination: PropertyDestination;
+  label: string;
+  properties: PropertyRecommendation[];
 }
 
 export interface PropertyProposal {
   departmentCount: DepartmentCount;
   properties: PropertyRecommendation[];
 }
+
+const DESTINATION_LABELS: Record<PropertyDestination, string> = {
+  vivir: "Vivienda",
+  airbnb: "Airbnb",
+  alquiler_tradicional: "Alquiler tradicional",
+  venta_corto_plazo: "Venta a corto plazo",
+};
 
 /** Cantidad de propiedades mostradas en el carrusel de inversión. */
 const CAROUSEL_SIZE = 6;
@@ -120,7 +138,7 @@ export const POST = withErrorHandling(async (request: Request) => {
   const { data, error } = await supabase
     .from("properties")
     .select(
-      "id, name, comuna, location, price_uf, purpose, bedrooms, bathrooms, property_type, images, video_url, created_at, near_historic_center, near_tourist_zone, near_business_district"
+      "id, name, comuna, location, price_uf, purpose, bedrooms, bathrooms, property_type, images, video_url, created_at, near_historic_center, near_tourist_zone, near_business_district, target_destinations, amenities"
     )
     .eq("org_id", MVP_ORG_ID)
     .eq("available", true);
@@ -175,13 +193,11 @@ export const POST = withErrorHandling(async (request: Request) => {
       image: r.images?.[0] ?? null,
       images: r.images ?? [],
       videoUrl: r.video_url ?? null,
+      amenities: r.amenities ?? [],
     };
   }
 
   if (body.purpose === "inversion") {
-    // Carrusel: hasta CAROUSEL_SIZE propiedades DISTINTAS, sin filtrar por
-    // comuna/preferencias (esa pata no las pide), ordenadas por cercanía al
-    // presupuesto real del cliente si viene `budgetUf`.
     const candidates = purposeMatches(allRows);
     const pool = candidates.length > 0 ? candidates : allRows; // nunca vacío si hay inventario
 
@@ -190,11 +206,7 @@ export const POST = withErrorHandling(async (request: Request) => {
     // histórico/céntrico, zona turística, negocios/sector financiero) --
     // ver ProximityProfileForm.tsx. Si el cliente no marcó ninguno (o su
     // destino no aplica), el orden es idéntico al de antes (solo precio).
-    const { profileHistoric, profileTourist, profileBusiness } = body;
-    const destinationList = body.destinations ?? (body.destination ? [body.destination] : []);
-    const applyProximityProfiling =
-      destinationList.some((d) => d === "airbnb" || d === "venta_corto_plazo") &&
-      (profileHistoric || profileTourist || profileBusiness);
+    const { profileHistoric, profileTourist, profileBusiness, budgetUf } = body;
 
     function proximityScore(r: PropertyRow): number {
       let score = 0;
@@ -204,26 +216,71 @@ export const POST = withErrorHandling(async (request: Request) => {
       return score;
     }
 
-    const sorted = [...pool].sort((a, b) => {
-      if (applyProximityProfiling) {
-        const scoreDiff = proximityScore(b) - proximityScore(a);
-        if (scoreDiff !== 0) return scoreDiff;
-      }
-      if (typeof body.budgetUf === "number") {
-        return Math.abs(a.price_uf - body.budgetUf) - Math.abs(b.price_uf - body.budgetUf);
-      }
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    });
-
-    const carousel: PropertyRecommendation[] = [];
-    const seenIds = new Set<string>();
-    for (const row of sorted) {
-      if (seenIds.has(row.id)) continue;
-      seenIds.add(row.id);
-      carousel.push(toRecommendation(row));
-      if (carousel.length >= CAROUSEL_SIZE) break;
+    function sortPool(rows: PropertyRow[], applyProximity: boolean): PropertyRow[] {
+      return [...rows].sort((a, b) => {
+        if (applyProximity) {
+          const scoreDiff = proximityScore(b) - proximityScore(a);
+          if (scoreDiff !== 0) return scoreDiff;
+        }
+        if (typeof budgetUf === "number") {
+          return Math.abs(a.price_uf - budgetUf) - Math.abs(b.price_uf - budgetUf);
+        }
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
     }
 
+    function buildCarousel(rows: PropertyRow[], applyProximity: boolean): PropertyRecommendation[] {
+      const sorted = sortPool(rows, applyProximity);
+      const carousel: PropertyRecommendation[] = [];
+      const seenIds = new Set<string>();
+      for (const row of sorted) {
+        if (seenIds.has(row.id)) continue;
+        seenIds.add(row.id);
+        carousel.push(toRecommendation(row));
+        if (carousel.length >= CAROUSEL_SIZE) break;
+      }
+      return carousel;
+    }
+
+    // Un carrusel POR CADA destino que el cliente eligió (ej. Airbnb +
+    // Alquiler tradicional => 2 carruseles separados), para que tanto el
+    // cliente como el sistema tengan mejor conocimiento de qué propiedades
+    // calzan con cada objetivo -- ver components/dashboard/PropertyPreferencesCard.tsx.
+    // Cada carrusel se filtra primero por `target_destinations` (etiquetado
+    // por el equipo comercial en el admin); si NINGUNA propiedad está
+    // etiquetada para ese destino todavía, se cae al pool general de
+    // "inversion" como antes, para no dejar al cliente sin opciones.
+    const destinationList = body.destinations ?? (body.destination ? [body.destination] : []);
+    if (destinationList.length > 0) {
+      const carousels: PropertyCarouselGroup[] = destinationList.map((destination) => {
+        const tagged = pool.filter((r) => r.target_destinations?.includes(destination));
+        const rowsForDestination = tagged.length > 0 ? tagged : pool;
+        const applyProximity = destination === "airbnb" || destination === "venta_corto_plazo";
+        return {
+          destination,
+          label: DESTINATION_LABELS[destination],
+          properties: buildCarousel(rowsForDestination, applyProximity && Boolean(profileHistoric || profileTourist || profileBusiness)),
+        };
+      });
+
+      // `carousel` (singular, aplanado y deduplicado) se mantiene por
+      // compatibilidad con cualquier consumidor viejo que no sepa de grupos.
+      const flatSeen = new Set<string>();
+      const flatCarousel: PropertyRecommendation[] = [];
+      for (const group of carousels) {
+        for (const p of group.properties) {
+          if (flatSeen.has(p.id)) continue;
+          flatSeen.add(p.id);
+          flatCarousel.push(p);
+        }
+      }
+
+      return NextResponse.json({ carousels, carousel: flatCarousel });
+    }
+
+    // Sin destinos declarados (legado): un solo carrusel general, igual que antes.
+    const applyProximityProfiling = Boolean(profileHistoric || profileTourist || profileBusiness);
+    const carousel = buildCarousel(pool, applyProximityProfiling);
     return NextResponse.json({ carousel });
   }
 

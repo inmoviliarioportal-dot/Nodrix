@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
+import { PROPERTY_AMENITIES } from "@/lib/property-amenities"
+import { AMENITY_ICONS } from "@/components/dashboard/amenityIcons"
 
 interface PropertyRow {
   id: string
@@ -23,7 +25,16 @@ interface PropertyRow {
   near_historic_center: boolean
   near_tourist_zone: boolean
   near_business_district: boolean
+  target_destinations: string[]
+  amenities: string[]
 }
+
+const DESTINATION_OPTIONS = [
+  { value: "vivir", label: "Vivienda" },
+  { value: "airbnb", label: "Airbnb" },
+  { value: "alquiler_tradicional", label: "Alquiler tradicional" },
+  { value: "venta_corto_plazo", label: "Venta a corto plazo" },
+]
 
 const PURPOSE_OPTIONS = [
   { value: "inversion", label: "Inversión" },
@@ -52,6 +63,8 @@ const EMPTY_FORM = {
   nearHistoricCenter: false,
   nearTouristZone: false,
   nearBusinessDistrict: false,
+  targetDestinations: [] as string[],
+  amenities: [] as string[],
 }
 
 /**
@@ -85,6 +98,22 @@ export default function AdminPropertiesPage() {
     setEditingId(null)
   }
 
+  function toggleDestination(value: string) {
+    setForm((f) => ({
+      ...f,
+      targetDestinations: f.targetDestinations.includes(value)
+        ? f.targetDestinations.filter((d) => d !== value)
+        : [...f.targetDestinations, value],
+    }))
+  }
+
+  function toggleAmenity(value: string) {
+    setForm((f) => ({
+      ...f,
+      amenities: f.amenities.includes(value) ? f.amenities.filter((a) => a !== value) : [...f.amenities, value],
+    }))
+  }
+
   function startEdit(property: PropertyRow) {
     setEditingId(property.id)
     setForm({
@@ -99,6 +128,8 @@ export default function AdminPropertiesPage() {
       nearHistoricCenter: property.near_historic_center,
       nearTouristZone: property.near_tourist_zone,
       nearBusinessDistrict: property.near_business_district,
+      targetDestinations: property.target_destinations ?? [],
+      amenities: property.amenities ?? [],
     })
   }
 
@@ -157,6 +188,8 @@ export default function AdminPropertiesPage() {
           nearHistoricCenter: form.nearHistoricCenter,
           nearTouristZone: form.nearTouristZone,
           nearBusinessDistrict: form.nearBusinessDistrict,
+          targetDestinations: form.targetDestinations,
+          amenities: form.amenities,
         }),
       })
       if (!res.ok) {
@@ -280,6 +313,62 @@ export default function AdminPropertiesPage() {
               onChange={(e) => setForm((f) => ({ ...f, videoUrl: e.target.value }))}
               placeholder="https://.../video.mp4"
             />
+          </Field>
+
+          <Field>
+            <FieldLabel>¿Para qué destino es ideal esta propiedad?</FieldLabel>
+            <p className="text-xs text-text-tertiary">
+              Determina en qué carrusel del cliente aparece (puede marcar más de uno).
+            </p>
+            <div className="flex flex-wrap gap-2 pt-1">
+              {DESTINATION_OPTIONS.map((opt) => {
+                const selected = form.targetDestinations.includes(opt.value)
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => toggleDestination(opt.value)}
+                    className={cn(
+                      "rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors duration-200",
+                      selected
+                        ? "border-neon-cyan bg-neon-cyan/10 text-neon-cyan"
+                        : "border-glass-border text-text-secondary hover:text-text-primary"
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                )
+              })}
+            </div>
+          </Field>
+
+          <Field>
+            <FieldLabel>Servicios y comodidades</FieldLabel>
+            <p className="text-xs text-text-tertiary">
+              Se muestran como íconos con tooltip en el carrusel de propiedades del cliente.
+            </p>
+            <div className="grid grid-cols-2 gap-2 pt-1 sm:grid-cols-3 md:grid-cols-4">
+              {PROPERTY_AMENITIES.map((amenity) => {
+                const Icon = AMENITY_ICONS[amenity.value]
+                const selected = form.amenities.includes(amenity.value)
+                return (
+                  <button
+                    key={amenity.value}
+                    type="button"
+                    onClick={() => toggleAmenity(amenity.value)}
+                    className={cn(
+                      "flex items-center gap-2 rounded-lg border px-2.5 py-2 text-left text-xs font-medium transition-colors duration-200",
+                      selected
+                        ? "border-neon-cyan bg-neon-cyan/10 text-neon-cyan"
+                        : "border-glass-border text-text-secondary hover:text-text-primary"
+                    )}
+                  >
+                    <Icon className="size-4 shrink-0" aria-hidden="true" />
+                    {amenity.label}
+                  </button>
+                )
+              })}
+            </div>
           </Field>
 
           <Field>

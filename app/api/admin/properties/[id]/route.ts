@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase";
 import { apiError, requireRole, withErrorHandling, HTTP_STATUS } from "@/app/api/_shared";
 import { MVP_ORG_ID } from "@/app/api/auth/_constants";
+import { PROPERTY_AMENITY_VALUES } from "@/lib/property-amenities";
 
 const VALID_PURPOSES = ["inversion", "vivienda_propia", "ambos"] as const;
+const VALID_TARGET_DESTINATIONS = ["vivir", "airbnb", "alquiler_tradicional", "venta_corto_plazo"] as const;
 
 type PropertyBody = {
   name?: string;
@@ -18,6 +20,8 @@ type PropertyBody = {
   nearHistoricCenter?: boolean;
   nearTouristZone?: boolean;
   nearBusinessDistrict?: boolean;
+  targetDestinations?: string[];
+  amenities?: string[];
 };
 
 /** PATCH /api/admin/properties/{id} — edita una propiedad. Requiere admin/gerencia. */
@@ -39,6 +43,20 @@ export const PATCH = withErrorHandling(async (request: Request, context: { param
   if (body.priceUf !== undefined && (typeof body.priceUf !== "number" || body.priceUf <= 0)) {
     return apiError("priceUf debe ser un número positivo", HTTP_STATUS.BAD_REQUEST, "INVALID_PRICE");
   }
+  const invalidDestination = body.targetDestinations?.find(
+    (d) => !VALID_TARGET_DESTINATIONS.includes(d as (typeof VALID_TARGET_DESTINATIONS)[number])
+  );
+  if (invalidDestination) {
+    return apiError(
+      `targetDestinations inválido: "${invalidDestination}"`,
+      HTTP_STATUS.BAD_REQUEST,
+      "INVALID_TARGET_DESTINATION"
+    );
+  }
+  const invalidAmenity = body.amenities?.find((a) => !PROPERTY_AMENITY_VALUES.includes(a));
+  if (invalidAmenity) {
+    return apiError(`amenities inválido: "${invalidAmenity}"`, HTTP_STATUS.BAD_REQUEST, "INVALID_AMENITY");
+  }
 
   const update: Record<string, unknown> = {};
   if (body.name !== undefined) update.name = body.name.trim();
@@ -53,6 +71,8 @@ export const PATCH = withErrorHandling(async (request: Request, context: { param
   if (body.nearHistoricCenter !== undefined) update.near_historic_center = body.nearHistoricCenter;
   if (body.nearTouristZone !== undefined) update.near_tourist_zone = body.nearTouristZone;
   if (body.nearBusinessDistrict !== undefined) update.near_business_district = body.nearBusinessDistrict;
+  if (body.targetDestinations !== undefined) update.target_destinations = body.targetDestinations;
+  if (body.amenities !== undefined) update.amenities = body.amenities;
 
   if (Object.keys(update).length === 0) {
     return apiError("Nada para actualizar", HTTP_STATUS.BAD_REQUEST, "EMPTY_UPDATE");

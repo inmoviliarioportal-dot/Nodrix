@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase";
 import { apiError, requireRole, withErrorHandling, HTTP_STATUS } from "@/app/api/_shared";
 import { MVP_ORG_ID } from "@/app/api/auth/_constants";
+import { PROPERTY_AMENITY_VALUES } from "@/lib/property-amenities";
 
 const VALID_PURPOSES = ["inversion", "vivienda_propia", "ambos"] as const;
+const VALID_TARGET_DESTINATIONS = ["vivir", "airbnb", "alquiler_tradicional", "venta_corto_plazo"] as const;
 
 /**
  * GET /api/admin/properties — lista el inventario completo (disponible o
@@ -42,6 +44,8 @@ type PropertyBody = {
   nearHistoricCenter?: boolean;
   nearTouristZone?: boolean;
   nearBusinessDistrict?: boolean;
+  targetDestinations?: string[];
+  amenities?: string[];
 };
 
 function validate(body: PropertyBody): string | null {
@@ -50,6 +54,16 @@ function validate(body: PropertyBody): string | null {
   if (typeof body.priceUf !== "number" || body.priceUf <= 0) return "priceUf debe ser un número positivo";
   if (body.purpose && !VALID_PURPOSES.includes(body.purpose as (typeof VALID_PURPOSES)[number])) {
     return `purpose inválido. Valores permitidos: ${VALID_PURPOSES.join(", ")}`;
+  }
+  const invalidDestination = body.targetDestinations?.find(
+    (d) => !VALID_TARGET_DESTINATIONS.includes(d as (typeof VALID_TARGET_DESTINATIONS)[number])
+  );
+  if (invalidDestination) {
+    return `targetDestinations inválido: "${invalidDestination}". Valores permitidos: ${VALID_TARGET_DESTINATIONS.join(", ")}`;
+  }
+  const invalidAmenity = body.amenities?.find((a) => !PROPERTY_AMENITY_VALUES.includes(a));
+  if (invalidAmenity) {
+    return `amenities inválido: "${invalidAmenity}"`;
   }
   return null;
 }
@@ -81,6 +95,8 @@ export const POST = withErrorHandling(async (request: Request) => {
       near_historic_center: body.nearHistoricCenter ?? false,
       near_tourist_zone: body.nearTouristZone ?? false,
       near_business_district: body.nearBusinessDistrict ?? false,
+      target_destinations: body.targetDestinations ?? [],
+      amenities: body.amenities ?? [],
     })
     .select("*")
     .single();

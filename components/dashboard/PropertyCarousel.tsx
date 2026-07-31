@@ -3,9 +3,11 @@
 import * as React from "react"
 import { MapPin, BedDouble, Bath, Home, Check, Images, ChevronLeft, ChevronRight } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { PropertyGalleryModal } from "@/components/dashboard/PropertyGalleryModal"
+import { PROPERTY_AMENITY_LABELS } from "@/lib/property-amenities"
+import { AMENITY_ICONS } from "@/components/dashboard/amenityIcons"
+import type { PropertyAmenity } from "@/lib/property-amenities"
 
 export interface PropertyRecommendation {
   id: string
@@ -19,63 +21,85 @@ export interface PropertyRecommendation {
   image: string | null
   images: string[]
   videoUrl: string | null
+  amenities: string[]
+}
+
+/** Hasta cuántos íconos de servicio se muestran directo en la tarjeta antes
+ * de resumir el resto en un "+N" (para no saturar la tarjeta). */
+const MAX_VISIBLE_AMENITIES = 4
+
+/** Ícono de servicio con burbuja informativa (tooltip) al pasar el cursor --
+ * CSS puro vía group-hover, sin JS ni librerías. */
+function AmenityBadge({ value }: { value: string }) {
+  const Icon = AMENITY_ICONS[value as PropertyAmenity]
+  const label = PROPERTY_AMENITY_LABELS[value] ?? value
+  if (!Icon) return null
+  return (
+    <span
+      className="group/amenity relative flex size-6 items-center justify-center rounded-full border border-glass-border bg-surface text-text-secondary transition-colors duration-200 hover:border-neon-cyan/50 hover:text-neon-cyan"
+      tabIndex={0}
+    >
+      <Icon className="size-3.5" aria-hidden="true" />
+      <span className="sr-only">{label}</span>
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1.5 w-max max-w-[160px] -translate-x-1/2 scale-95 rounded-md bg-deep px-2 py-1 text-center text-[10.5px] font-medium text-white opacity-0 shadow-lg transition-all duration-150 group-hover/amenity:scale-100 group-hover/amenity:opacity-100 group-focus-visible/amenity:scale-100 group-focus-visible/amenity:opacity-100"
+      >
+        {label}
+        <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-deep" />
+      </span>
+    </span>
+  )
 }
 
 /**
  * Carrusel de hasta 6 propiedades de inversión, las más adecuadas según la
  * pre-evaluación en UF del cliente (ordenadas por cercanía de precio en el
- * backend, ver app/api/properties/recommendations/route.ts). Reemplaza el
- * viejo esquema de 3 "propuestas" fijas (1/2/3 departamentos): acá el
- * cliente elige libremente cuántas propiedades quiere (1, 2, 4, 6...) con
- * una selección múltiple tipo checklist sobre cada tarjeta.
+ * backend, ver app/api/properties/recommendations/route.ts). El cliente
+ * elige libremente cuántas propiedades quiere (1, 2, 4, 6...) con una
+ * selección múltiple tipo checklist sobre cada tarjeta.
+ *
+ * Componente CONTROLADO: la selección vive en el padre (`selectedIds`/
+ * `onToggle`) para que varios carruseles (uno por destino elegido, ver
+ * PropertyPreferencesCard.tsx) puedan compartir un único set de propiedades
+ * elegidas y un solo botón de "Confirmar selección" al final.
  */
 function PropertyCarousel({
+  title = "Propiedades para ti",
+  description = "Selecciona una o más propiedades de la lista. Puedes revisar la galería de cada una antes de decidir.",
   properties,
-  onAccept,
-  isSubmitting,
+  selectedIds,
+  onToggle,
 }: {
+  title?: string
+  description?: string
   properties: PropertyRecommendation[]
-  onAccept: (selected: PropertyRecommendation[]) => void
-  isSubmitting?: boolean
+  selectedIds: Set<string>
+  onToggle: (id: string) => void
 }) {
-  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set())
   const [galleryProperty, setGalleryProperty] = React.useState<PropertyRecommendation | null>(null)
   const scrollerRef = React.useRef<HTMLDivElement>(null)
 
   if (properties.length === 0) {
     return (
       <div className="glass-card rounded-2xl p-6">
-        <p className="text-sm text-text-tertiary">
+        <h2 className="font-heading text-sm font-semibold uppercase tracking-wide text-text-tertiary">{title}</h2>
+        <p className="mt-2 text-sm text-text-tertiary">
           No encontramos propiedades disponibles por ahora. Tu asesor te contactará con alternativas.
         </p>
       </div>
     )
   }
 
-  function toggleSelected(id: string) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
-
   function scrollBy(amount: number) {
     scrollerRef.current?.scrollBy({ left: amount, behavior: "smooth" })
   }
 
-  const selectedCount = selectedIds.size
-
   return (
     <div className="glass-card flex flex-col gap-5 rounded-2xl p-6">
       <div>
-        <h2 className="font-heading text-sm font-semibold uppercase tracking-wide text-text-tertiary">
-          Propiedades para ti
-        </h2>
-        <p className="mt-1 text-sm text-text-secondary">
-          Selecciona una o más propiedades de la lista. Puedes revisar la galería de cada una antes de decidir.
-        </p>
+        <h2 className="font-heading text-sm font-semibold uppercase tracking-wide text-text-tertiary">{title}</h2>
+        <p className="mt-1 text-sm text-text-secondary">{description}</p>
       </div>
 
       <div className="relative">
@@ -85,11 +109,13 @@ function PropertyCarousel({
         >
           {properties.map((property) => {
             const isSelected = selectedIds.has(property.id)
+            const visibleAmenities = property.amenities.slice(0, MAX_VISIBLE_AMENITIES)
+            const extraAmenityCount = property.amenities.length - visibleAmenities.length
             return (
               <button
                 key={property.id}
                 type="button"
-                onClick={() => toggleSelected(property.id)}
+                onClick={() => onToggle(property.id)}
                 className={cn(
                   "interactive-lift flex w-64 shrink-0 snap-start flex-col overflow-hidden rounded-xl border text-left transition-colors duration-200",
                   isSelected ? "border-neon-cyan bg-neon-cyan/5" : "border-glass-border hover:border-neon-cyan/40"
@@ -162,6 +188,18 @@ function PropertyCarousel({
                       </span>
                     )}
                   </div>
+                  {property.amenities.length > 0 && (
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                      {visibleAmenities.map((amenity) => (
+                        <AmenityBadge key={amenity} value={amenity} />
+                      ))}
+                      {extraAmenityCount > 0 && (
+                        <span className="flex size-6 items-center justify-center rounded-full border border-glass-border text-[10px] font-semibold text-text-tertiary">
+                          +{extraAmenityCount}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </button>
             )
@@ -189,18 +227,6 @@ function PropertyCarousel({
           </>
         )}
       </div>
-
-      <Button
-        className="glow-cyan w-fit self-center gap-2 bg-neon-cyan text-deep hover:bg-neon-cyan/90"
-        disabled={selectedCount === 0 || isSubmitting}
-        onClick={() => onAccept(properties.filter((p) => selectedIds.has(p.id)))}
-      >
-        {isSubmitting
-          ? "Guardando..."
-          : selectedCount === 0
-            ? "Selecciona al menos una propiedad"
-            : `Confirmar selección (${selectedCount})`}
-      </Button>
 
       <PropertyGalleryModal
         open={galleryProperty !== null}
