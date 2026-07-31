@@ -5,46 +5,47 @@ import { Check } from "lucide-react";
 interface WizardProgressProps {
   step: number; // 1-based, 1..totalSteps
   totalSteps: number;
-  /** Labels cortos por paso (ej. "Empleo", "Finanzas", "Ahorro"). Opcional --
-   * si no se pasan no se muestran labels bajo cada círculo. */
+  /** Labels cortos por paso (ej. "Perfil", "Finanzas", "Ahorro"). Opcional --
+   * si no se pasan no se muestran labels junto a cada círculo. */
   labels?: string[];
 }
 
 /**
- * Indicador de progreso superior compacto: círculos de 22px numerados (o con
- * check si ya se completaron) conectados por una línea fina, con un label
- * corto debajo de cada uno -- reemplaza la barra de dots + "Paso N de X".
+ * Stepper horizontal centrado (ver referencias en Rediseño/rediseño/*.png):
+ * círculos numerados de 28px -- azul relleno en el paso activo, check
+ * verde/azul en los completados, contorno gris en los pendientes -- unidos
+ * por una línea sólida entre completados y punteada hacia los pendientes.
+ * Subtítulo "Paso N de X" centrado debajo.
  */
 export function WizardProgress({ step, totalSteps, labels }: WizardProgressProps) {
   const steps = Array.from({ length: totalSteps }, (_, i) => i + 1);
 
   return (
-    <div className="mx-auto mb-8 flex w-full max-w-md flex-col items-center gap-2">
-      <div className="flex items-center justify-center gap-2">
+    <div className="mx-auto mb-10 flex w-full flex-col items-center gap-2">
+      <div className="flex items-center justify-center gap-3 sm:gap-4">
         {steps.map((n) => {
           const done = n < step;
           const active = n === step;
-          const color = done || active ? "var(--neon-cyan)" : "var(--glass-border)";
           return (
-            <div key={n} className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5">
+            <div key={n} className="flex items-center gap-3 sm:gap-4">
+              <div className="flex items-center gap-2">
                 <span
-                  className="flex items-center justify-center rounded-full text-[11px] font-bold transition-all duration-300 ease-out"
+                  className="flex shrink-0 items-center justify-center rounded-full text-[13px] font-bold transition-all duration-300 ease-out"
                   style={{
-                    width: 22,
-                    height: 22,
-                    borderWidth: 1.5,
+                    width: 28,
+                    height: 28,
+                    borderWidth: 1.75,
                     borderStyle: "solid",
-                    borderColor: color,
-                    color: done ? "var(--deep)" : active ? "var(--neon-cyan)" : "var(--text-tertiary)",
-                    backgroundColor: done ? "var(--neon-cyan)" : "var(--surface)",
+                    borderColor: done || active ? "var(--neon-cyan)" : "var(--glass-border)",
+                    color: done ? "#ffffff" : active ? "#ffffff" : "var(--text-tertiary)",
+                    backgroundColor: done || active ? "var(--neon-cyan)" : "var(--surface)",
                   }}
                 >
-                  {done ? <Check size={11} strokeWidth={3} /> : n}
+                  {done ? <Check size={13} strokeWidth={3} /> : n}
                 </span>
                 {labels?.[n - 1] ? (
                   <span
-                    className="font-heading text-[12.5px] font-semibold"
+                    className="font-heading text-[13.5px] font-semibold"
                     style={{ color: done || active ? "var(--text-primary)" : "var(--text-tertiary)" }}
                   >
                     {labels[n - 1]}
@@ -53,15 +54,18 @@ export function WizardProgress({ step, totalSteps, labels }: WizardProgressProps
               </div>
               {n < totalSteps && (
                 <div
-                  className="h-px transition-colors duration-300 ease-out"
-                  style={{ width: 24, backgroundColor: done ? "var(--neon-cyan)" : "var(--glass-border)" }}
+                  className="h-px w-8 transition-colors duration-300 ease-out sm:w-10"
+                  style={{
+                    backgroundColor: done ? "var(--neon-cyan)" : "transparent",
+                    borderTop: done ? "none" : "1.5px dashed var(--glass-border)",
+                  }}
                 />
               )}
             </div>
           );
         })}
       </div>
-      <span className="text-[11.5px]" style={{ color: "var(--text-tertiary)" }}>
+      <span className="text-[12.5px]" style={{ color: "var(--text-tertiary)" }}>
         Paso {step} de {totalSteps}
       </span>
     </div>

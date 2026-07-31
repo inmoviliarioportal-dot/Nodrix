@@ -2,11 +2,26 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Briefcase, PiggyBank, Home, Check, X, Users } from "lucide-react";
+import {
+  Briefcase,
+  PiggyBank,
+  Home,
+  Check,
+  X,
+  Users,
+  Lock,
+  Info,
+  Lightbulb,
+  ShieldCheck,
+  CheckCircle2,
+  ArrowLeft,
+  ArrowRight,
+} from "lucide-react";
 import { SelectableCard } from "@/components/wizard/SelectableCard";
 import { SelectableChip } from "@/components/wizard/SelectableChip";
 import { AmountSelect } from "@/components/wizard/AmountSelect";
 import { WizardProgress } from "@/components/wizard/WizardProgress";
+import { WizardHeader, WizardTitle, InfoBadge, Sparkle } from "@/components/wizard/WizardChrome";
 import { PROPERTY_STATUS_OPTIONS } from "@/components/auth/schemas";
 import { INCOME_AMOUNT_OPTIONS } from "@/lib/amount-options";
 import {
@@ -421,9 +436,19 @@ function WizardPageInner() {
     goToStep(step - 1);
   }
 
+  const nextLabel =
+    step === 1 ? "Continuar a finanzas" : step === 2 ? "Continuar al último paso" : "Ver mi propuesta inicial";
+  const motivationalMessage =
+    step === 1
+      ? "Vas avanzando muy bien"
+      : step === 2
+        ? "Ya falta muy poco para ver tu propuesta inicial"
+        : "Estás a un paso de terminar";
+
   return (
-    <main className="bg-deep-ambient flex min-h-screen flex-col items-center justify-center px-4 py-12">
-      <div className="w-full max-w-2xl">
+    <main className="bg-deep-ambient flex min-h-screen flex-col items-center px-4 py-10 sm:py-12">
+      <div className="w-full max-w-3xl">
+        <WizardHeader />
         <WizardProgress step={step} totalSteps={TOTAL_STEPS} labels={STEP_LABELS} />
 
         {profileError && (
@@ -436,7 +461,7 @@ function WizardPageInner() {
         )}
 
         <div
-          className="transition-all duration-150 ease-out"
+          className="glass-card animate-fade-in-up rounded-3xl p-6 transition-all duration-150 ease-out sm:p-8"
           style={{
             opacity: transitioning ? 0 : 1,
             transform: transitioning ? "translateY(6px)" : "translateY(0)",
@@ -447,32 +472,44 @@ function WizardPageInner() {
           {step === 3 && <StepSavings data={data} onChange={update} />}
         </div>
 
-        <div
-          className="mt-9 flex items-center justify-between gap-4 border-t pt-5"
-          style={{ borderColor: "var(--glass-border)" }}
-        >
+        <div className="mt-6 flex flex-col-reverse items-center gap-4 sm:flex-row sm:items-center sm:justify-between">
           <button
             type="button"
             onClick={handleBack}
             disabled={step === 1}
-            className="rounded-xl border px-6 py-3 text-sm font-medium transition-all duration-200 ease-out disabled:cursor-not-allowed disabled:opacity-30"
-            style={{ borderColor: "var(--glass-border)", color: "var(--text-secondary)" }}
+            className="inline-flex items-center gap-1.5 rounded-full border px-6 py-3 text-sm font-semibold transition-all duration-200 ease-out disabled:cursor-not-allowed disabled:opacity-30"
+            style={{ borderColor: "var(--glass-border)", color: "var(--text-secondary)", backgroundColor: "var(--surface)" }}
           >
-            Atrás
+            <ArrowLeft size={16} /> Atrás
           </button>
+
+          <span
+            className="inline-flex items-center gap-1.5 text-center text-[13px] font-medium"
+            style={{ color: "var(--text-tertiary)" }}
+          >
+            <Sparkle size={13} /> {motivationalMessage}
+          </span>
+
           <button
             type="button"
             onClick={handleNext}
             disabled={!canAdvance() || submitting}
-            className="glow-cyan rounded-xl px-8 py-3 text-sm font-semibold transition-all duration-200 ease-out disabled:cursor-not-allowed disabled:opacity-30"
-            style={{
-              backgroundColor: "var(--neon-cyan)",
-              color: "var(--deep)",
-            }}
+            className="glow-cyan inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-semibold text-white transition-all duration-200 ease-out disabled:cursor-not-allowed disabled:opacity-40"
+            style={{ backgroundColor: "var(--neon-cyan)" }}
           >
-            {submitting ? "Guardando..." : step === TOTAL_STEPS ? "Finalizar" : "Siguiente"}
+            {submitting ? "Guardando..." : step === TOTAL_STEPS ? nextLabel : nextLabel}
+            <ArrowRight size={16} />
           </button>
         </div>
+
+        {step === TOTAL_STEPS && (
+          <p
+            className="mt-5 flex items-center justify-center gap-1.5 text-center text-[12.5px]"
+            style={{ color: "var(--text-tertiary)" }}
+          >
+            <Lock size={12} /> Tu información está protegida
+          </p>
+        )}
       </div>
     </main>
   );
@@ -515,21 +552,25 @@ function StepProfile({
   return (
     <section className="flex flex-col gap-8">
       <header className="text-center">
-        <h1 className="font-heading text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>
-          Cuéntanos sobre tu perfil
-        </h1>
-        <p className="mt-2 text-sm" style={{ color: "var(--text-tertiary)" }}>
-          Identifica tu(s) fuente(s) de ingreso -- puedes elegir más de una si tienes ingresos mixtos.
+        <WizardTitle>Cuéntanos sobre tu situación</WizardTitle>
+        <p className="mx-auto mt-3 max-w-lg text-sm" style={{ color: "var(--text-secondary)" }}>
+          Con esta información podremos orientarte mejor y mostrarte una propuesta más alineada a tu realidad.
         </p>
+        <div className="mt-4">
+          <InfoBadge icon={Lock}>Tus datos se usan solo para tu evaluación</InfoBadge>
+        </div>
       </header>
 
       <div>
         <h2
-          className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide"
-          style={{ color: "var(--text-secondary)" }}
+          className="mb-3 flex items-center gap-2 text-base font-semibold"
+          style={{ color: "var(--text-primary)" }}
         >
           <Briefcase size={16} /> ¿Cuál es tu situación laboral?
         </h2>
+        <p className="mb-3 text-[13px]" style={{ color: "var(--text-tertiary)" }}>
+          Puedes elegir más de una opción si tienes ingresos mixtos.
+        </p>
         <div className="flex flex-wrap gap-2">
           {INCOME_TYPE_OPTIONS.map((opt) => (
             <SelectableChip
@@ -676,10 +717,7 @@ function StepProfile({
       })}
 
       <div>
-        <h2
-          className="mb-3 text-sm font-semibold uppercase tracking-wide"
-          style={{ color: "var(--text-secondary)" }}
-        >
+        <h2 className="mb-3 text-base font-semibold" style={{ color: "var(--text-primary)" }}>
           Nivel profesional
         </h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -719,54 +757,74 @@ function StepFinancialProfile({
   return (
     <section className="flex flex-col gap-8">
       <header className="text-center">
-        <h1 className="font-heading text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>
-          Tus finanzas
-        </h1>
-        <p className="mt-2 text-sm" style={{ color: "var(--text-tertiary)" }}>
-          Confirma el monto exacto de cada ingreso que identificaste.
+        <WizardTitle>Tus finanzas</WizardTitle>
+        <p className="mx-auto mt-3 max-w-lg text-sm" style={{ color: "var(--text-secondary)" }}>
+          Confirma tus ingresos aproximados para mostrarte oportunidades más alineadas con tu presupuesto.
         </p>
+        <div className="mt-4">
+          <InfoBadge icon={Info}>No necesitas ser exacto al peso. Esta información nos ayuda a orientarte mejor.</InfoBadge>
+        </div>
       </header>
 
-      <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {data.incomeSources.map((entry) => {
           const typeLabel = INCOME_TYPE_OPTIONS.find((o) => o.value === entry.type)?.label ?? entry.type;
           return (
-            <div key={entry.type}>
-              <h2
-                className="mb-2 text-sm font-semibold uppercase tracking-wide"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                {typeLabel}
-              </h2>
-              <div className="max-w-xs">
-                <AmountSelect
-                  value={entry.monthlyAmountCLP}
-                  onChange={(v) => updateAmount(entry.type, v)}
-                  options={INCOME_AMOUNT_OPTIONS}
-                  placeholder="Monto mensual exacto"
-                />
+            <div key={entry.type} className="rounded-2xl border p-4" style={{ borderColor: "var(--glass-border)" }}>
+              <div className="mb-3 flex items-center gap-3">
+                <span
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                  style={{ backgroundColor: "var(--dark-tertiary)" }}
+                >
+                  <Briefcase size={16} color="var(--neon-cyan)" />
+                </span>
+                <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+                  {typeLabel}
+                </h2>
               </div>
+              <AmountSelect
+                value={entry.monthlyAmountCLP}
+                onChange={(v) => updateAmount(entry.type, v)}
+                options={INCOME_AMOUNT_OPTIONS}
+                placeholder="Monto mensual exacto"
+              />
             </div>
           );
         })}
       </div>
 
-      <div>
-        <h2
-          className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide"
-          style={{ color: "var(--text-secondary)" }}
-        >
-          <Home size={16} /> Estado del inmueble que buscas
-        </h2>
-        <div className="flex flex-wrap gap-2">
-          {PROPERTY_STATUS_OPTIONS.map((opt) => (
-            <SelectableChip
-              key={opt.value}
-              label={opt.label}
-              selected={data.propertyStatus === opt.value}
-              onClick={() => onChange("propertyStatus", opt.value)}
-            />
-          ))}
+      <div className="rounded-2xl border p-4 sm:p-5" style={{ borderColor: "var(--glass-border)" }}>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_240px]">
+          <div>
+            <h2 className="mb-1 flex items-center gap-2 text-base font-semibold" style={{ color: "var(--text-primary)" }}>
+              <Home size={16} /> Estado del inmueble que buscas
+            </h2>
+            <p className="mb-3 text-[13px]" style={{ color: "var(--text-tertiary)" }}>
+              Selecciona una o más opciones para priorizar mejores alternativas.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {PROPERTY_STATUS_OPTIONS.map((opt) => (
+                <SelectableChip
+                  key={opt.value}
+                  label={opt.label}
+                  selected={data.propertyStatus === opt.value}
+                  onClick={() => onChange("propertyStatus", opt.value)}
+                />
+              ))}
+            </div>
+          </div>
+          <div
+            className="flex flex-col gap-2 rounded-xl p-4"
+            style={{ backgroundColor: "var(--dark-tertiary)" }}
+          >
+            <span className="flex items-center gap-2">
+              <Lightbulb size={16} color="var(--neon-cyan)" />
+              <Sparkle size={12} />
+            </span>
+            <p className="text-[13px] leading-snug" style={{ color: "var(--text-secondary)" }}>
+              Si aún no sabes qué tipo de inmueble elegir, no te preocupes: luego podrás ajustar tus preferencias.
+            </p>
+          </div>
         </div>
       </div>
     </section>
@@ -783,18 +841,22 @@ function StepSavings({
   return (
     <section className="flex flex-col gap-8">
       <header className="text-center">
-        <h1 className="font-heading text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>
-          Último paso
-        </h1>
-        <p className="mt-2 text-sm" style={{ color: "var(--text-tertiary)" }}>
-          Ahorro disponible y deudas vigentes.
+        <WizardTitle>Último paso para tu propuesta</WizardTitle>
+        <p className="mx-auto mt-3 max-w-lg text-sm" style={{ color: "var(--text-secondary)" }}>
+          Con tu ahorro y tus deudas podremos estimar un rango más realista para mostrarte opciones acordes a tu
+          situación.
         </p>
+        <div className="mt-4">
+          <InfoBadge icon={CheckCircle2} tone="success">
+            Estás a un paso de ver tu propuesta
+          </InfoBadge>
+        </div>
       </header>
 
       <div>
         <h2
-          className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide"
-          style={{ color: "var(--text-secondary)" }}
+          className="mb-3 flex items-center gap-2 text-base font-semibold"
+          style={{ color: "var(--text-primary)" }}
         >
           <PiggyBank size={16} /> ¿Cuánto ahorro/pie tienes disponible?
         </h2>
@@ -804,10 +866,7 @@ function StepSavings({
       </div>
 
       <div>
-        <h2
-          className="mb-3 text-sm font-semibold uppercase tracking-wide"
-          style={{ color: "var(--text-secondary)" }}
-        >
+        <h2 className="mb-3 text-base font-semibold" style={{ color: "var(--text-primary)" }}>
           ¿Tienes deudas vigentes?
         </h2>
         <div className="flex flex-wrap gap-2">
@@ -839,8 +898,8 @@ function StepSavings({
 
       <div>
         <h2
-          className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide"
-          style={{ color: "var(--text-secondary)" }}
+          className="mb-3 flex items-center gap-2 text-base font-semibold"
+          style={{ color: "var(--text-primary)" }}
         >
           <Users size={16} /> ¿Cuentas con un aval o codeudor?
         </h2>
@@ -910,6 +969,16 @@ function StepSavings({
             </div>
           </div>
         )}
+      </div>
+
+      <div
+        className="flex items-center gap-3 rounded-xl px-4 py-3.5"
+        style={{ backgroundColor: "var(--dark-tertiary)" }}
+      >
+        <ShieldCheck size={18} color="var(--neon-cyan)" className="shrink-0" />
+        <p className="text-[13px] leading-snug" style={{ color: "var(--text-secondary)" }}>
+          Tener deudas no te excluye. Nos ayuda a estimar una propuesta más honesta y útil para ti.
+        </p>
       </div>
     </section>
   );
