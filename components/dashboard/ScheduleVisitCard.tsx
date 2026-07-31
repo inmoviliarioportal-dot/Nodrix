@@ -79,12 +79,17 @@ function ScheduleVisitCard({ applicationId }: { applicationId: string }) {
   if (!properties || properties.length === 0) return null
 
   return (
-    <div className="flex flex-col gap-2 rounded-[14px] border border-glass-border bg-surface p-3.5">
-      <div>
-        <h2 className="text-[13px] font-bold text-text-primary">Agenda tu visita</h2>
-        <p className="mt-1 text-[12.5px] leading-relaxed text-text-secondary">
-          Coordina una visita a la propiedad de tu interés en paralelo a la revisión de documentos.
-        </p>
+    <div className="glass-card flex flex-col gap-3 rounded-2xl p-4">
+      <div className="flex items-center gap-2.5">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-neon-cyan/10 text-neon-cyan">
+          <CalendarCheck className="size-4.5" aria-hidden="true" />
+        </span>
+        <div>
+          <h2 className="text-[14px] font-bold text-text-primary">Agenda tu visita</h2>
+          <p className="text-[12.5px] leading-relaxed text-text-secondary">
+            Coordina una visita a la propiedad de tu interés en paralelo a la revisión de documentos.
+          </p>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-1.5">
@@ -125,7 +130,7 @@ function ScheduleVisitCard({ applicationId }: { applicationId: string }) {
             onChange={(e) => setScheduledAt(e.target.value)}
             className="h-9 rounded-md border border-glass-border bg-deep px-2 text-xs text-text-primary outline-none"
           />
-          <Button size="sm" disabled={!scheduledAt || isSubmitting} onClick={handleSchedule} className="gap-1.5">
+          <Button size="sm" disabled={!scheduledAt || isSubmitting} onClick={handleSchedule} className="gap-1.5 rounded-full">
             <CalendarCheck className="size-3.5" />
             {isSubmitting ? "Agendando..." : "Agendar visita"}
           </Button>

@@ -1,4 +1,4 @@
-import { FileCheck2 } from "lucide-react"
+import { FileText } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import type { DocumentRecord } from "./types"
@@ -8,39 +8,36 @@ export interface DocumentsCardProps {
   onUploadClick: () => void
 }
 
-/** Tile compacto de documentos: progreso de aprobación + botón para abrir el modal de subida. */
+/** Tile de documentos: ícono + progreso de aprobación + botón para abrir el modal de subida. */
 function DocumentsCard({ documents, onUploadClick }: DocumentsCardProps) {
   const total = documents.length
   const approved = documents.filter((doc) => doc.status === "aprobado").length
-  const percent = total > 0 ? Math.round((approved / total) * 100) : 0
 
   return (
-    <div className="glass-card flex flex-col gap-1.5 rounded-xl p-3">
-      <div className="flex items-center justify-between gap-2">
-        <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-text-tertiary">
-          <FileCheck2 className="size-3.5 text-neon-cyan" aria-hidden="true" />
-          Documentos
+    <div className="glass-card flex items-center justify-between gap-3 rounded-2xl p-4">
+      <div className="flex items-start gap-3">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-neon-cyan/10 text-neon-cyan">
+          <FileText className="size-5" aria-hidden="true" />
         </span>
-        <span className="text-[11px] font-semibold text-text-tertiary">{total > 0 ? `${approved}/${total}` : "0/0"}</span>
-      </div>
-      {total > 0 && (
-        <div className="h-[4px] w-full overflow-hidden rounded-full bg-glass-border">
-          <div
-            className="h-full rounded-full bg-neon-green transition-all duration-500"
-            style={{ width: `${percent}%` }}
-          />
+        <div className="flex flex-col gap-1">
+          <span className="text-[10.5px] font-bold uppercase tracking-wide text-text-tertiary">
+            Documentos
+          </span>
+          <p className="text-[13px] font-semibold text-text-primary">
+            {total === 0
+              ? "Aún no has subido documentos"
+              : approved === total
+                ? "Todos tus documentos fueron aprobados"
+                : `${approved}/${total} aprobados`}
+          </p>
+          <Button size="sm" variant="outline" className="mt-1 w-fit rounded-full" onClick={onUploadClick}>
+            Subir documentos
+          </Button>
         </div>
-      )}
-      <p className="line-clamp-2 text-[12px] leading-snug text-text-secondary">
-        {total === 0
-          ? "Aún no has subido documentos."
-          : approved === total
-            ? "Todos tus documentos fueron aprobados."
-            : `${approved}/${total} aprobados. Faltan ${total - approved}.`}
-      </p>
-      <Button size="sm" variant="outline" className="w-fit" onClick={onUploadClick}>
-        Subir documentos
-      </Button>
+      </div>
+      <span className="shrink-0 text-lg font-semibold text-text-primary">
+        {total > 0 ? `${approved}/${total}` : "0/0"}
+      </span>
     </div>
   )
 }

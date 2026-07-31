@@ -7,7 +7,7 @@ import { ArrowRight } from "lucide-react"
 
 import { Layout } from "@/components/Layout"
 import { Timeline } from "@/components/Timeline"
-import { ScoringBadge, type ScoringCategory } from "@/components/ui/scoring-badge"
+import { type ScoringCategory } from "@/components/ui/scoring-badge"
 import { Toaster } from "@/components/ui/sonner"
 
 import { ComunaOffersCard } from "@/components/dashboard/ComunaOffersCard"
@@ -127,12 +127,12 @@ export default function DashboardPage() {
     <Layout>
       <Toaster />
       <div className="flex flex-col gap-3.5">
-        <div className="animate-fade-in-up overflow-hidden rounded-2xl bg-neon-cyan">
+        <div className="animate-fade-in-up overflow-hidden rounded-2xl bg-[#101B3D]">
           <div className="grid grid-cols-1 sm:grid-cols-[1.3fr_1fr]">
             <div className="flex flex-col justify-center gap-4 p-5 sm:p-7">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[10.5px] font-bold uppercase tracking-wide text-white/60">
+                  <span className="text-[10.5px] font-bold uppercase tracking-wide text-gold">
                     Estado de tu proceso
                   </span>
                   <span className="font-heading text-xl font-semibold text-white sm:text-2xl">
@@ -140,7 +140,10 @@ export default function DashboardPage() {
                   </span>
                 </div>
                 {scoring && isScoringCategory(scoring.category) && (
-                  <ScoringBadge category={scoring.category} />
+                  <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-semibold text-white">
+                    {scoring.category}
+                    <span aria-hidden="true">★</span>
+                  </span>
                 )}
               </div>
 
@@ -175,7 +178,7 @@ export default function DashboardPage() {
               )}
             </div>
             <div
-              className="hidden min-h-[150px] bg-cover bg-center sm:block"
+              className="hidden min-h-[150px] rounded-2xl bg-cover bg-center sm:m-3 sm:block"
               style={{
                 backgroundImage:
                   "url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80')",
@@ -218,7 +221,7 @@ export default function DashboardPage() {
                 </p>
               </div>
               <Button
-                className="glow-cyan gap-2 bg-neon-cyan text-deep hover:bg-neon-cyan/90"
+                className="glow-cyan gap-2 rounded-full bg-neon-cyan text-white hover:bg-neon-cyan/90"
                 render={<Link href="/onboarding/wizard" />}
               >
                 Empezar ahora
@@ -250,47 +253,45 @@ export default function DashboardPage() {
           <div className="flex flex-col gap-2.5">
             <StageAlert tone={stageContent.alert.tone} message={stageContent.alert.message} />
 
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 text-[11px] text-text-tertiary">
-                <Clock className="size-3.5 shrink-0" aria-hidden="true" />
-                <span>Duración estimada: {stageContent.estimatedDuration}</span>
-              </div>
-
-              {(stage === "SCORING_COMPLETADO" || stage === "DOCUMENTOS_PENDIENTES") && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  render={<Link href="/onboarding/wizard?edit=true" />}
-                >
-                  Actualizar mis datos
-                </Button>
-              )}
+            <div className="flex items-center gap-1.5 text-[11px] text-text-tertiary">
+              <Clock className="size-3.5 shrink-0" aria-hidden="true" />
+              <span>Duración estimada: {stageContent.estimatedDuration}</span>
             </div>
 
-            {/* Un solo CTA prominente por etapa cuando aplica -- el resto de
-                las acciones (agendar visita, actualizar datos) van como
-                botones secundarios dentro de sus propias cards. */}
-            {stageContent.showUploadCta && (
-              <div className="glow-cyan flex flex-col items-start gap-2 rounded-xl border border-neon-cyan/40 bg-neon-cyan/[0.06] p-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex flex-col gap-0.5">
-                  <p className="text-[13px] font-bold text-text-primary">
-                    Tu solicitud necesita documentos
-                  </p>
-                  <p className="text-[11.5px] text-text-secondary">
-                    Súbelos ahora para que tu asesor pueda continuar el proceso.
-                  </p>
-                </div>
-                <Button
-                  className="glow-cyan gap-2 bg-neon-cyan text-deep hover:bg-neon-cyan/90"
-                  onClick={() => setUploadOpen(true)}
-                >
-                  <UploadCloud className="size-4" aria-hidden="true" />
-                  Subir documentos
-                </Button>
+            {/* Fila de acciones principales -- CTA de documentos (si aplica),
+                actualizar datos y video guía, todos como botones píldora en
+                una sola fila (stack en mobile). */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                {stageContent.showUploadCta && (
+                  <Button
+                    className="glow-cyan gap-2 rounded-full bg-neon-cyan px-5 text-white hover:bg-neon-cyan/90"
+                    onClick={() => setUploadOpen(true)}
+                  >
+                    <UploadCloud className="size-4" aria-hidden="true" />
+                    Subir documentos
+                    <ArrowRight className="size-4" aria-hidden="true" />
+                  </Button>
+                )}
+                {(stage === "SCORING_COMPLETADO" || stage === "DOCUMENTOS_PENDIENTES") && (
+                  <Button
+                    variant="outline"
+                    className="gap-2 rounded-full"
+                    render={<Link href="/onboarding/wizard?edit=true" />}
+                  >
+                    Actualizar mis datos
+                  </Button>
+                )}
               </div>
-            )}
+              <GuideVideoOverlay title={stageContent.videoTitle} videoUrl={stageContent.videoUrl} stageKey={stage} />
+            </div>
 
-            <GuideVideoOverlay title={stageContent.videoTitle} videoUrl={stageContent.videoUrl} stageKey={stage} />
+            {stageContent.showUploadCta && (
+              <p className="glass-card flex items-start gap-2 rounded-xl border-l-4 border-l-gold bg-gold/5 p-3 text-[12.5px] leading-snug text-text-secondary">
+                <span className="mt-0.5 text-gold" aria-hidden="true">✦</span>
+                Tu solicitud necesita documentos -- súbelos ahora para que tu asesor pueda continuar el proceso.
+              </p>
+            )}
 
             {stage === "SCORING_COMPLETADO" && application ? (
               // Antes de subir documentos, el cliente debe elegir su

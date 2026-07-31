@@ -1,14 +1,107 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { CheckCircle2, Sparkles } from "lucide-react"
+import { CheckCircle2, HelpCircle, Heart, Building2, Sparkles } from "lucide-react"
 
 import { InitialProposalCard } from "@/components/dashboard/InitialProposalCard"
 import { PropertyPreferencesCard } from "@/components/dashboard/PropertyPreferencesCard"
 import { AvatarPresenter } from "@/components/avatar/AvatarPresenter"
 
-const TRACKER_STEPS = ["Pre-evaluación completada", "Define tu objetivo", "Sube tus documentos"]
+const TRACKER_STEPS_INTRO = ["Pre-evaluación completada", "Define tu objetivo", "Sube tus documentos"]
+const TRACKER_STEPS_PICK = ["Pre-evaluación completada", "Define tu objetivo", "Elige tus opciones"]
+
+/**
+ * Logo "Nodrix" reutilizado tal cual del header de la landing (app/page.tsx)
+ * para mantener consistencia de marca entre el funnel público y el cierre
+ * del onboarding.
+ */
+function NodrixLogo() {
+  return (
+    <Link href="/" className="flex shrink-0 items-center gap-2.5">
+      <svg width="30" height="30" viewBox="0 0 34 34" aria-hidden="true">
+        <rect width="34" height="34" rx="9" fill="#16204B" />
+        <path
+          d="M9 19l6-6 4 3 6-7"
+          stroke="#2547E5"
+          strokeWidth="2.3"
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path d="M9 23.5h16" stroke="#2547E5" strokeWidth="2.3" strokeLinecap="round" />
+      </svg>
+      <span className="font-heading text-lg font-semibold tracking-tight text-text-primary">Nodrix</span>
+    </Link>
+  )
+}
+
+/**
+ * Header simple del funnel de onboarding. En el paso de propuesta inicial
+ * replica el header público completo (nav + login/registro), tal como en la
+ * referencia visual -- el cliente todavía no "entró" a su panel. En los
+ * pasos siguientes (ya con destino elegido) se simplifica a solo un link de
+ * ayuda, igual que la referencia de selección de propiedades.
+ */
+function OnboardingHeader({ variant }: { variant: "intro" | "minimal" }) {
+  return (
+    <header className="relative z-10 border-b border-glass-border bg-surface">
+      <div className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between gap-4 px-6">
+        <NodrixLogo />
+        {variant === "intro" ? (
+          <nav className="flex flex-wrap items-center gap-6 text-sm font-semibold text-text-secondary">
+            <Link href="/#como-funciona" className="hidden transition-colors duration-200 hover:text-text-primary md:inline">
+              Cómo funciona
+            </Link>
+            <Link href="/#propiedades" className="hidden transition-colors duration-200 hover:text-text-primary md:inline">
+              Propiedades
+            </Link>
+            <Link href="/#asesoria" className="hidden transition-colors duration-200 hover:text-text-primary lg:inline">
+              Asesoría humana
+            </Link>
+            <Link href="/#recursos" className="hidden transition-colors duration-200 hover:text-text-primary lg:inline">
+              Recursos
+            </Link>
+            <span className="hidden h-5 w-px bg-glass-border sm:block" aria-hidden="true" />
+            <Link href="/auth/login" className="transition-colors duration-200 hover:text-text-primary">
+              Iniciar sesión
+            </Link>
+            <Link
+              href="/auth/register"
+              className="glow-cyan rounded-full bg-neon-cyan px-4 py-2 text-[13px] font-bold text-white transition-colors duration-200 hover:bg-neon-cyan/90"
+            >
+              Comenzar
+            </Link>
+          </nav>
+        ) : (
+          <Link
+            href="/#recursos"
+            className="flex items-center gap-1.5 text-sm font-semibold text-neon-cyan transition-colors duration-200 hover:text-neon-cyan/80"
+          >
+            <HelpCircle className="size-4" aria-hidden="true" />
+            ¿Necesitas ayuda?
+          </Link>
+        )}
+      </div>
+    </header>
+  )
+}
+
+/** Ilustración decorativa de "edificios + corazón" arriba a la derecha del
+ * encabezado, tal como en la referencia visual -- versión simplificada con
+ * íconos (no un asset ilustrado a medida). */
+function BuildingsBadge() {
+  return (
+    <div className="pointer-events-none absolute top-2 right-2 hidden items-end gap-1.5 opacity-90 sm:flex" aria-hidden="true">
+      <Building2 className="size-14 -mb-1 text-[#C7D2FE]" strokeWidth={1.3} />
+      <Building2 className="size-20 text-[#93A4F5]" strokeWidth={1.2} />
+      <span className="absolute -top-1 right-0 flex size-8 items-center justify-center rounded-full bg-white shadow-[0_4px_14px_rgba(30,64,175,0.18)]">
+        <Heart className="size-4 fill-[#FCA5A5] text-[#FCA5A5]" aria-hidden="true" />
+      </span>
+    </div>
+  )
+}
 
 /**
  * Mini-tracker de 3 pasos que acompaña el cierre del wizard -- puramente
@@ -22,10 +115,10 @@ const TRACKER_STEPS = ["Pre-evaluación completada", "Define tu objetivo", "Sube
  * replique tal cual una referencia visual aportada, con línea punteada
  * conectando los pasos como en la referencia.
  */
-function StepTracker({ currentIndex }: { currentIndex: number }) {
+function StepTracker({ currentIndex, steps }: { currentIndex: number; steps: string[] }) {
   return (
     <div className="mx-auto mb-8 flex w-fit flex-wrap items-center gap-2.5 rounded-full border border-[#E0E7FF] bg-white px-4 py-2.5 shadow-[0_1px_3px_rgba(30,27,75,0.06)] sm:gap-3">
-      {TRACKER_STEPS.map((label, i) => (
+      {steps.map((label, i) => (
         <React.Fragment key={label}>
           {i > 0 && (
             <span
@@ -170,34 +263,44 @@ export default function InitialProposalPage() {
   }
 
   const trackerIndex = step === "initial-proposal" ? 1 : 2
+  const isIntroStep = step === "initial-proposal"
+  const heading = isIntroStep ? "¡Tu propuesta inicial está lista!" : "¡Vas muy bien!"
+  const subheading = isIntroStep
+    ? "Estás más cerca de tu próxima propiedad. Ahora elige tu objetivo para mostrarte opciones más alineadas a ti."
+    : "Ya tenemos tu orientación inicial. Ahora elige las propiedades que más te interesan para avanzar con tu asesor."
+  const trackerSteps = isIntroStep ? TRACKER_STEPS_INTRO : TRACKER_STEPS_PICK
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#F5F3FF] px-4 py-12">
-      {/* Decoración de fondo -- nubes suaves + degradé, igual a la referencia. */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-        <div className="absolute -top-24 -left-24 size-96 rounded-full bg-[#DBEAFE] opacity-60 blur-3xl" />
-        <div className="absolute top-1/3 -right-32 size-96 rounded-full bg-[#E0E7FF] opacity-70 blur-3xl" />
-        <div className="absolute bottom-0 left-1/4 size-72 rounded-full bg-[#EDE9FE] opacity-50 blur-3xl" />
-      </div>
+    <div className="bg-deep-ambient relative flex min-h-screen flex-col">
+      <OnboardingHeader variant={isIntroStep ? "intro" : "minimal"} />
 
-      <div className="animate-fade-in-up relative w-full max-w-3xl">
-        <header className="relative mb-8 flex flex-col items-center text-center">
-          <Sparkles className="absolute -top-1 left-[16%] size-5 text-[#F59E0B]/70 sm:left-[20%]" aria-hidden="true" />
-          <Sparkles className="absolute top-8 right-[14%] size-4 text-[#2563EB]/50 sm:right-[18%]" aria-hidden="true" />
-          <span className="mb-4 flex size-[72px] items-center justify-center rounded-full bg-white shadow-[0_8px_24px_rgba(30,64,175,0.14)]">
-            <span className="flex size-14 items-center justify-center rounded-full bg-[#DCFCE7]">
-              <CheckCircle2 className="size-7 text-[#16A34A]" aria-hidden="true" />
+      <main className="relative flex flex-1 flex-col items-center overflow-hidden px-4 py-12">
+        {/* Decoración de fondo -- nubes suaves, igual a la referencia. */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+          <div className="absolute -top-24 -left-24 size-96 rounded-full bg-[#DBEAFE] opacity-50 blur-3xl" />
+          <div className="absolute top-0 -right-32 size-96 rounded-full bg-[#E0E7FF] opacity-60 blur-3xl" />
+          <div className="absolute bottom-0 left-1/4 size-72 rounded-full bg-[#EDE9FE] opacity-40 blur-3xl" />
+        </div>
+
+        <div className={`animate-fade-in-up relative w-full ${isIntroStep ? "max-w-3xl" : "max-w-5xl"}`}>
+          <div className="relative mb-8 flex flex-col items-center text-center">
+            <BuildingsBadge />
+            <Sparkles className="absolute -top-1 left-[16%] size-5 text-[#F59E0B]/70 sm:left-[20%]" aria-hidden="true" />
+            <Sparkles className="absolute top-8 right-[14%] size-4 text-[#2563EB]/50 sm:right-[18%]" aria-hidden="true" />
+            <span className="mb-4 flex size-[72px] items-center justify-center rounded-full bg-white shadow-[0_8px_24px_rgba(30,64,175,0.14)]">
+              <span className="flex size-14 items-center justify-center rounded-full bg-[#DCFCE7]">
+                <CheckCircle2 className="size-7 text-[#16A34A]" aria-hidden="true" />
+              </span>
             </span>
-          </span>
-          <h1 className="text-3xl font-extrabold tracking-tight text-[#1E1B4B] sm:text-4xl">¡Vas muy bien!</h1>
-          <p className="mt-2 max-w-md text-[15px] text-[#475569]">
-            Tu pre-evaluación ya está lista. Estás más cerca de tu próxima propiedad.
-          </p>
-        </header>
+            <h1 className="font-heading text-3xl font-extrabold tracking-tight text-[#1E1B4B] sm:text-4xl">
+              {heading}
+            </h1>
+            <p className="mt-2 max-w-md text-[15px] text-[#475569]">{subheading}</p>
+          </div>
 
-        <StepTracker currentIndex={trackerIndex} />
+          <StepTracker currentIndex={trackerIndex} steps={trackerSteps} />
 
-        {step === "investment-proposal" && purpose ? (
+          {step === "investment-proposal" && purpose ? (
           <PropertyPreferencesCard
             purpose={purpose}
             applicationId={applicationId}
@@ -229,9 +332,10 @@ export default function InitialProposalPage() {
               // "vivienda_propia" pura no pasa por la propuesta de inversión.
               setStep(hasInvestment ? "investment-proposal" : "housing-preferences")
             }}
-          />
-        )}
-      </div>
-    </main>
+            />
+          )}
+        </div>
+      </main>
+    </div>
   )
 }

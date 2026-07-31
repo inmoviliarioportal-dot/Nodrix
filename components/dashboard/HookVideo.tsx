@@ -48,8 +48,8 @@ function HookVideo({ title, videoUrl }: { title: string; videoUrl?: string }) {
   const embed = videoUrl ? getEmbedUrl(videoUrl) : null
 
   return (
-    <div className="glass-card overflow-hidden rounded-2xl">
-      <div className="bg-surface-elevated relative flex aspect-video w-full items-center justify-center">
+    <div className="overflow-hidden rounded-2xl bg-white">
+      <div className="relative flex aspect-video w-full items-center justify-center overflow-hidden bg-dark-tertiary">
         {embed ? (
           embed.kind === "iframe" ? (
             <iframe
@@ -64,20 +64,17 @@ function HookVideo({ title, videoUrl }: { title: string; videoUrl?: string }) {
           )
         ) : (
           <>
-            <div className="bg-deep-ambient absolute inset-0" aria-hidden="true" />
+            <span className="absolute top-6 left-8 text-lg text-gold" aria-hidden="true">✦</span>
+            <span className="absolute right-10 bottom-10 text-sm text-gold" aria-hidden="true">✦</span>
             <button
               type="button"
-              className="glow-cyan relative z-10 flex size-14 items-center justify-center rounded-full border border-neon-cyan bg-neon-cyan/10 text-neon-cyan transition-transform duration-200 hover:scale-105"
+              className="relative z-10 flex size-16 items-center justify-center rounded-full bg-white text-neon-cyan shadow-md transition-transform duration-200 hover:scale-105"
               aria-label={`Reproducir video: ${title}`}
             >
-              <PlayCircle className="size-8" aria-hidden="true" />
+              <PlayCircle className="size-9" aria-hidden="true" />
             </button>
           </>
         )}
-      </div>
-      <div className="p-4">
-        <p className="text-sm font-medium text-text-primary">{title}</p>
-        {!embed && <p className="text-xs text-text-tertiary">Video informativo — próximamente</p>}
       </div>
     </div>
   )

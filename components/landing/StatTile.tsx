@@ -1,27 +1,37 @@
+import type { LucideIcon } from "lucide-react"
+
 interface StatTileProps {
+  icon: LucideIcon
   value: string
   label: string
-  /** Cuando la tile vive sobre el fondo navy (franja de stats), usa cifra
-   * oro y label claro en vez de los tonos por defecto para texto sobre
-   * fondo cálido. */
-  onDark?: boolean
+  sublabel?: string
+  highlight?: string
 }
 
 /**
- * Tile de estadística para la franja de confianza de la Landing. Números
- * en tabular-nums para evitar layout shift al comparar cifras.
+ * Tile de la barra de confianza (4 columnas) — icono en círculo tinte azul,
+ * valor destacado en navy/serif y label de dos líneas en gris, replicando
+ * el mockup "trust blue" de referencia.
  */
-function StatTile({ value, label, onDark = false }: StatTileProps) {
+function StatTile({ icon: Icon, value, label, sublabel, highlight }: StatTileProps) {
   return (
-    <div className="flex flex-col items-center gap-1.5 px-3 py-2 text-center">
-      <span
-        className={`font-heading text-2xl font-semibold tabular-nums sm:text-3xl ${
-          onDark ? "text-gold" : "text-neon-cyan"
-        }`}
-      >
-        {value}
+    <div className="flex items-start gap-3 px-2 py-1 text-left">
+      <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary text-neon-cyan">
+        <Icon className="size-5" aria-hidden="true" />
       </span>
-      <span className={`text-xs ${onDark ? "text-white/70" : "text-text-secondary"}`}>{label}</span>
+      <div className="flex flex-col">
+        <span className="font-heading text-[15px] font-bold text-text-primary">{value}</span>
+        <span className="text-xs leading-snug text-text-tertiary">
+          {label}
+          {highlight ? (
+            <>
+              <br />
+              <span className="font-semibold text-neon-cyan">{highlight}</span>
+            </>
+          ) : null}
+          {sublabel ? <span className="block">{sublabel}</span> : null}
+        </span>
+      </div>
     </div>
   )
 }

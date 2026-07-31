@@ -9,8 +9,8 @@ const TONE_CONFIG: Record<
 > = {
   info: {
     icon: Info,
-    wrapper: "border-neon-cyan/30 bg-neon-cyan/5",
-    icon_: "text-neon-cyan",
+    wrapper: "border-transparent bg-dark-tertiary",
+    icon_: "text-gold",
   },
   success: {
     icon: CheckCircle2,

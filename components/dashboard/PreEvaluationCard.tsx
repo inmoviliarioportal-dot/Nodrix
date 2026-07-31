@@ -73,27 +73,31 @@ function PreEvaluationCard({ applicationId }: PreEvaluationCardProps) {
   }, [applicationId])
 
   return (
-    <div className="glass-card flex flex-col gap-1.5 rounded-xl p-3">
-      <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-text-tertiary">
-        <TrendingUp className="size-3.5 text-neon-cyan" aria-hidden="true" />
-        Pre-evaluación
+    <div className="glass-card relative flex items-start gap-3 overflow-hidden rounded-2xl p-4">
+      <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-neon-cyan/10 text-neon-cyan">
+        <TrendingUp className="size-5" aria-hidden="true" />
       </span>
-      {loading ? (
-        <p className="text-[12px] text-text-tertiary">Cargando...</p>
-      ) : (
-        <>
-          <p className="font-heading text-[13px] leading-snug text-text-primary">
-            {approvedUf != null
-              ? `${Math.round(approvedUf).toLocaleString("es-CL")} UF aprobadas`
-              : "Pendiente revisión."}
-          </p>
-          {breakdown.length > 0 && (
-            <p className="line-clamp-2 text-[12px] leading-snug text-text-secondary">
-              Optas a: {breakdown.join(", ")}
+      <div className="flex min-w-0 flex-col gap-1">
+        <span className="text-[10.5px] font-bold uppercase tracking-wide text-text-tertiary">
+          Pre-evaluación
+        </span>
+        {loading ? (
+          <p className="text-[12px] text-text-tertiary">Cargando...</p>
+        ) : (
+          <>
+            <p className="font-heading text-[15px] leading-snug font-semibold text-text-primary">
+              {approvedUf != null
+                ? `${Math.round(approvedUf).toLocaleString("es-CL")} UF aprobadas`
+                : "Pendiente revisión."}
             </p>
-          )}
-        </>
-      )}
+            {breakdown.length > 0 && (
+              <p className="line-clamp-2 text-[12px] leading-snug text-text-secondary">
+                Optas a: {breakdown.join(", ")}
+              </p>
+            )}
+          </>
+        )}
+      </div>
     </div>
   )
 }

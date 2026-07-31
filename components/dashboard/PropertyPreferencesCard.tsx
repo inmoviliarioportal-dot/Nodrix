@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { toast } from "sonner"
-import { Home, Building2 } from "lucide-react"
+import { Home, Building2, KeyRound, Timer, Heart, Lock, ArrowRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { SelectableCard } from "@/components/wizard/SelectableCard"
@@ -28,6 +28,16 @@ type PropertyDestination = "vivir" | "airbnb" | "alquiler_tradicional" | "venta_
 
 const BEDROOM_OPTIONS = [1, 2, 3, 4] as const
 const BATHROOM_OPTIONS = [1, 2, 3] as const
+
+/** Ícono por destino para el encabezado de cada carrusel (ver PropertyCarousel).
+ * No usamos el logo real de Airbnb (marca registrada) -- KeyRound genérico
+ * transmite "arriendo corto/temporal" igual que en la referencia. */
+const DESTINATION_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  vivir: Home,
+  airbnb: KeyRound,
+  alquiler_tradicional: Building2,
+  venta_corto_plazo: Timer,
+}
 
 /**
  * Tarjeta de propuesta de propiedades, con dos modos completamente
@@ -233,30 +243,51 @@ function PropertyPreferencesCard({
     // Un carrusel POR CADA destino que el cliente eligió (ej. Airbnb +
     // Alquiler tradicional) -- comparten un solo set de selección y un solo
     // botón de confirmación al final, para que el cliente vea claramente
-    // qué opciones calzan con cada objetivo antes de decidir.
+    // qué opciones calzan con cada objetivo antes de decidir. Footer sticky
+    // inferior con el resumen de selección + CTA, igual a la referencia.
     return (
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-8 pb-28">
         {carouselGroups.map((group) => (
           <PropertyCarousel
             key={group.destination}
             title={`Para ${group.label.toLowerCase()}`}
-            description="Selecciona una o más propiedades. Puedes revisar la galería de cada una antes de decidir."
+            description="Selecciona al menos una propiedad. Puedes revisar la galería de cada una antes de decidir."
+            icon={DESTINATION_ICONS[group.destination] ?? Home}
             properties={group.properties}
             selectedIds={selectedIds}
             onToggle={toggleSelected}
           />
         ))}
-        <Button
-          className="glow-cyan w-fit self-center gap-2 bg-neon-cyan text-deep hover:bg-neon-cyan/90"
-          disabled={selectedIds.size === 0 || isAccepting}
-          onClick={handleAcceptInvestmentSelection}
-        >
-          {isAccepting
-            ? "Guardando..."
-            : selectedIds.size === 0
-              ? "Selecciona al menos una propiedad"
-              : `Confirmar selección (${selectedIds.size})`}
-        </Button>
+
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-glass-border bg-white/95 backdrop-blur-sm">
+          <div className="mx-auto flex w-full max-w-5xl flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div className="flex items-center gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-neon-cyan/10 text-neon-cyan">
+                <Heart className={selectedIds.size > 0 ? "size-4.5 fill-current" : "size-4.5"} aria-hidden="true" />
+              </span>
+              <div>
+                <p className="text-sm font-bold text-text-primary">
+                  {selectedIds.size} {selectedIds.size === 1 ? "propiedad seleccionada" : "propiedades seleccionadas"}
+                </p>
+                <p className="text-xs text-text-tertiary">Puedes elegir más si lo deseas.</p>
+              </div>
+            </div>
+            <div className="flex flex-col items-center gap-1.5 sm:items-end">
+              <Button
+                className="glow-cyan w-full gap-2 rounded-full bg-neon-cyan px-6 text-white hover:bg-neon-cyan/90 sm:w-fit"
+                disabled={selectedIds.size === 0 || isAccepting}
+                onClick={handleAcceptInvestmentSelection}
+              >
+                {isAccepting ? "Guardando..." : "Continuar con estas propiedades"}
+                {!isAccepting && <ArrowRight className="size-4" aria-hidden="true" />}
+              </Button>
+              <p className="hidden items-center gap-1 text-[11px] text-text-tertiary sm:flex">
+                <Lock className="size-3" aria-hidden="true" />
+                Si luego quieres cambiar tus opciones, podrás hacerlo con tu asesor.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }

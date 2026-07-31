@@ -89,51 +89,52 @@
 }
 
 /*
- * Rediseño v3 — identidad "real-estate editorial": navy + oro sobre base
- * cálida (ver .claude/design-system/tokens.md). Único tema del MVP (sin
- * toggle claro/oscuro). Se remapean los MISMOS nombres de variable que el
- * sistema neón/glassmorphism anterior (--neon-cyan, --deep, --glass-border,
- * etc.) para que TODO el código existente (dashboard, wizard, backoffice,
- * admin) herede la nueva paleta sin tener que tocar cada archivo -- los
- * agentes de rediseño solo ajustan estructura/copy puntual, no color.
- * Se conserva `.dark` con los mismos valores (no hay modo oscuro real en el
- * MVP) por compatibilidad con utilidades `dark:` preexistentes.
+ * Rediseño v4 — identidad "trust blue" clara (ver .claude/design-system/tokens.md
+ * y las referencias en Rediseño/rediseño/*.png). Fondo lavanda-blanco muy claro,
+ * tarjetas blancas, titulares navy en serif, acento primario azul índigo vibrante
+ * para CTAs, botones píldora, decoraciones "sparkle" doradas puntuales. Único
+ * tema del MVP (sin toggle claro/oscuro). Se remapean los MISMOS nombres de
+ * variable que los sistemas anteriores (--neon-cyan, --deep, --glass-border,
+ * etc.) para que TODO el código existente herede la nueva paleta sin tener que
+ * tocar cada archivo -- los agentes de rediseño solo ajustan estructura/copy
+ * puntual, no color. Se conserva `.dark` con los mismos valores (no hay modo
+ * oscuro real en el MVP) por compatibilidad con utilidades `dark:` preexistentes.
  */
 :root {
-  /* Paleta base -- fondo cálido, tarjetas blancas, texto navy */
-  --dark-primary: #f7f5f0; /* fondo de página (antes casi-negro) */
-  --dark-secondary: #ffffff; /* fondo de card (antes superficie oscura) */
-  --dark-tertiary: #efe6d4; /* hover/tint sutil (antes superficie elevada oscura) */
-  --gold: #b8863c;
-  --blue-accent: #16324f; /* navy -- reemplaza el índigo como color "primary" */
-  --success: #2e8b63;
-  --warning: #b8863c;
-  --error: #c0392b;
-  --text-primary: #16324f; /* navy -- titulares y texto fuerte */
+  /* Paleta base -- fondo lavanda-blanco, tarjetas blancas, texto navy */
+  --dark-primary: #f5f6fc; /* fondo de página */
+  --dark-secondary: #ffffff; /* fondo de card */
+  --dark-tertiary: #eef1fe; /* hover/tint sutil, boxes destacados (monto UF, tips) */
+  --gold: #f5a623; /* acento decorativo (sparkles), usar con moderación */
+  --blue-accent: #2547e5; /* azul índigo primario -- CTAs, links, bordes activos */
+  --success: #22c55e;
+  --warning: #f5a623;
+  --error: #dc2626;
+  --text-primary: #16204b; /* navy -- titulares y texto fuerte */
   --text-secondary: #4b5563; /* texto de cuerpo */
-  --text-tertiary: #6c7787; /* texto atenuado/caption */
+  --text-tertiary: #6b7280; /* texto atenuado/caption */
 
   /* Categorías de scoring (paleta metálica, independiente del acento de marca) */
   --bronce: #b08d57;
   --plata: #9aa0a8;
-  --oro: #b8863c;
+  --oro: #d4af37;
   --platino: #8a8f98;
 
   /* Acentos -- mismos nombres que el sistema anterior, reasignados:
-     "neon-cyan" = acento primario de marca (navy, CTAs/bordes activos),
+     "neon-cyan" = acento primario de marca (azul índigo, CTAs/bordes activos),
      "neon-purple" = acento secundario (ciruela apagado, IA/premium/BLACK),
      "neon-green" = éxito/rentabilidad (verde). */
-  --deep: #f7f5f0;
+  --deep: #f5f6fc;
   --surface: #ffffff;
   --surface-elevated: #ffffff;
   --glass: #ffffff;
-  --glass-border: #e4dfd3;
-  --neon-cyan: #16324f;
-  --neon-purple: #5c4a72;
-  --neon-green: #2e8b63;
-  --neon-cyan-glow: rgba(22, 50, 79, 0.16);
-  --neon-purple-glow: rgba(92, 74, 114, 0.16);
-  --neon-green-glow: rgba(46, 139, 99, 0.16);
+  --glass-border: #e3e7f5;
+  --neon-cyan: #2547e5;
+  --neon-purple: #5c4a9c;
+  --neon-green: #22c55e;
+  --neon-cyan-glow: rgba(37, 71, 229, 0.18);
+  --neon-purple-glow: rgba(92, 74, 156, 0.16);
+  --neon-green-glow: rgba(34, 197, 94, 0.16);
 
   --background: var(--dark-primary);
   --foreground: var(--text-primary);
@@ -145,27 +146,27 @@
   --primary-foreground: #ffffff;
   --secondary: var(--dark-tertiary);
   --secondary-foreground: var(--text-primary);
-  --muted: #f0ede4;
+  --muted: #eef1fe;
   --muted-foreground: var(--text-tertiary);
   --accent: var(--dark-tertiary);
   --accent-foreground: var(--text-primary);
   --destructive: var(--error);
-  --border: #e4dfd3;
-  --input: #d8d2c2;
+  --border: #e3e7f5;
+  --input: #d7ddf3;
   --ring: var(--blue-accent);
-  --chart-1: var(--gold);
-  --chart-2: var(--blue-accent);
+  --chart-1: var(--blue-accent);
+  --chart-2: var(--gold);
   --chart-3: var(--success);
   --chart-4: var(--warning);
   --chart-5: var(--error);
-  --radius: 0.75rem;
+  --radius: 1rem;
   --sidebar: var(--dark-secondary);
   --sidebar-foreground: var(--text-primary);
   --sidebar-primary: var(--blue-accent);
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: var(--dark-tertiary);
   --sidebar-accent-foreground: var(--text-primary);
-  --sidebar-border: #e4dfd3;
+  --sidebar-border: #e3e7f5;
   --sidebar-ring: var(--blue-accent);
 }
 
@@ -180,16 +181,16 @@
   --primary-foreground: #ffffff;
   --secondary: var(--dark-tertiary);
   --secondary-foreground: var(--text-primary);
-  --muted: #f0ede4;
+  --muted: #eef1fe;
   --muted-foreground: var(--text-tertiary);
   --accent: var(--dark-tertiary);
   --accent-foreground: var(--text-primary);
   --destructive: var(--error);
-  --border: #e4dfd3;
-  --input: #d8d2c2;
+  --border: #e3e7f5;
+  --input: #d7ddf3;
   --ring: var(--blue-accent);
-  --chart-1: var(--gold);
-  --chart-2: var(--blue-accent);
+  --chart-1: var(--blue-accent);
+  --chart-2: var(--gold);
   --chart-3: var(--success);
   --chart-4: var(--warning);
   --chart-5: var(--error);
@@ -199,7 +200,7 @@
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: var(--dark-tertiary);
   --sidebar-accent-foreground: var(--text-primary);
-  --sidebar-border: #e4dfd3;
+  --sidebar-border: #e3e7f5;
   --sidebar-ring: var(--blue-accent);
 }
 
@@ -328,7 +329,7 @@
   }
   .interactive-lift:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px -8px rgba(22, 50, 79, 0.18);
+    box-shadow: 0 8px 20px -8px rgba(37, 71, 229, 0.18);
   }
   .interactive-lift:active {
     transform: translateY(0);

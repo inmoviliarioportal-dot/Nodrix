@@ -114,14 +114,16 @@ function DocumentVaultItem({
       ? "border-neon-cyan/40 bg-neon-cyan/10 text-neon-cyan"
       : isRejected
         ? "border-status-error/40 bg-status-error/10 text-status-error"
-        : "border-border bg-surface-elevated text-text-tertiary"
+        : status === "pendiente"
+          ? "border-gold/40 bg-gold/10 text-gold"
+          : "border-border bg-surface-elevated text-text-tertiary"
 
   return (
-    <div className="glass-card interactive-lift flex flex-col gap-2.5 rounded-xl p-3.5">
+    <div className="glass-card interactive-lift flex flex-col gap-2.5 rounded-2xl p-4">
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2.5">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-surface-elevated">
-            <FileTextIcon className="size-4 text-text-tertiary" />
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-neon-cyan/10">
+            <FileTextIcon className="size-4.5 text-neon-cyan" />
           </div>
           <span className="truncate text-sm font-semibold text-text-primary">{typeLabel}</span>
         </div>
@@ -166,7 +168,7 @@ function DocumentVaultItem({
             disabled={isSubmitting}
             onClick={() => inputRef.current?.click()}
             className={cn(
-              "inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-text-primary transition-colors duration-200 hover:border-neon-cyan hover:text-neon-cyan disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan",
+              "inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full border border-neon-cyan/40 px-3 py-2 text-xs font-semibold text-neon-cyan transition-colors duration-200 hover:bg-neon-cyan/5 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan",
               isInReview && "border-neon-cyan/40"
             )}
           >
