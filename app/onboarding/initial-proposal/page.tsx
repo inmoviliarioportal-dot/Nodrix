@@ -10,30 +10,42 @@ import { AvatarPresenter } from "@/components/avatar/AvatarPresenter"
 
 const TRACKER_STEPS = ["Pre-evaluación completada", "Define tu objetivo", "Sube tus documentos"]
 
-/** Mini-tracker de 3 pasos que acompaña el cierre del wizard -- puramente
+/**
+ * Mini-tracker de 3 pasos que acompaña el cierre del wizard -- puramente
  * visual, no gobierna navegación (eso lo sigue haciendo `step`/`Step` más
  * abajo). `currentIndex` 1 = recién llegó a elegir su objetivo, 2 = ya lo
  * eligió y está viendo/aceptando propiedades (el siguiente paso real es
- * subir documentos). */
+ * subir documentos).
+ *
+ * Paleta indigo/azul (no la navy+oro del resto del sitio) -- pedido
+ * explícito del negocio para que esta pantalla puntual (cierre del wizard)
+ * replique tal cual una referencia visual aportada, con línea punteada
+ * conectando los pasos como en la referencia.
+ */
 function StepTracker({ currentIndex }: { currentIndex: number }) {
   return (
-    <div className="glass-card mx-auto mb-8 flex w-fit flex-wrap items-center gap-2 rounded-full px-3 py-2 sm:gap-3">
+    <div className="mx-auto mb-8 flex w-fit flex-wrap items-center gap-2.5 rounded-full border border-[#E0E7FF] bg-white px-4 py-2.5 shadow-[0_1px_3px_rgba(30,27,75,0.06)] sm:gap-3">
       {TRACKER_STEPS.map((label, i) => (
         <React.Fragment key={label}>
-          {i > 0 && <span className="h-px w-5 shrink-0 bg-glass-border sm:w-8" aria-hidden="true" />}
-          <span className="flex items-center gap-1.5 whitespace-nowrap px-1 text-[12.5px] font-medium">
+          {i > 0 && (
+            <span
+              className="w-5 shrink-0 border-t-2 border-dotted border-[#C7D2FE] sm:w-8"
+              aria-hidden="true"
+            />
+          )}
+          <span className="flex items-center gap-1.5 whitespace-nowrap px-1 text-[12.5px] font-semibold">
             <span
               className={
                 i < currentIndex
-                  ? "flex size-5 items-center justify-center rounded-full bg-neon-green text-white"
+                  ? "flex size-6 items-center justify-center rounded-full bg-[#2563EB] text-white"
                   : i === currentIndex
-                    ? "flex size-5 items-center justify-center rounded-full bg-neon-cyan text-white"
-                    : "flex size-5 items-center justify-center rounded-full border border-glass-border text-text-tertiary"
+                    ? "flex size-6 items-center justify-center rounded-full bg-[#2563EB] text-white"
+                    : "flex size-6 items-center justify-center rounded-full border border-[#E0E7FF] text-[#94A3B8]"
               }
             >
               {i < currentIndex ? <CheckCircle2 className="size-3.5" aria-hidden="true" /> : i + 1}
             </span>
-            <span className={i === currentIndex ? "text-text-primary" : "text-text-tertiary"}>{label}</span>
+            <span className={i === currentIndex ? "text-[#1E1B4B]" : "text-[#94A3B8]"}>{label}</span>
           </span>
         </React.Fragment>
       ))}
@@ -160,22 +172,25 @@ export default function InitialProposalPage() {
   const trackerIndex = step === "initial-proposal" ? 1 : 2
 
   return (
-    <main className="bg-deep-ambient flex min-h-screen flex-col items-center justify-center px-4 py-12">
-      <div className="animate-fade-in-up w-full max-w-3xl">
+    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#F5F3FF] px-4 py-12">
+      {/* Decoración de fondo -- nubes suaves + degradé, igual a la referencia. */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+        <div className="absolute -top-24 -left-24 size-96 rounded-full bg-[#DBEAFE] opacity-60 blur-3xl" />
+        <div className="absolute top-1/3 -right-32 size-96 rounded-full bg-[#E0E7FF] opacity-70 blur-3xl" />
+        <div className="absolute bottom-0 left-1/4 size-72 rounded-full bg-[#EDE9FE] opacity-50 blur-3xl" />
+      </div>
+
+      <div className="animate-fade-in-up relative w-full max-w-3xl">
         <header className="relative mb-8 flex flex-col items-center text-center">
-          <Sparkles
-            className="absolute -top-1 left-[18%] size-5 text-gold/70 sm:left-[22%]"
-            aria-hidden="true"
-          />
-          <Sparkles
-            className="absolute top-6 right-[16%] size-4 text-neon-cyan/50 sm:right-[20%]"
-            aria-hidden="true"
-          />
-          <span className="glow-green mb-4 flex size-16 items-center justify-center rounded-full border border-neon-green/30 bg-neon-green/10">
-            <CheckCircle2 className="size-8 text-neon-green" aria-hidden="true" />
+          <Sparkles className="absolute -top-1 left-[16%] size-5 text-[#F59E0B]/70 sm:left-[20%]" aria-hidden="true" />
+          <Sparkles className="absolute top-8 right-[14%] size-4 text-[#2563EB]/50 sm:right-[18%]" aria-hidden="true" />
+          <span className="mb-4 flex size-[72px] items-center justify-center rounded-full bg-white shadow-[0_8px_24px_rgba(30,64,175,0.14)]">
+            <span className="flex size-14 items-center justify-center rounded-full bg-[#DCFCE7]">
+              <CheckCircle2 className="size-7 text-[#16A34A]" aria-hidden="true" />
+            </span>
           </span>
-          <h1 className="font-heading text-3xl font-semibold text-text-primary sm:text-4xl">¡Vas muy bien!</h1>
-          <p className="mt-2 max-w-md text-sm text-text-secondary">
+          <h1 className="text-3xl font-extrabold tracking-tight text-[#1E1B4B] sm:text-4xl">¡Vas muy bien!</h1>
+          <p className="mt-2 max-w-md text-[15px] text-[#475569]">
             Tu pre-evaluación ya está lista. Estás más cerca de tu próxima propiedad.
           </p>
         </header>

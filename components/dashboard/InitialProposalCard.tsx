@@ -3,10 +3,21 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { AlertTriangle, BadgeCheck, Home, Building2, KeyRound, Timer, Lock, Sparkles, ArrowRight } from "lucide-react"
+import {
+  AlertTriangle,
+  Home,
+  Building2,
+  KeyRound,
+  Timer,
+  Lock,
+  Sparkles,
+  ArrowRight,
+  ShieldCheck,
+  Target,
+  Check,
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { SelectableChip } from "@/components/wizard/SelectableChip"
 import { MIN_QUALIFYING_UF } from "@/lib/uf-preevaluation"
 
 interface BandResult {
@@ -31,6 +42,47 @@ const DESTINATION_OPTIONS: { label: string; value: Destination; icon: typeof Hom
   { label: "Alquiler tradicional", value: "alquiler_tradicional", icon: Building2 },
   { label: "Venta a corto plazo", value: "venta_corto_plazo", icon: Timer },
 ]
+
+/**
+ * Chip de destino -- réplica de la referencia visual aportada por el
+ * negocio (paleta indigo/azul puntual para esta pantalla, no la navy+oro
+ * del resto del sitio): pill blanco con borde suave, ícono + label, y un
+ * círculo con check a la derecha cuando está seleccionado (en vez de solo
+ * cambiar el color del borde).
+ */
+function DestinationChip({
+  label,
+  icon: Icon,
+  selected,
+  onClick,
+}: {
+  label: string
+  icon: typeof Home
+  selected: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      className={
+        "inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2.5 text-[13.5px] font-semibold transition-all duration-200 ease-out active:scale-[0.98] " +
+        (selected
+          ? "border-[#2563EB] bg-[#EFF3FF] text-[#1E1B4B]"
+          : "border-[#E2E8F0] bg-white text-[#334155] hover:border-[#C7D2FE]")
+      }
+    >
+      <Icon size={16} strokeWidth={2} className={selected ? "text-[#2563EB]" : "text-[#94A3B8]"} />
+      {label}
+      {selected && (
+        <span className="flex size-4 items-center justify-center rounded-full bg-[#2563EB] text-white">
+          <Check size={10} strokeWidth={3} />
+        </span>
+      )}
+    </button>
+  )
+}
 
 /**
  * Selección de propuesta inicial: el cliente YA NO ve las 6 bandas de
@@ -174,70 +226,80 @@ function InitialProposalCard({
   }
 
   return (
-    <div className="glass-card flex flex-col gap-6 rounded-2xl p-6 sm:p-7">
+    <div className="flex flex-col gap-6 rounded-3xl border border-[#EEF0FF] bg-white p-6 shadow-[0_20px_50px_-24px_rgba(30,27,75,0.25)] sm:p-8">
       <div className="flex items-start gap-3">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-neon-cyan/10 text-neon-cyan">
-          <BadgeCheck className="size-5" aria-hidden="true" />
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-[#DBEAFE] text-[#2563EB]">
+          <Home className="size-5" aria-hidden="true" />
         </span>
         <div>
-          <h2 className="font-heading text-sm font-semibold uppercase tracking-wide text-text-tertiary">
-            Tu propuesta inicial
-          </h2>
-          <p className="mt-1 text-sm text-text-secondary">
+          <h2 className="text-[11.5px] font-bold tracking-wide text-[#2563EB] uppercase">Tu propuesta inicial</h2>
+          <p className="mt-1 text-sm leading-relaxed text-[#475569]">
             ¡Excelente! Con la información que nos entregaste, ya tenemos una propuesta inicial para ti. Este
-            resultado es <strong className="text-text-primary">estimado</strong> y se confirmará una vez que subas
-            tus documentos.
+            resultado es <strong className="text-[#1E1B4B]">estimado</strong> y se confirmará una vez que subas tus
+            documentos.
           </p>
         </div>
       </div>
 
       {ufPreEvaluation && (
-        <div className="relative overflow-hidden rounded-2xl border border-neon-cyan/25 bg-gradient-to-br from-neon-cyan/[0.06] to-gold/[0.06] p-6 text-center sm:p-8">
-          <p className="flex items-center justify-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-neon-cyan">
-            <Sparkles className="size-3.5" aria-hidden="true" />
+        <div className="relative overflow-hidden rounded-2xl border border-[#DBEAFE] bg-gradient-to-br from-[#EFF6FF] to-[#EEF2FF] p-6 text-center sm:p-8">
+          <p className="flex items-center justify-center gap-1.5 text-[13px] font-semibold text-[#2563EB]">
+            <ShieldCheck className="size-4" aria-hidden="true" />
             Monto estimado disponible
           </p>
-          <p className="font-heading mt-1 text-5xl font-semibold text-text-primary sm:text-6xl">
+          <p className="mt-1 text-5xl font-extrabold tracking-tight text-[#1E1B4B] sm:text-6xl">
             {Math.round(ufPreEvaluation.estimatedPropertyValueUF).toLocaleString("es-CL")}
-            <span className="ml-1.5 text-2xl text-neon-cyan sm:text-3xl">UF</span>
+            <span className="ml-1.5 text-2xl text-[#2563EB] sm:text-3xl">UF</span>
           </p>
-          <p className="mt-3 text-sm font-medium text-text-secondary">
+          <p className="mt-3 text-[15px] font-semibold text-[#2563EB]">
             Ahora vamos a mostrarte opciones que sí pueden calzar contigo.
           </p>
-          <p className="mt-3 text-xs leading-relaxed text-text-tertiary">{ufPreEvaluation.disclaimer}</p>
+          <p className="mt-3 text-xs leading-relaxed text-[#64748B]">{ufPreEvaluation.disclaimer}</p>
         </div>
       )}
 
       <div>
-        <h3 className="font-heading text-base font-semibold text-text-primary">¿Para qué quieres tu inmueble?</h3>
-        <p className="mt-1 text-xs text-text-tertiary">
+        <div className="flex items-center gap-2.5">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-[#FFEDD5] text-[#EA580C]">
+            <Target className="size-4.5" aria-hidden="true" />
+          </span>
+          <h3 className="text-base font-bold text-[#1E1B4B]">¿Para qué quieres tu inmueble?</h3>
+        </div>
+        <p className="mt-1.5 text-xs text-[#64748B]">
           Selecciona una o más opciones para recomendarte oportunidades más alineadas a tu objetivo.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {DESTINATION_OPTIONS.map((opt) => (
-            <SelectableChip
+            <DestinationChip
               key={opt.value}
               label={opt.label}
               icon={opt.icon}
               selected={destinations.includes(opt.value)}
               onClick={() => toggleDestination(opt.value)}
-              showCheckWhenSelected
             />
           ))}
         </div>
       </div>
 
-      <Button
-        className="glow-cyan w-full gap-2 rounded-full bg-neon-cyan text-deep hover:bg-neon-cyan/90 sm:w-fit sm:self-center sm:px-8"
-        disabled={isSubmitting || destinations.length === 0}
-        onClick={handleContinue}
-      >
-        <Sparkles className="size-4" aria-hidden="true" />
-        {isSubmitting ? "Guardando..." : "Ver mis opciones"}
-        <ArrowRight className="size-4" aria-hidden="true" />
-      </Button>
+      <div className="flex items-center justify-center gap-3">
+        <span
+          className="hidden -rotate-6 text-[13px] font-medium text-[#94A3B8] italic sm:block"
+          aria-hidden="true"
+        >
+          ¡Sigamos!
+        </span>
+        <Button
+          className="w-full gap-2 rounded-full bg-gradient-to-r from-[#2563EB] to-[#4F46E5] text-white shadow-[0_10px_24px_-8px_rgba(37,99,235,0.55)] hover:brightness-105 sm:w-fit sm:px-8"
+          disabled={isSubmitting || destinations.length === 0}
+          onClick={handleContinue}
+        >
+          <Sparkles className="size-4" aria-hidden="true" />
+          {isSubmitting ? "Guardando..." : "Ver mis opciones"}
+          <ArrowRight className="size-4" aria-hidden="true" />
+        </Button>
+      </div>
 
-      <p className="flex items-center justify-center gap-1.5 text-[11.5px] text-text-tertiary">
+      <p className="flex items-center justify-center gap-1.5 text-[11.5px] text-[#94A3B8]">
         <Lock className="size-3" aria-hidden="true" />
         Tu información está segura y protegida.
       </p>
