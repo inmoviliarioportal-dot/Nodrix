@@ -447,7 +447,7 @@ function WizardPageInner() {
 
   return (
     <main className="bg-deep-ambient flex min-h-screen flex-col items-center px-4 py-10 sm:py-12">
-      <div className="w-full max-w-3xl">
+      <div className="w-full max-w-6xl">
         <WizardHeader />
         <WizardProgress step={step} totalSteps={TOTAL_STEPS} labels={STEP_LABELS} />
 
@@ -584,6 +584,7 @@ function StepProfile({
         </div>
       </div>
 
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       {data.incomeSources.map((entry) => {
         const typeLabel = INCOME_TYPE_OPTIONS.find((o) => o.value === entry.type)?.label ?? entry.type;
         return (
@@ -715,6 +716,7 @@ function StepProfile({
           </div>
         );
       })}
+      </div>
 
       <div>
         <h2 className="mb-3 text-base font-semibold" style={{ color: "var(--text-primary)" }}>
