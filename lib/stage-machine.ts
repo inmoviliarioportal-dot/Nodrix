@@ -1,6 +1,7 @@
 import type { AnySupabaseClient, ApplicationStage } from "@/lib/leads";
 import { calculatePreEvaluation, DEFAULT_SALARY, DEFAULT_SAVINGS } from "@/lib/pre-evaluation";
 import { notifyStageChange } from "@/lib/notifications";
+import { LEGACY_DOCUMENT_TYPES, requiredDocumentValuesFor, situationsFromIncomeSources } from "@/lib/document-requirements";
 
 /**
  * Máquina de estados lineal de 9 pasos (mismo orden que el CHECK constraint
@@ -133,21 +134,14 @@ async function runAutomaticPreEvaluation(supabase: AnySupabaseClient, applicatio
     .eq("id", applicationId);
 }
 
-/** Mismos 4 tipos que `components/dashboard/types.ts` (DOCUMENT_TYPES) --
- * duplicado acá porque ese archivo es de frontend y esta lista la necesita
- * el servidor (ver `maybeAdvanceAfterDocumentApproval`). */
-export const REQUIRED_DOCUMENT_TYPES = [
-  "cedula",
-  "liquidacion_sueldo",
-  "certificado_afp",
-  "contrato_trabajo",
-] as const;
-
 /**
  * Se llama cada vez que un documento pasa a 'aprobado' (ej. tras la
  * validación OCR exitosa, ver `app/api/documents/route.ts`). Si la
- * application sigue en DOCUMENTOS_PENDIENTES y ya tiene los 4 tipos de
- * documento requeridos con status 'aprobado', avanza a DOCUMENTOS_APROBADOS
+ * application sigue en DOCUMENTOS_PENDIENTES y ya tiene aprobados TODOS los
+ * tipos de documento requeridos según su(s) situación(es) laboral(es)
+ * declarada(s) en el wizard (`income_sources`, ver
+ * lib/document-requirements.ts -- fallback al checklist genérico de 4 tipos
+ * para solicitudes anteriores a este sistema), avanza a DOCUMENTOS_APROBADOS
  * y encadena el resto de transiciones automáticas (pre-evaluación incluida)
  * vía `applyAutomaticTransitions`.
  *
@@ -162,12 +156,16 @@ export async function maybeAdvanceAfterDocumentApproval(
   try {
     const { data: application } = await supabase
       .from("applications")
-      .select("stage")
+      .select("stage, income_sources")
       .eq("id", applicationId)
       .maybeSingle();
 
     const stage = (application as { stage: ApplicationStage } | null)?.stage;
     if (stage !== "DOCUMENTOS_PENDIENTES") return;
+
+    const situations = situationsFromIncomeSources((application as { income_sources?: unknown } | null)?.income_sources);
+    const requiredTypes =
+      situations.length > 0 ? requiredDocumentValuesFor(situations) : LEGACY_DOCUMENT_TYPES.map((d) => d.value);
 
     const { data: documents } = await supabase
       .from("documents")
@@ -179,7 +177,7 @@ export async function maybeAdvanceAfterDocumentApproval(
         .filter((d) => d.status === "aprobado")
         .map((d) => d.type)
     );
-    const allApproved = REQUIRED_DOCUMENT_TYPES.every((type) => approvedTypes.has(type));
+    const allApproved = requiredTypes.every((type) => approvedTypes.has(type));
     if (!allApproved) return;
 
     const { error: updateError } = await supabase
@@ -193,7 +191,7 @@ export async function maybeAdvanceAfterDocumentApproval(
       from_stage: "DOCUMENTOS_PENDIENTES",
       to_stage: "DOCUMENTOS_APROBADOS",
       actor_user_id: null,
-      note: "Avance automático: los 4 documentos requeridos fueron aprobados por OCR.",
+      note: "Avance automático: todos los documentos requeridos fueron aprobados por OCR.",
     });
 
     await notifyStageChange(supabase, applicationId, "DOCUMENTOS_APROBADOS");

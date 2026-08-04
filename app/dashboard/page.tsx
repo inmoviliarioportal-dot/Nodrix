@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { toast } from "sonner"
 import { ArrowRight } from "lucide-react"
 
 import { Layout } from "@/components/Layout"
@@ -13,7 +12,6 @@ import { Toaster } from "@/components/ui/sonner"
 import { ComunaOffersCard } from "@/components/dashboard/ComunaOffersCard"
 import { WhatsAppBubble } from "@/components/dashboard/WhatsAppBubble"
 import { DocumentsCard } from "@/components/dashboard/DocumentsCard"
-import { DocumentUploadModal } from "@/components/dashboard/DocumentUploadModal"
 import { FinalProposalCard } from "@/components/dashboard/FinalProposalCard"
 import { InitialProposalCard } from "@/components/dashboard/InitialProposalCard"
 import { PreEvaluationCard } from "@/components/dashboard/PreEvaluationCard"
@@ -51,7 +49,6 @@ export default function DashboardPage() {
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [application, setApplication] = React.useState<ApplicationRecord | null>(null)
-  const [uploadOpen, setUploadOpen] = React.useState(false)
   // Solo relevante en stage SCORING_COMPLETADO: si el cliente no califica
   // (UF estimadas < MIN_QUALIFYING_UF), ocultamos el timeline y demás
   // secciones de progreso, dejando únicamente la tarjeta ámbar de
@@ -266,7 +263,7 @@ export default function DashboardPage() {
                 {stageContent.showUploadCta && (
                   <Button
                     className="glow-cyan gap-2 rounded-full bg-neon-cyan px-5 text-white hover:bg-neon-cyan/90"
-                    onClick={() => setUploadOpen(true)}
+                    render={<Link href="/dashboard/documents" />}
                   >
                     <UploadCloud className="size-4" aria-hidden="true" />
                     Subir documentos
@@ -309,7 +306,7 @@ export default function DashboardPage() {
               // elegidas (ver components/dashboard/PreEvaluationCard.tsx).
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <div className="animate-fade-in-up" style={{ "--animate-delay": "0ms" } as React.CSSProperties}>
-                  <DocumentsCard documents={documents} onUploadClick={() => setUploadOpen(true)} />
+                  <DocumentsCard documents={documents} />
                 </div>
                 <div className="animate-fade-in-up" style={{ "--animate-delay": "80ms" } as React.CSSProperties}>
                   <PreEvaluationCard applicationId={application.id} />
@@ -339,18 +336,6 @@ export default function DashboardPage() {
       </div>
 
       <WhatsAppBubble />
-
-      {application && (
-        <DocumentUploadModal
-          open={uploadOpen}
-          onOpenChange={setUploadOpen}
-          applicationId={application.id}
-          onUploaded={() => {
-            toast.success("Documento subido correctamente.")
-            loadData()
-          }}
-        />
-      )}
     </Layout>
   )
 }

@@ -1,5 +1,6 @@
 import type { ApplicationRow, ApplicationStage, CustomerRow } from "@/lib/leads"
 import type { ScoringCategory } from "@/components/ui/scoring-badge"
+import { SITUATION_DOCUMENT_GROUPS, LEGACY_DOCUMENT_TYPES } from "@/lib/document-requirements"
 
 export type { ApplicationRow, ApplicationStage, CustomerRow, ScoringCategory }
 
@@ -124,12 +125,14 @@ export const DOCUMENT_STATUS_LABELS: Record<DocumentRow["status"], string> = {
   rechazado: "Rechazado",
 }
 
-export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
-  cedula: "Cédula de identidad",
-  liquidacion_sueldo: "Liquidación de sueldo",
-  certificado_afp: "Certificado AFP",
-  contrato_trabajo: "Contrato de trabajo",
-}
+/** Etiquetas de todos los tipos de documento posibles (situación laboral +
+ * checklist genérico legado) -- derivado de lib/document-requirements.ts
+ * para que el asesor vea el mismo nombre que ve el cliente en la Bóveda
+ * documental, sin duplicar la lista a mano. */
+export const DOCUMENT_TYPE_LABELS: Record<string, string> = Object.fromEntries([
+  ...LEGACY_DOCUMENT_TYPES.map((d) => [d.value, d.label] as const),
+  ...SITUATION_DOCUMENT_GROUPS.flatMap((group) => group.documents.map((d) => [d.value, d.label] as const)),
+])
 
 /** Entrada de `application_stage_history`. Cuando `from_stage === to_stage`
  * la fila representa una NOTA (no un cambio de estado real) — ver

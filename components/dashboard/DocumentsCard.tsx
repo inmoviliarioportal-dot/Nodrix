@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { FileText } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -5,11 +6,10 @@ import type { DocumentRecord } from "./types"
 
 export interface DocumentsCardProps {
   documents: DocumentRecord[]
-  onUploadClick: () => void
 }
 
-/** Tile de documentos: ícono + progreso de aprobación + botón para abrir el modal de subida. */
-function DocumentsCard({ documents, onUploadClick }: DocumentsCardProps) {
+/** Tile de documentos: ícono + progreso de aprobación + botón que lleva a la Bóveda documental. */
+function DocumentsCard({ documents }: DocumentsCardProps) {
   const total = documents.length
   const approved = documents.filter((doc) => doc.status === "aprobado").length
 
@@ -30,7 +30,7 @@ function DocumentsCard({ documents, onUploadClick }: DocumentsCardProps) {
                 ? "Todos tus documentos fueron aprobados"
                 : `${approved}/${total} aprobados`}
           </p>
-          <Button size="sm" variant="outline" className="mt-1 w-fit rounded-full" onClick={onUploadClick}>
+          <Button size="sm" variant="outline" className="mt-1 w-fit rounded-full" render={<Link href="/dashboard/documents" />}>
             Subir documentos
           </Button>
         </div>

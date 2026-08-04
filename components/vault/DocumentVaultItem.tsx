@@ -27,6 +27,8 @@ const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024
 export interface DocumentVaultItemProps {
   typeValue: string
   typeLabel: string
+  /** Aclaración corta sobre cómo subir el documento (ej. "últimas 6 en un solo PDF"). */
+  hint?: string
   applicationId: string
   document?: DocumentRecord
   onUploaded: () => void
@@ -39,6 +41,7 @@ export interface DocumentVaultItemProps {
 function DocumentVaultItem({
   typeValue,
   typeLabel,
+  hint,
   applicationId,
   document,
   onUploaded,
@@ -125,7 +128,10 @@ function DocumentVaultItem({
           <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-dark-tertiary">
             <FileTextIcon className="size-4.5 text-neon-cyan" />
           </div>
-          <span className="truncate text-sm font-semibold text-text-primary">{typeLabel}</span>
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate text-sm font-semibold text-text-primary">{typeLabel}</span>
+            {hint && <span className="truncate text-[11px] text-text-tertiary">{hint}</span>}
+          </div>
         </div>
         <span
           className={cn(

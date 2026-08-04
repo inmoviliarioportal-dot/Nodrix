@@ -9,11 +9,16 @@ import { Button } from "@/components/ui/button"
 import { Toaster } from "@/components/ui/sonner"
 import { DocumentVaultItem } from "@/components/vault/DocumentVaultItem"
 import {
-  DOCUMENT_TYPES,
   type ApplicationRecord,
   type AuthUserResponse,
   type DocumentRecord,
 } from "@/components/dashboard/types"
+import {
+  LEGACY_DOCUMENT_TYPES,
+  situationsFromIncomeSources,
+  situationGroupsFor,
+  requiredDocumentValuesFor,
+} from "@/lib/document-requirements"
 
 /** Extrae la application "actual" del usuario desde las distintas formas posibles
  * de la respuesta de `GET /api/auth/user` (contrato definido en paralelo por
@@ -83,10 +88,17 @@ export default function DashboardDocumentsPage() {
     })
   }
 
-  const approvedCount = DOCUMENT_TYPES.filter(
-    (docType) => documentForType(docType.value)?.status === "aprobado"
-  ).length
-  const totalCount = DOCUMENT_TYPES.length
+  // Los documentos requeridos dependen de la(s) situación(es) laboral(es)
+  // que el cliente declaró en el Paso 1 del wizard (income_sources). Si la
+  // solicitud es anterior a este sistema (sin income_sources guardado), se
+  // usa el checklist genérico anterior como fallback.
+  const situations = situationsFromIncomeSources(application?.income_sources)
+  const situationGroups = situationGroupsFor(situations)
+  const hasSituationGroups = situationGroups.length > 0
+  const requiredValues = hasSituationGroups ? requiredDocumentValuesFor(situations) : LEGACY_DOCUMENT_TYPES.map((d) => d.value)
+
+  const approvedCount = requiredValues.filter((value) => documentForType(value)?.status === "aprobado").length
+  const totalCount = requiredValues.length
   const progressPct = totalCount > 0 ? Math.round((approvedCount / totalCount) * 100) : 0
 
   return (
@@ -153,22 +165,58 @@ export default function DashboardDocumentsPage() {
 
         {!loading && application && (
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.6fr_1fr]">
-            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-              {DOCUMENT_TYPES.map((docType, idx) => (
-                <div
-                  key={docType.value}
-                  className="animate-fade-in-up"
-                  style={{ "--animate-delay": `${idx * 60}ms` } as React.CSSProperties}
-                >
-                  <DocumentVaultItem
-                    typeValue={docType.value}
-                    typeLabel={docType.label}
-                    applicationId={application.id}
-                    document={documentForType(docType.value)}
-                    onUploaded={loadData}
-                  />
+            <div className="flex flex-col gap-6">
+              {hasSituationGroups ? (
+                situationGroups.map((group, groupIdx) => (
+                  <div
+                    key={group.situation}
+                    className="animate-fade-in-up flex flex-col gap-3"
+                    style={{ "--animate-delay": `${groupIdx * 80}ms` } as React.CSSProperties}
+                  >
+                    <div>
+                      <h2 className="font-heading text-[15px] font-semibold text-text-primary">{group.title}</h2>
+                      <p className="text-[12.5px] text-text-tertiary">{group.description}</p>
+                      {group.note && (
+                        <p className="mt-1 flex items-start gap-1.5 text-[11.5px] leading-snug text-gold">
+                          <Lightbulb className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+                          {group.note}
+                        </p>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                      {group.documents.map((docType) => (
+                        <DocumentVaultItem
+                          key={`${group.situation}-${docType.value}`}
+                          typeValue={docType.value}
+                          typeLabel={docType.label}
+                          hint={docType.hint}
+                          applicationId={application.id}
+                          document={documentForType(docType.value)}
+                          onUploaded={loadData}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                  {LEGACY_DOCUMENT_TYPES.map((docType, idx) => (
+                    <div
+                      key={docType.value}
+                      className="animate-fade-in-up"
+                      style={{ "--animate-delay": `${idx * 60}ms` } as React.CSSProperties}
+                    >
+                      <DocumentVaultItem
+                        typeValue={docType.value}
+                        typeLabel={docType.label}
+                        applicationId={application.id}
+                        document={documentForType(docType.value)}
+                        onUploaded={loadData}
+                      />
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
 
             {/* Panel lateral de seguridad -- puramente informativo, sin lógica de datos. */}

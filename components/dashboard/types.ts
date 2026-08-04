@@ -91,13 +91,6 @@ export const DOCUMENT_STATUS_LABELS: Record<string, string> = {
   rechazado: "Rechazado",
 };
 
-export const DOCUMENT_TYPES = [
-  { value: "cedula", label: "Cédula de identidad" },
-  { value: "liquidacion_sueldo", label: "Liquidación de sueldo" },
-  { value: "certificado_afp", label: "Certificado AFP" },
-  { value: "contrato_trabajo", label: "Contrato de trabajo" },
-] as const;
-
 export interface ScoringFactor {
   factor: string;
   points: number;
@@ -141,6 +134,10 @@ export interface ApplicationRecord {
   initial_proposal_band?: string | null;
   initial_proposal_purpose?: string | null;
   initial_proposal_selected_at?: string | null;
+  /** Fuentes de ingreso declaradas en el wizard (Paso 1) -- determina qué
+   * grupos de documentos se piden en la Bóveda documental, ver
+   * lib/document-requirements.ts. */
+  income_sources?: unknown;
   created_at?: string;
   updated_at?: string;
 }
