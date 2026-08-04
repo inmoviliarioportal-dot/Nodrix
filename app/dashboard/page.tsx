@@ -122,7 +122,7 @@ export default function DashboardPage() {
   return (
     <Layout>
       <Toaster />
-      <div className="flex flex-col gap-3.5">
+      <div className="flex flex-col gap-3.5 pb-20 sm:pb-0">
         <div className="animate-fade-in-up overflow-hidden rounded-2xl bg-[#101B3D]">
           <div className="grid grid-cols-1 sm:grid-cols-[1.3fr_1fr]">
             <div className="flex flex-col justify-center gap-4 p-5 sm:p-7">

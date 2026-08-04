@@ -2,10 +2,16 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Bell, LayoutDashboard, FileText } from "lucide-react"
+import { Bell, LayoutDashboard, FileText, Menu } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { AccountMenu } from "@/components/AccountMenu"
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu"
 
 export interface LayoutNavLink {
   href: string
@@ -102,6 +108,30 @@ function Layout({
               <Bell className="size-4" aria-hidden="true" />
             </button>
             <AccountMenu />
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="flex size-9 items-center justify-center rounded-full text-text-tertiary transition-colors duration-200 hover:text-text-primary sm:hidden"
+                aria-label="Abrir menú de navegación"
+              >
+                <Menu className="size-5" aria-hidden="true" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {navLinks.map((link) => {
+                  const isActive = pathname === link.href
+                  const Icon = link.icon
+                  return (
+                    <DropdownMenuItem
+                      key={link.href}
+                      render={<Link href={link.href} aria-current={isActive ? "page" : undefined} />}
+                      className={cn(isActive && "text-neon-cyan")}
+                    >
+                      {Icon && <Icon className="size-4 shrink-0" aria-hidden="true" />}
+                      {link.label}
+                    </DropdownMenuItem>
+                  )
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>

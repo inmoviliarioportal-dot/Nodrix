@@ -37,24 +37,24 @@ function WhatsAppBubble({ whatsappNumber = "56900000000", advisorName }: WhatsAp
       target="_blank"
       rel="noopener noreferrer"
       aria-label={name ? `Contactar a ${name}, tu asesor, por WhatsApp` : "Hablar con mi asesor por WhatsApp"}
-      className="fixed right-5 bottom-5 z-50 flex items-center gap-3 rounded-2xl border border-border/60 bg-white py-2.5 pr-4 pl-2.5 shadow-[0_4px_16px_rgba(15,23,42,0.12)] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(15,23,42,0.16)] active:translate-y-0 active:scale-[0.98]"
+      className="fixed right-4 bottom-4 z-50 flex items-center gap-2.5 rounded-2xl border border-border/60 bg-white py-2 pr-3 pl-2 shadow-[0_4px_16px_rgba(15,23,42,0.12)] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(15,23,42,0.16)] active:translate-y-0 active:scale-[0.98] sm:right-5 sm:bottom-5 sm:gap-3 sm:py-2.5 sm:pr-4"
     >
-      <span className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-dark-tertiary text-[12px] font-bold text-neon-cyan">
-        {name ? initialsFrom(name) : <User className="size-4.5" aria-hidden />}
+      <span className="relative flex size-9 shrink-0 items-center justify-center rounded-full bg-dark-tertiary text-[11px] font-bold text-neon-cyan sm:size-10 sm:text-[12px]">
+        {name ? initialsFrom(name) : <User className="size-4" aria-hidden />}
         <span
-          className="absolute -right-0.5 -bottom-0.5 flex size-3.5 items-center justify-center rounded-full border-2 border-white bg-neon-green"
+          className="absolute -right-0.5 -bottom-0.5 flex size-3 items-center justify-center rounded-full border-2 border-white bg-neon-green sm:size-3.5"
           aria-hidden="true"
         />
       </span>
       <span className="flex min-w-0 flex-col text-left">
-        <span className="text-[10px] leading-tight font-semibold tracking-wide text-text-tertiary uppercase">
+        <span className="hidden text-[10px] leading-tight font-semibold tracking-wide text-text-tertiary uppercase sm:block">
           Tu asesor personal
         </span>
-        <span className="truncate text-[13.5px] leading-tight font-semibold text-text-primary">
+        <span className="max-w-[38vw] truncate text-[12.5px] leading-tight font-semibold text-text-primary sm:max-w-none sm:text-[13.5px]">
           {name ?? "Hablar con mi asesor"}
         </span>
       </span>
-      <ChevronRight className="size-4 shrink-0 text-text-tertiary" aria-hidden="true" />
+      <ChevronRight className="hidden size-4 shrink-0 text-text-tertiary sm:block" aria-hidden="true" />
     </a>
   )
 }
