@@ -156,6 +156,13 @@ function PropertyPreferencesCard({
     }
     setIsSubmitting(true)
     try {
+      // Igual que en el carrusel de inversión: solo deben ofrecerse
+      // propiedades cuyo precio en UF sea <= al presupuesto real del cliente
+      // (pre-evaluación), no cualquier inmueble de la comuna.
+      const bandsRes = await fetch(`/api/applications/${applicationId}/proposal-bands`)
+      const bandsData = bandsRes.ok ? await bandsRes.json() : null
+      const budgetUf = bandsData?.ufPreEvaluation?.estimatedPropertyValueUF as number | undefined
+
       const res = await fetch("/api/properties/recommendations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -165,6 +172,7 @@ function PropertyPreferencesCard({
           propertyType: propertyType ?? undefined,
           bedrooms: bedrooms ?? undefined,
           bathrooms: bathrooms ?? undefined,
+          budgetUf,
         }),
       })
       if (!res.ok) {

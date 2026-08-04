@@ -37,6 +37,19 @@ import {
   type WizardProfessionalLevel,
 } from "@/lib/wizard-storage";
 import type { IncomeSource } from "@/lib/income-types";
+import { ProgressCircle } from "@/components/processing/progress-circle";
+import { RotatingMessage } from "@/components/processing/rotating-message";
+
+/** Duración fija de la pantalla puente "recalculando tu propuesta" (modo
+ * edición) -- el fetch de actualización ya terminó cuando se muestra, así
+ * que no hay progreso real que animar, solo una pausa breve para transmitir
+ * que se está reprocesando la información antes de saltar a la propuesta. */
+const RECALCULATE_SCREEN_MS = 2200;
+const RECALCULATE_MESSAGES = [
+  "Actualizando tu perfil financiero...",
+  "Recalculando tu capacidad de compra...",
+  "Ajustando tu propuesta...",
+];
 
 /**
  * Los 5 perfiles laborales/fuente de ingreso que evalúa la banca -- ver
@@ -204,7 +217,23 @@ function WizardPageInner() {
   const [profileError, setProfileError] = useState(false);
   const [applicationId, setApplicationId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Solo se usa en isEditMode: tras guardar los datos actualizados, muestra
+  // una pantalla puente de "recalculando" (misma sensación que /onboarding/processing
+  // para un lead nuevo) antes de saltar a la propuesta inicial recalculada,
+  // en vez de un salto instantáneo que no comunica que se está reprocesando.
+  const [recalculating, setRecalculating] = useState(false);
+  const [recalculatePercent, setRecalculatePercent] = useState(0);
   const hasRestored = useRef(false);
+
+  useEffect(() => {
+    if (!recalculating) return;
+    const startedAt = Date.now();
+    const timer = window.setInterval(() => {
+      const ratio = Math.min(1, (Date.now() - startedAt) / RECALCULATE_SCREEN_MS);
+      setRecalculatePercent(ratio * 100);
+    }, 60);
+    return () => window.clearInterval(timer);
+  }, [recalculating]);
 
   // Restaurar progreso guardado en localStorage al montar (solo en modo
   // normal -- en modo edición precargamos desde la application/customer
@@ -389,7 +418,11 @@ function WizardPageInner() {
           setProfileError(true);
           return;
         }
-        router.push("/onboarding/initial-proposal");
+        // Pantalla puente antes de saltar a la propuesta recalculada -- ver
+        // estado `recalculating` más abajo. Duración mínima fija (no depende
+        // de un timer de progreso real) porque el fetch ya terminó acá.
+        setRecalculating(true);
+        window.setTimeout(() => router.push("/onboarding/initial-proposal"), RECALCULATE_SCREEN_MS);
       } finally {
         setSubmitting(false);
       }
@@ -434,6 +467,17 @@ function WizardPageInner() {
   function handleBack() {
     if (step === 1) return;
     goToStep(step - 1);
+  }
+
+  if (recalculating) {
+    return (
+      <main className="bg-deep-ambient animate-fade-in flex min-h-screen flex-col items-center justify-center gap-8 px-6">
+        <ProgressCircle percent={recalculatePercent} />
+        <div className="flex min-h-[3rem] flex-col items-center gap-2 text-center">
+          <RotatingMessage messages={RECALCULATE_MESSAGES} intervalMs={900} />
+        </div>
+      </main>
+    );
   }
 
   const nextLabel =

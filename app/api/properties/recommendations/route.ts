@@ -156,6 +156,16 @@ export const POST = withErrorHandling(async (request: Request) => {
     ? allRows.filter((r) => r.comuna?.toLowerCase() === body.comuna!.toLowerCase())
     : allRows;
 
+  // Filtro de presupuesto: solo propiedades cuyo precio en UF sea <= a la
+  // pre-evaluación del cliente (`budgetUf`, ver lib/uf-preevaluation.ts) --
+  // antes solo se usaba para ORDENAR (más cercano al presupuesto primero),
+  // por lo que igual aparecían inmuebles que el cliente no podía pagar. Se
+  // aplica como filtro DURO antes de cualquier otra relajación (comuna,
+  // tipo, dormitorios, baños): nunca mostramos algo por sobre el presupuesto
+  // real, aunque eso implique menos (o cero) resultados.
+  const withinBudget = (rows: PropertyRow[]) =>
+    typeof body.budgetUf === "number" ? rows.filter((r) => r.price_uf <= (body.budgetUf as number)) : rows;
+
   // Etapas de relajación: comuna+purpose+filtros estrictos -> ... -> sin
   // comuna (último recurso, solo si en la comuna elegida no hay nada).
   const filterStages: Array<(r: PropertyRow) => boolean> = [
@@ -171,7 +181,7 @@ export const POST = withErrorHandling(async (request: Request) => {
   ];
 
   function pickPool(rows: PropertyRow[], minCount: number): PropertyRow[] {
-    const candidates = purposeMatches(rows);
+    const candidates = withinBudget(purposeMatches(rows));
     let selected: PropertyRow[] = [];
     for (const stage of filterStages) {
       selected = candidates.filter(stage);
@@ -198,8 +208,8 @@ export const POST = withErrorHandling(async (request: Request) => {
   }
 
   if (body.purpose === "inversion") {
-    const candidates = purposeMatches(allRows);
-    const pool = candidates.length > 0 ? candidates : allRows; // nunca vacío si hay inventario
+    const candidates = withinBudget(purposeMatches(allRows));
+    const pool = candidates.length > 0 ? candidates : withinBudget(allRows); // nunca vacío si hay inventario dentro de presupuesto
 
     // Perfilamiento Airbnb/venta a corto plazo: prioriza las propiedades que
     // matchean más de los 3 parámetros de proximidad declarados (casco
