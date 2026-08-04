@@ -1,15 +1,3 @@
-import {
-  BarChart3Icon,
-  FileBarChart2Icon,
-  LayoutDashboardIcon,
-  CalendarDaysIcon,
-  UserPlusIcon,
-  BuildingIcon,
-  MapPinIcon,
-  UsersIcon,
-  ShieldIcon,
-} from "lucide-react"
-
 import { requireRolePage } from "@/lib/auth-guards"
 import { Layout } from "@/components/Layout"
 
@@ -30,15 +18,15 @@ export default async function AdminLayout({
   await requireRolePage(["admin", "gerencia"])
 
   const navLinks = [
-    { href: "/admin/dashboard", label: "KPIs", icon: BarChart3Icon },
-    { href: "/admin/reports", label: "Reportes", icon: FileBarChart2Icon },
-    { href: "/backoffice/queue", label: "Backoffice", icon: LayoutDashboardIcon },
-    { href: "/backoffice/visits", label: "Visitas", icon: CalendarDaysIcon },
-    { href: "/admin/assignments", label: "Asignar asesor", icon: UserPlusIcon },
-    { href: "/admin/properties", label: "Propiedades", icon: BuildingIcon },
-    { href: "/admin/regions", label: "Regiones", icon: MapPinIcon },
-    { href: "/admin/users/new", label: "Crear usuario", icon: UsersIcon },
-    { href: "/admin/roles", label: "Roles", icon: ShieldIcon },
+    { href: "/admin/dashboard", label: "KPIs", iconKey: "chart" as const },
+    { href: "/admin/reports", label: "Reportes", iconKey: "report" as const },
+    { href: "/backoffice/queue", label: "Backoffice", iconKey: "dashboard" as const },
+    { href: "/backoffice/visits", label: "Visitas", iconKey: "calendar" as const },
+    { href: "/admin/assignments", label: "Asignar asesor", iconKey: "userPlus" as const },
+    { href: "/admin/properties", label: "Propiedades", iconKey: "building" as const },
+    { href: "/admin/regions", label: "Regiones", iconKey: "mapPin" as const },
+    { href: "/admin/users/new", label: "Crear usuario", iconKey: "users" as const },
+    { href: "/admin/roles", label: "Roles", iconKey: "shield" as const },
   ]
 
   return <Layout navLinks={navLinks}>{children}</Layout>

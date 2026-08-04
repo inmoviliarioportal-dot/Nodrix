@@ -3,7 +3,21 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Bell, LayoutDashboard, FileText, Menu } from "lucide-react"
+import {
+  Bell,
+  LayoutDashboard,
+  FileText,
+  Menu,
+  BarChart3,
+  FileBarChart2,
+  CalendarDays,
+  UserPlus,
+  Building2,
+  MapPin,
+  Users,
+  Shield,
+  type LucideIcon,
+} from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { AccountMenu } from "@/components/AccountMenu"
@@ -14,10 +28,28 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu"
 
+/** Íconos de lucide-react son funciones -- no pueden pasarse como prop
+ * directamente de un Server Component a este Client Component (React las
+ * rechaza al serializar el límite RSC: "Functions cannot be passed
+ * directly to Client Components"). Por eso `navLinks` recibe una CLAVE de
+ * string (`iconKey`) resuelta acá adentro, nunca el componente en sí. */
+const ICON_MAP: Record<string, LucideIcon> = {
+  dashboard: LayoutDashboard,
+  documents: FileText,
+  chart: BarChart3,
+  report: FileBarChart2,
+  calendar: CalendarDays,
+  userPlus: UserPlus,
+  building: Building2,
+  mapPin: MapPin,
+  users: Users,
+  shield: Shield,
+}
+
 export interface LayoutNavLink {
   href: string
   label: string
-  icon?: React.ComponentType<{ className?: string }>
+  iconKey?: keyof typeof ICON_MAP
 }
 
 export interface LayoutProps extends React.ComponentProps<"div"> {
@@ -28,8 +60,8 @@ export interface LayoutProps extends React.ComponentProps<"div"> {
 }
 
 const DEFAULT_NAV_LINKS: LayoutNavLink[] = [
-  { href: "/dashboard", label: "Panel", icon: LayoutDashboard },
-  { href: "/dashboard/documents", label: "Documentos", icon: FileText },
+  { href: "/dashboard", label: "Panel", iconKey: "dashboard" },
+  { href: "/dashboard/documents", label: "Documentos", iconKey: "documents" },
 ]
 
 /**
@@ -91,7 +123,7 @@ function Layout({
             <nav className="flex items-center gap-5 text-sm">
               {navLinks.map((link) => {
                 const isActive = pathname === link.href
-                const Icon = link.icon
+                const Icon = link.iconKey ? ICON_MAP[link.iconKey] : undefined
                 return (
                   <Link
                     key={link.href}
@@ -131,7 +163,7 @@ function Layout({
               <DropdownMenuContent align="end">
                 {navLinks.map((link) => {
                   const isActive = pathname === link.href
-                  const Icon = link.icon
+                  const Icon = link.iconKey ? ICON_MAP[link.iconKey] : undefined
                   return (
                     <DropdownMenuItem
                       key={link.href}
