@@ -152,6 +152,10 @@ export interface ApplicationRecord {
    * grupos de documentos se piden en la Bóveda documental, ver
    * lib/document-requirements.ts. */
   income_sources?: unknown;
+  /** Asesor asignado a la solicitud (solo nombre, ver GET /api/applications/[id]) --
+   * usado en la burbuja de WhatsApp del dashboard para mostrar a quién
+   * contactar por nombre y apellido. */
+  assigned_advisor?: { full_name: string | null } | null;
   created_at?: string;
   updated_at?: string;
 }

@@ -35,9 +35,9 @@ export const GET = withErrorHandling(async (_request: Request, context: { params
     return apiError("Application not found", HTTP_STATUS.NOT_FOUND, "APPLICATION_NOT_FOUND");
   }
 
-  const applicationRow = application as { customer_id: string };
+  const applicationRow = application as { customer_id: string; assigned_advisor_id: string | null };
 
-  const [{ data: customer }, { data: history }, { data: documents }] = await Promise.all([
+  const [{ data: customer }, { data: history }, { data: documents }, { data: advisor }] = await Promise.all([
     supabase.from("customers").select("*").eq("id", applicationRow.customer_id).maybeSingle(),
     supabase
       .from("application_stage_history")
@@ -49,10 +49,20 @@ export const GET = withErrorHandling(async (_request: Request, context: { params
       .select("*")
       .eq("application_id", id)
       .order("created_at", { ascending: false }),
+    // Nombre del asesor asignado (si hay uno) -- se muestra en la burbuja de
+    // WhatsApp del dashboard cliente para generar cercanía. No se expone el
+    // email/id del asesor al cliente, solo su nombre.
+    applicationRow.assigned_advisor_id
+      ? supabase.from("users").select("full_name").eq("id", applicationRow.assigned_advisor_id).maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
 
   return NextResponse.json({
-    application: { ...application, documents: documents ?? [] },
+    application: {
+      ...application,
+      documents: documents ?? [],
+      assigned_advisor: advisor ? { full_name: (advisor as { full_name: string | null }).full_name } : null,
+    },
     customer: customer ?? null,
     stageHistory: history ?? [],
   });

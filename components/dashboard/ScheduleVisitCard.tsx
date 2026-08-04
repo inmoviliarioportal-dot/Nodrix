@@ -85,7 +85,7 @@ function ScheduleVisitCard({ applicationId }: { applicationId: string }) {
           <CalendarCheck className="size-4.5" aria-hidden="true" />
         </span>
         <div>
-          <h2 className="text-[14px] font-bold text-text-primary">Agenda tu visita</h2>
+          <h2 className="font-heading text-[15px] font-semibold text-text-primary">Agenda tu visita</h2>
           <p className="text-[12.5px] leading-relaxed text-text-secondary">
             Coordina una visita a la propiedad de tu interés en paralelo a la revisión de documentos.
           </p>
