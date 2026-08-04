@@ -73,11 +73,11 @@ function PreEvaluationCard({ applicationId }: PreEvaluationCardProps) {
   }, [applicationId])
 
   return (
-    <div className="glass-card relative flex items-start gap-3 overflow-hidden rounded-2xl p-4">
+    <div className="glass-card relative flex h-full min-h-[168px] items-start gap-3 overflow-hidden rounded-2xl p-5">
       <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-dark-tertiary text-neon-cyan">
         <TrendingUp className="size-5" aria-hidden="true" />
       </span>
-      <div className="flex min-w-0 flex-col gap-1">
+      <div className="flex min-w-0 flex-col gap-1.5">
         <span className="text-[10.5px] font-bold uppercase tracking-wide text-text-tertiary">
           Pre-evaluación
         </span>
@@ -85,16 +85,17 @@ function PreEvaluationCard({ applicationId }: PreEvaluationCardProps) {
           <p className="text-[12px] text-text-tertiary">Cargando...</p>
         ) : (
           <>
-            <p className="font-heading text-[15px] leading-snug font-semibold text-text-primary">
+            <p className="font-heading text-2xl leading-snug font-semibold text-text-primary">
               {approvedUf != null
                 ? `${Math.round(approvedUf).toLocaleString("es-CL")} UF aprobadas`
                 : "Pendiente revisión."}
             </p>
             {breakdown.length > 0 && (
-              <p className="line-clamp-2 text-[12px] leading-snug text-text-secondary">
-                Optas a: {breakdown.join(", ")}
-              </p>
+              <p className="text-[13px] leading-relaxed text-text-secondary">Optas a: {breakdown.join(", ")}</p>
             )}
+            <p className="mt-1 text-[12px] leading-relaxed text-text-tertiary">
+              Este monto es referencial y se confirmará una vez que el banco revise tus documentos.
+            </p>
           </>
         )}
       </div>
