@@ -32,9 +32,9 @@ function GuideVideoOverlay({ title, videoUrl, stageKey }: { title: string; video
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="glass-card flex w-fit items-center gap-1.5 rounded-full border border-neon-cyan/40 px-4 py-2 text-[12.5px] font-semibold text-neon-cyan transition-colors duration-200 hover:bg-neon-cyan/5"
+        className="flex w-fit items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-5 py-2.5 text-[13.5px] font-semibold text-gold transition-colors duration-200 hover:bg-gold/15"
       >
-        <PlayCircle className="size-4 text-neon-cyan" aria-hidden="true" />
+        <PlayCircle className="size-4.5" aria-hidden="true" />
         Ver video guía
       </button>
 

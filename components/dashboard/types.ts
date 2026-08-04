@@ -55,7 +55,6 @@ export const STAGE_LABELS: Record<string, string> = {
 export const CLIENT_TIMELINE_STAGES: ApplicationStage[] = [
   "RECEPCIONADA",
   "SCORING_COMPLETADO",
-  "VISITA_COMPLETADA",
   "DOCUMENTOS_PENDIENTES",
   "DOCUMENTOS_APROBADOS",
   "ENVIADO_A_BANCO",
@@ -66,14 +65,29 @@ export const CLIENT_TIMELINE_STAGES: ApplicationStage[] = [
 export const STAGE_MARKETING_LABELS: Record<string, string> = {
   RECEPCIONADA: "Revisión inicial",
   SCORING_COMPLETADO: "Análisis de perfil",
-  DOCUMENTOS_PENDIENTES: "Documentación",
+  // Un solo paso visual para el cliente: agendar/hacer la visita a la
+  // propiedad y subir documentos ocurren EN PARALELO en la práctica (no hay
+  // que esperar una etapa para avanzar en la otra), así que se muestran
+  // como un único estado en vez de dos pasos separados -- ver
+  // `mapStageForClientTimeline` más abajo, que colapsa VISITA_COMPLETADA
+  // sobre este mismo paso para el cálculo de progreso/resaltado.
+  DOCUMENTOS_PENDIENTES: "Documentación y visita",
   DOCUMENTOS_APROBADOS: "Documentos aprobados",
   PRE_EVALUACION_COMPLETADA: "Aprobado previo",
-  VISITA_COMPLETADA: "Visita a propiedad",
+  VISITA_COMPLETADA: "Documentación y visita",
   ENVIADO_A_BANCO: "Financiamiento",
   ESCRITURACION_AGENDADA: "Escrituración",
   CIERRE: "Cierre",
 };
+
+/** Traduce el `stage` real (backend, sin tocar) al valor que debe usarse
+ * para resaltar/calcular progreso en la timeline del cliente, donde
+ * VISITA_COMPLETADA y DOCUMENTOS_PENDIENTES se muestran como un solo paso
+ * ("Documentación y visita"). El resto de la máquina de estados (gating de
+ * documentos, transiciones automáticas, etc.) sigue usando el stage real. */
+export function mapStageForClientTimeline(stage: ApplicationStage): ApplicationStage {
+  return stage === "VISITA_COMPLETADA" ? "DOCUMENTOS_PENDIENTES" : stage;
+}
 
 export const DOCUMENT_STATUSES = [
   "pendiente",

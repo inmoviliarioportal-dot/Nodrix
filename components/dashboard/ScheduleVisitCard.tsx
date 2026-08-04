@@ -17,9 +17,9 @@ interface SelectedProperty {
 /**
  * Agendamiento de visita a las propiedades/proyectos que el cliente YA
  * eligió durante el flujo de propuestas (inversión y/o vivienda propia).
- * Se muestra junto a `DocumentsCard` en DOCUMENTOS_PENDIENTES para que el
- * cliente pueda subir documentos Y agendar su visita en la misma vista,
- * en paralelo (no una etapa detrás de la otra).
+ * Se muestra en DOCUMENTOS_PENDIENTES para que el cliente pueda subir
+ * documentos Y agendar su visita en la misma vista, en paralelo (no una
+ * etapa detrás de la otra).
  */
 function ScheduleVisitCard({ applicationId }: { applicationId: string }) {
   const [properties, setProperties] = React.useState<SelectedProperty[] | null>(null)

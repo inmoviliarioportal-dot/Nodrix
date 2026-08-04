@@ -11,7 +11,6 @@ import { Toaster } from "@/components/ui/sonner"
 
 import { ComunaOffersCard } from "@/components/dashboard/ComunaOffersCard"
 import { WhatsAppBubble } from "@/components/dashboard/WhatsAppBubble"
-import { DocumentsCard } from "@/components/dashboard/DocumentsCard"
 import { FinalProposalCard } from "@/components/dashboard/FinalProposalCard"
 import { InitialProposalCard } from "@/components/dashboard/InitialProposalCard"
 import { PreEvaluationCard } from "@/components/dashboard/PreEvaluationCard"
@@ -24,6 +23,7 @@ import {
   CLIENT_TIMELINE_STAGES,
   STAGE_LABELS,
   STAGE_MARKETING_LABELS,
+  mapStageForClientTimeline,
   type ApplicationStage,
   type ApplicationRecord,
   type AuthUserResponse,
@@ -109,7 +109,6 @@ export default function DashboardPage() {
   const stageLabel = STAGE_LABELS[stage] ?? stage
   const stageContent =
     STAGE_CLIENT_CONTENT[stage as ApplicationStage] ?? STAGE_CLIENT_CONTENT.RECEPCIONADA
-  const documents = application?.documents ?? []
   const scoring =
     application?.scoring ??
     (application?.scoring_category && isScoringCategory(application.scoring_category)
@@ -150,7 +149,7 @@ export default function DashboardPage() {
               {!loading && application && (
                 <div className="flex flex-col gap-2">
                   {(() => {
-                    const idx = CLIENT_TIMELINE_STAGES.indexOf(stage as ApplicationStage)
+                    const idx = CLIENT_TIMELINE_STAGES.indexOf(mapStageForClientTimeline(stage as ApplicationStage))
                     const completed = idx >= 0 ? idx : 0
                     const total = CLIENT_TIMELINE_STAGES.length
                     const pct = total > 0 ? Math.round((completed / total) * 100) : 0
@@ -196,7 +195,7 @@ export default function DashboardPage() {
             </h2>
             <Timeline
               orientation="horizontal"
-              currentStage={application ? stage : ""}
+              currentStage={application ? mapStageForClientTimeline(stage as ApplicationStage) : ""}
               stages={CLIENT_TIMELINE_STAGES}
               labels={STAGE_MARKETING_LABELS}
             />
@@ -255,40 +254,33 @@ export default function DashboardPage() {
               <span>Duración estimada: {stageContent.estimatedDuration}</span>
             </div>
 
-            {/* Fila de acciones principales -- CTA de documentos (si aplica),
-                actualizar datos y video guía, todos como botones píldora en
-                una sola fila (stack en mobile). */}
-            <div className="flex flex-wrap items-center justify-between gap-2">
+            {/* Fila de acciones -- CTA principal de documentos (si aplica) y,
+                debajo, el par "Actualizar mis datos" + "Ver video guía"
+                juntos como acciones secundarias destacadas. */}
+            <div className="flex flex-col gap-2">
+              {stageContent.showUploadCta && (
+                <Button
+                  className="glow-cyan w-fit gap-2 rounded-full bg-neon-cyan px-5 text-white hover:bg-neon-cyan/90"
+                  render={<Link href="/dashboard/documents" />}
+                >
+                  <UploadCloud className="size-4" aria-hidden="true" />
+                  Subir documentos
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </Button>
+              )}
               <div className="flex flex-wrap items-center gap-2">
-                {stageContent.showUploadCta && (
-                  <Button
-                    className="glow-cyan gap-2 rounded-full bg-neon-cyan px-5 text-white hover:bg-neon-cyan/90"
-                    render={<Link href="/dashboard/documents" />}
-                  >
-                    <UploadCloud className="size-4" aria-hidden="true" />
-                    Subir documentos
-                    <ArrowRight className="size-4" aria-hidden="true" />
-                  </Button>
-                )}
                 {(stage === "SCORING_COMPLETADO" || stage === "DOCUMENTOS_PENDIENTES") && (
                   <Button
+                    className="gap-2 rounded-full border border-neon-cyan/40 bg-neon-cyan/[0.06] px-5 py-2.5 text-[13.5px] font-semibold text-neon-cyan hover:bg-neon-cyan/10"
                     variant="outline"
-                    className="gap-2 rounded-full"
                     render={<Link href="/onboarding/wizard?edit=true" />}
                   >
                     Actualizar mis datos
                   </Button>
                 )}
+                <GuideVideoOverlay title={stageContent.videoTitle} videoUrl={stageContent.videoUrl} stageKey={stage} />
               </div>
-              <GuideVideoOverlay title={stageContent.videoTitle} videoUrl={stageContent.videoUrl} stageKey={stage} />
             </div>
-
-            {stageContent.showUploadCta && (
-              <p className="glass-card flex items-start gap-2 rounded-xl border-l-4 border-l-gold bg-gold/5 p-3 text-[12.5px] leading-snug text-text-secondary">
-                <span className="mt-0.5 text-gold" aria-hidden="true">✦</span>
-                Tu solicitud necesita documentos -- súbelos ahora para que tu asesor pueda continuar el proceso.
-              </p>
-            )}
 
             {stage === "SCORING_COMPLETADO" && application ? (
               // Antes de subir documentos, el cliente debe elegir su
@@ -304,22 +296,17 @@ export default function DashboardPage() {
               // simulada" -- redundante con PreEvaluationCard, que ahora
               // indica las UF aprobadas y el detalle real de propiedades
               // elegidas (ver components/dashboard/PreEvaluationCard.tsx).
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              // Tampoco se repite la tarjeta "Documentos" -- redundante con
+              // el CTA "Subir documentos" ya destacado arriba.
+              <div className="flex flex-col gap-2">
                 <div className="animate-fade-in-up" style={{ "--animate-delay": "0ms" } as React.CSSProperties}>
-                  <DocumentsCard documents={documents} />
-                </div>
-                <div className="animate-fade-in-up" style={{ "--animate-delay": "80ms" } as React.CSSProperties}>
                   <PreEvaluationCard applicationId={application.id} />
                 </div>
                 {/* Agendar visita en paralelo a la subida de documentos --
                     no hay que esperar a "Aprobado previo" para conocer
-                    las propiedades que el cliente ya eligió. Tiene más
-                    contenido (chips + formulario) -- ocupa el ancho completo. */}
+                    las propiedades que el cliente ya eligió. */}
                 {stage === "DOCUMENTOS_PENDIENTES" && application && (
-                  <div
-                    className="animate-fade-in-up sm:col-span-2"
-                    style={{ "--animate-delay": "160ms" } as React.CSSProperties}
-                  >
+                  <div className="animate-fade-in-up" style={{ "--animate-delay": "80ms" } as React.CSSProperties}>
                     <ScheduleVisitCard applicationId={application.id} />
                   </div>
                 )}

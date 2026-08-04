@@ -135,7 +135,7 @@ function Timeline({
         <ol
           data-slot="timeline"
           data-orientation="horizontal"
-          className={cn("flex items-start gap-0", className)}
+          className={cn("flex w-full min-w-[560px] items-start gap-0", className)}
           {...props}
         >
           {stages.map((stage, index) => {
@@ -150,7 +150,7 @@ function Timeline({
                 key={stage}
                 data-slot="timeline-item"
                 data-state={isCurrent ? "current" : isCompleted ? "completed" : "future"}
-                className="relative flex w-20 shrink-0 flex-col items-center gap-2 sm:w-24"
+                className="relative flex min-w-0 flex-1 flex-col items-center gap-2"
               >
                 <div className="relative flex w-full items-center">
                   {/* Línea horizontal conectora hacia el paso anterior */}
