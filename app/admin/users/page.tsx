@@ -3,13 +3,14 @@
 import * as React from "react"
 import Link from "next/link"
 import { toast } from "sonner"
-import { Users, UserPlus, Search, Ban, CheckCircle2 } from "lucide-react"
+import { Users, UserPlus, Search, Ban, CheckCircle2, Pencil } from "lucide-react"
 
 import { Toaster } from "@/components/ui/sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { formatRut } from "@/lib/rut"
+import { EditStaffUserDialog } from "@/components/admin/EditStaffUserDialog"
 
 interface StaffUserRow {
   id: string
@@ -44,6 +45,19 @@ export default function UsersMaintainerPage() {
   const [loading, setLoading] = React.useState(true)
   const [search, setSearch] = React.useState("")
   const [updatingId, setUpdatingId] = React.useState<string | null>(null)
+  const [creatorRole, setCreatorRole] = React.useState<string | null>(null)
+  const [editingUser, setEditingUser] = React.useState<StaffUserRow | null>(null)
+
+  // Solo admin puede editar datos/contraseña -- gerencia puede crear
+  // usuarios pero no editarlos (control de acceso pedido explícitamente).
+  const canEdit = creatorRole === "admin"
+
+  React.useEffect(() => {
+    fetch("/api/auth/user")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setCreatorRole(data?.role ?? null))
+      .catch(() => {})
+  }, [])
 
   const load = React.useCallback(() => {
     setLoading(true)
@@ -160,6 +174,17 @@ export default function UsersMaintainerPage() {
                   </td>
                   <td className="py-2 pr-2">
                     <div className="flex items-center justify-end gap-2">
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 gap-1.5 px-2 text-xs"
+                          onClick={() => setEditingUser(user)}
+                        >
+                          <Pencil className="size-3.5" aria-hidden="true" />
+                          Editar
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="outline"
@@ -187,6 +212,17 @@ export default function UsersMaintainerPage() {
           </table>
         )}
       </div>
+
+      {canEdit && (
+        <EditStaffUserDialog
+          user={editingUser}
+          onOpenChange={(open) => !open && setEditingUser(null)}
+          onUpdated={() => {
+            setEditingUser(null)
+            load()
+          }}
+        />
+      )}
     </div>
   )
 }

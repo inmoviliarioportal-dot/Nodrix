@@ -20,13 +20,20 @@ type UpdateUserBody = {
   rut?: string;
 };
 
+/** Campos que solo `admin` puede tocar -- gerencia puede crear usuarios
+ * pero NO editarlos (pedido explícito de negocio: mantener el control de
+ * quién modifica datos según nivel de acceso). Gerencia conserva solo la
+ * capacidad de habilitar/deshabilitar (`active`), que ya tenía. */
+const EDIT_ONLY_FIELDS: (keyof UpdateUserBody)[] = ["firstName", "lastName", "phone", "rut"];
+
 /**
- * PATCH /api/admin/users/{id} — mantenedor de usuarios de backend: permite
- * habilitar/deshabilitar una cuenta y editar sus datos de contacto. NUNCA
- * cambia el rol (eso requeriría re-evaluar permisos en cascada, fuera de
- * este endpoint) ni permite auto-gestionarse (evita que alguien se
- * deshabilite a sí mismo por error). Requiere admin/gerencia, y solo sobre
- * roles que ese creador podría crear (ver MANAGEABLE_ROLES_BY_CREATOR).
+ * PATCH /api/admin/users/{id} — mantenedor de usuarios de backend.
+ * - `active` (habilitar/deshabilitar): admin y gerencia, cada uno sobre los
+ *   roles que podría crear (ver MANAGEABLE_ROLES_BY_CREATOR).
+ * - Datos de contacto (firstName/lastName/phone/rut): SOLO admin. Gerencia
+ *   recibe 403 si intenta enviar cualquiera de estos campos.
+ * NUNCA cambia el rol (eso requeriría re-evaluar permisos en cascada,
+ * fuera de este endpoint) ni permite auto-gestionarse.
  */
 export const PATCH = withErrorHandling(async (request: Request, context: { params: Promise<{ id: string }> }) => {
   const auth = await requireRole(["admin", "gerencia"]);
@@ -40,6 +47,14 @@ export const PATCH = withErrorHandling(async (request: Request, context: { param
   const body = (await request.json().catch(() => null)) as UpdateUserBody | null;
   if (!body || typeof body !== "object") {
     return apiError("Invalid JSON body", HTTP_STATUS.BAD_REQUEST, "INVALID_BODY");
+  }
+
+  if (auth.role !== "admin" && EDIT_ONLY_FIELDS.some((field) => body[field] !== undefined)) {
+    return apiError(
+      "Solo un administrador puede editar los datos de un usuario. Gerencia solo puede habilitar/deshabilitar cuentas.",
+      HTTP_STATUS.FORBIDDEN,
+      "EDIT_REQUIRES_ADMIN"
+    );
   }
 
   const supabase = createSupabaseServiceRoleClient() as any;
