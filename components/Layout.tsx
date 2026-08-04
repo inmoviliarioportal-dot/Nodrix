@@ -29,8 +29,6 @@ export interface LayoutProps extends React.ComponentProps<"div"> {
 const DEFAULT_NAV_LINKS: LayoutNavLink[] = [
   { href: "/dashboard", label: "Panel", icon: LayoutDashboard },
   { href: "/dashboard/documents", label: "Documentos", icon: FileText },
-  { href: "/#asesoria", label: "Asesoría" },
-  { href: "/#recursos", label: "Recursos" },
 ]
 
 /**
