@@ -35,6 +35,7 @@ type PropertyBody = {
   name?: string;
   comuna?: string;
   location?: string;
+  unitNumber?: string | null;
   priceUf?: number;
   purpose?: string;
   available?: boolean;
@@ -86,6 +87,7 @@ export const POST = withErrorHandling(async (request: Request) => {
       name: body.name!.trim(),
       comuna: body.comuna!.trim(),
       location: body.location?.trim() || body.comuna!.trim(),
+      unit_number: body.unitNumber?.trim() || null,
       price_uf: body.priceUf,
       purpose: body.purpose ?? "ambos",
       available: body.available ?? true,

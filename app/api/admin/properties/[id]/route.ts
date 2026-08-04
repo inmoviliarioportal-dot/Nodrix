@@ -11,6 +11,7 @@ type PropertyBody = {
   name?: string;
   comuna?: string;
   location?: string;
+  unitNumber?: string | null;
   priceUf?: number;
   purpose?: string;
   available?: boolean;
@@ -62,6 +63,7 @@ export const PATCH = withErrorHandling(async (request: Request, context: { param
   if (body.name !== undefined) update.name = body.name.trim();
   if (body.comuna !== undefined) update.comuna = body.comuna.trim();
   if (body.location !== undefined) update.location = body.location.trim();
+  if (body.unitNumber !== undefined) update.unit_number = body.unitNumber?.trim() || null;
   if (body.priceUf !== undefined) update.price_uf = body.priceUf;
   if (body.purpose !== undefined) update.purpose = body.purpose;
   if (body.available !== undefined) update.available = body.available;

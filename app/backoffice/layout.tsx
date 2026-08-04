@@ -39,6 +39,7 @@ export default async function BackofficeLayout({
   const navLinks = [
     ...(canSeeQueue ? [{ href: "/backoffice/queue", label: "Bandeja" }] : []),
     ...(canSeeVisits ? [{ href: "/backoffice/visits", label: "Visitas" }] : []),
+    { href: "/backoffice/properties", label: "Propiedades" },
     ...(role === "admin" || role === "gerencia"
       ? [{ href: "/admin/dashboard", label: "Panel Admin" }]
       : []),

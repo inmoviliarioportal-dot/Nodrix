@@ -16,6 +16,7 @@ interface PropertyRow {
   name: string
   comuna: string
   location: string | null
+  unit_number: string | null
   price_uf: number
   purpose: string | null
   available: boolean
@@ -55,6 +56,7 @@ const EMPTY_FORM = {
   name: "",
   comuna: "",
   location: "",
+  unitNumber: "",
   priceUf: "",
   purpose: "ambos",
   imagesText: "",
@@ -120,6 +122,7 @@ export default function AdminPropertiesPage() {
       name: property.name,
       comuna: property.comuna,
       location: property.location ?? "",
+      unitNumber: property.unit_number ?? "",
       priceUf: String(property.price_uf),
       purpose: property.purpose ?? "ambos",
       imagesText: (property.images ?? []).join("\n"),
@@ -180,6 +183,7 @@ export default function AdminPropertiesPage() {
           name: form.name,
           comuna: form.comuna,
           location: form.location || form.comuna,
+          unitNumber: form.unitNumber || null,
           priceUf,
           purpose: form.purpose,
           images,
@@ -278,6 +282,19 @@ export default function AdminPropertiesPage() {
                   </option>
                 ))}
               </select>
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Field>
+              <FieldLabel htmlFor="unitNumber">N° de departamento/unidad</FieldLabel>
+              <Input
+                id="unitNumber"
+                className="bg-surface-elevated border-glass-border"
+                value={form.unitNumber}
+                onChange={(e) => setForm((f) => ({ ...f, unitNumber: e.target.value }))}
+                placeholder="Depto 402"
+              />
             </Field>
           </div>
 

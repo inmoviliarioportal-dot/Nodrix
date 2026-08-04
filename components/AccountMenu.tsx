@@ -14,6 +14,7 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu"
 import { EditProfileDialog } from "@/components/dashboard/EditProfileDialog"
+import { EditStaffProfileDialog } from "@/components/backoffice/EditStaffProfileDialog"
 import { ChangePasswordDialog } from "@/components/dashboard/ChangePasswordDialog"
 
 interface AuthUser {
@@ -36,6 +37,7 @@ function initialsFrom(name: string | undefined, email: string | undefined) {
 function AccountMenu() {
   const router = useRouter()
   const [user, setUser] = React.useState<AuthUser | null>(null)
+  const [role, setRole] = React.useState<string | null>(null)
   const [editOpen, setEditOpen] = React.useState(false)
   const [passwordOpen, setPasswordOpen] = React.useState(false)
 
@@ -44,7 +46,10 @@ function AccountMenu() {
     fetch("/api/auth/user")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (!cancelled) setUser(data?.user ?? null)
+        if (!cancelled) {
+          setUser(data?.user ?? null)
+          setRole(data?.role ?? null)
+        }
       })
       .catch(() => {
         if (!cancelled) setUser(null)
@@ -53,6 +58,11 @@ function AccountMenu() {
       cancelled = true
     }
   }, [])
+
+  // Los usuarios de backend (asesor/admin/gerencia) tienen un formulario de
+  // edición distinto al de clientes -- ver EditStaffProfileDialog. `role`
+  // viene de GET /api/auth/user (users.role, ver database/schema.sql).
+  const isStaff = role === "asesor" || role === "admin" || role === "gerencia"
 
   if (!user) return null
 
@@ -108,7 +118,11 @@ function AccountMenu() {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <EditProfileDialog open={editOpen} onOpenChange={setEditOpen} />
+      {isStaff ? (
+        <EditStaffProfileDialog open={editOpen} onOpenChange={setEditOpen} />
+      ) : (
+        <EditProfileDialog open={editOpen} onOpenChange={setEditOpen} />
+      )}
       <ChangePasswordDialog open={passwordOpen} onOpenChange={setPasswordOpen} />
     </>
   )
