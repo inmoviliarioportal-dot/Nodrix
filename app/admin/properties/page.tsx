@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { toast } from "sonner"
+import { UploadCloud, X, FileText, Video, Loader2 } from "lucide-react"
 
 import { Toaster } from "@/components/ui/sonner"
 import { Button } from "@/components/ui/button"
@@ -10,6 +11,28 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { PROPERTY_AMENITIES } from "@/lib/property-amenities"
 import { AMENITY_ICONS } from "@/components/dashboard/amenityIcons"
+
+interface ChileRegionWithComunas {
+  id: string
+  name: string
+  comunas: string[]
+}
+
+/** Sube uno o más archivos a POST /api/admin/properties/upload y devuelve
+ * sus URLs públicas -- usado por los 3 tipos de carga (imágenes, plano,
+ * video), ver ese endpoint para el detalle de validación por tipo. */
+async function uploadPropertyFiles(kind: "image" | "floorPlan" | "video", files: FileList | File[]): Promise<string[]> {
+  const formData = new FormData()
+  formData.append("kind", kind)
+  Array.from(files).forEach((file) => formData.append("files", file))
+
+  const res = await fetch("/api/admin/properties/upload", { method: "POST", body: formData })
+  const data = await res.json().catch(() => null)
+  if (!res.ok) {
+    throw new Error(data?.error ?? "No se pudo subir el archivo.")
+  }
+  return data.urls as string[]
+}
 
 interface PropertyRow {
   id: string
@@ -54,12 +77,13 @@ const selectClassName =
 
 const EMPTY_FORM = {
   name: "",
+  regionId: "",
   comuna: "",
   location: "",
   unitNumber: "",
   priceUf: "",
   purpose: "ambos",
-  imagesText: "",
+  images: [] as string[],
   floorPlanUrl: "",
   videoUrl: "",
   nearHistoricCenter: false,
@@ -78,10 +102,14 @@ const EMPTY_FORM = {
  */
 export default function AdminPropertiesPage() {
   const [properties, setProperties] = React.useState<PropertyRow[]>([])
+  const [regions, setRegions] = React.useState<ChileRegionWithComunas[]>([])
   const [loading, setLoading] = React.useState(true)
   const [form, setForm] = React.useState(EMPTY_FORM)
   const [editingId, setEditingId] = React.useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [uploadingImages, setUploadingImages] = React.useState(false)
+  const [uploadingFloorPlan, setUploadingFloorPlan] = React.useState(false)
+  const [uploadingVideo, setUploadingVideo] = React.useState(false)
 
   const load = React.useCallback(() => {
     setLoading(true)
@@ -93,7 +121,62 @@ export default function AdminPropertiesPage() {
 
   React.useEffect(() => {
     load()
+    fetch("/api/regions/enabled")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setRegions(data?.regions ?? []))
+      .catch(() => setRegions([]))
   }, [load])
+
+  const comunaOptions = React.useMemo(
+    () => regions.find((r) => r.id === form.regionId)?.comunas ?? [],
+    [regions, form.regionId]
+  )
+
+  async function handleImagesSelected(files: FileList | null) {
+    if (!files || files.length === 0) return
+    setUploadingImages(true)
+    try {
+      const urls = await uploadPropertyFiles("image", files)
+      setForm((f) => ({ ...f, images: [...f.images, ...urls] }))
+      toast.success(`${urls.length} imagen(es) subida(s).`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "No se pudieron subir las imágenes.")
+    } finally {
+      setUploadingImages(false)
+    }
+  }
+
+  function removeImage(url: string) {
+    setForm((f) => ({ ...f, images: f.images.filter((img) => img !== url) }))
+  }
+
+  async function handleFloorPlanSelected(files: FileList | null) {
+    if (!files || files.length === 0) return
+    setUploadingFloorPlan(true)
+    try {
+      const [url] = await uploadPropertyFiles("floorPlan", [files[0]])
+      setForm((f) => ({ ...f, floorPlanUrl: url }))
+      toast.success("Plano subido.")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "No se pudo subir el plano.")
+    } finally {
+      setUploadingFloorPlan(false)
+    }
+  }
+
+  async function handleVideoSelected(files: FileList | null) {
+    if (!files || files.length === 0) return
+    setUploadingVideo(true)
+    try {
+      const [url] = await uploadPropertyFiles("video", [files[0]])
+      setForm((f) => ({ ...f, videoUrl: url }))
+      toast.success("Video subido.")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "No se pudo subir el video.")
+    } finally {
+      setUploadingVideo(false)
+    }
+  }
 
   function resetForm() {
     setForm(EMPTY_FORM)
@@ -118,14 +201,21 @@ export default function AdminPropertiesPage() {
 
   function startEdit(property: PropertyRow) {
     setEditingId(property.id)
+    // La región no se guarda en `properties` (solo comuna) -- se infiere
+    // buscando qué región contiene esta comuna, para preseleccionar el
+    // combo en cascada al editar.
+    const matchedRegion = regions.find((r) =>
+      r.comunas.some((c) => c.toLowerCase() === property.comuna.toLowerCase())
+    )
     setForm({
       name: property.name,
+      regionId: matchedRegion?.id ?? "",
       comuna: property.comuna,
       location: property.location ?? "",
       unitNumber: property.unit_number ?? "",
       priceUf: String(property.price_uf),
       purpose: property.purpose ?? "ambos",
-      imagesText: (property.images ?? []).join("\n"),
+      images: property.images ?? [],
       floorPlanUrl: property.floor_plan_url ?? "",
       videoUrl: property.video_url ?? "",
       nearHistoricCenter: property.near_historic_center,
@@ -167,11 +257,6 @@ export default function AdminPropertiesPage() {
       return
     }
 
-    const images = form.imagesText
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean)
-
     setIsSubmitting(true)
     try {
       const url = editingId ? `/api/admin/properties/${editingId}` : "/api/admin/properties"
@@ -186,7 +271,7 @@ export default function AdminPropertiesPage() {
           unitNumber: form.unitNumber || null,
           priceUf,
           purpose: form.purpose,
-          images,
+          images: form.images,
           floorPlanUrl: form.floorPlanUrl || null,
           videoUrl: form.videoUrl || null,
           nearHistoricCenter: form.nearHistoricCenter,
@@ -233,15 +318,41 @@ export default function AdminPropertiesPage() {
                 placeholder="Edificio Vista Sur"
               />
             </Field>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field>
+              <FieldLabel htmlFor="region">Región</FieldLabel>
+              <select
+                id="region"
+                className={selectClassName}
+                value={form.regionId}
+                onChange={(e) => setForm((f) => ({ ...f, regionId: e.target.value, comuna: "" }))}
+              >
+                <option value="">Selecciona una región</option>
+                {regions.map((region) => (
+                  <option key={region.id} value={region.id}>
+                    {region.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
             <Field>
               <FieldLabel htmlFor="comuna">Comuna</FieldLabel>
-              <Input
+              <select
                 id="comuna"
-                className="bg-surface-elevated border-glass-border"
+                className={selectClassName}
                 value={form.comuna}
+                disabled={!form.regionId}
                 onChange={(e) => setForm((f) => ({ ...f, comuna: e.target.value }))}
-                placeholder="Ñuñoa"
-              />
+              >
+                <option value="">{form.regionId ? "Selecciona una comuna" : "Elige primero una región"}</option>
+                {comunaOptions.map((comuna) => (
+                  <option key={comuna} value={comuna}>
+                    {comuna}
+                  </option>
+                ))}
+              </select>
             </Field>
           </div>
 
@@ -299,38 +410,167 @@ export default function AdminPropertiesPage() {
           </div>
 
           <Field>
-            <FieldLabel htmlFor="images">Imágenes referenciales (una URL por línea)</FieldLabel>
-            <textarea
+            <FieldLabel htmlFor="images">Imágenes referenciales</FieldLabel>
+            <p className="text-xs text-text-tertiary">Puedes seleccionar varias a la vez (carga masiva) o una por una.</p>
+            <label
+              htmlFor="images"
+              className="border-glass-border bg-surface-elevated hover:border-neon-cyan/50 mt-1 flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed px-4 py-4 text-sm text-text-secondary transition-colors duration-200"
+            >
+              {uploadingImages ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                  Subiendo...
+                </>
+              ) : (
+                <>
+                  <UploadCloud className="size-4" aria-hidden="true" />
+                  Seleccionar imágenes (JPG/PNG/WEBP)
+                </>
+              )}
+            </label>
+            <input
               id="images"
-              rows={3}
-              className="bg-surface-elevated border-glass-border w-full rounded-md border px-3 py-2 text-sm text-text-primary outline-none focus-visible:ring-3 focus-visible:ring-neon-cyan/30"
-              value={form.imagesText}
-              onChange={(e) => setForm((f) => ({ ...f, imagesText: e.target.value }))}
-              placeholder="https://.../foto1.jpg"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              className="hidden"
+              disabled={uploadingImages}
+              onChange={(e) => {
+                handleImagesSelected(e.target.files)
+                e.target.value = ""
+              }}
             />
+            {form.images.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {form.images.map((url) => (
+                  <div key={url} className="group relative size-20 shrink-0 overflow-hidden rounded-lg bg-dark-tertiary">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt="" className="h-full w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(url)}
+                      aria-label="Quitar imagen"
+                      className="absolute top-0.5 right-0.5 flex size-5 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+                    >
+                      <X className="size-3" aria-hidden="true" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </Field>
 
-          <Field>
-            <FieldLabel htmlFor="floorPlanUrl">URL de plano / distribución (opcional)</FieldLabel>
-            <Input
-              id="floorPlanUrl"
-              className="bg-surface-elevated border-glass-border"
-              value={form.floorPlanUrl}
-              onChange={(e) => setForm((f) => ({ ...f, floorPlanUrl: e.target.value }))}
-              placeholder="https://.../plano.jpg"
-            />
-          </Field>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field>
+              <FieldLabel htmlFor="floorPlanFile">Plano / distribución (opcional)</FieldLabel>
+              <label
+                htmlFor="floorPlanFile"
+                className="border-glass-border bg-surface-elevated hover:border-neon-cyan/50 mt-1 flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed px-4 py-3 text-sm text-text-secondary transition-colors duration-200"
+              >
+                {uploadingFloorPlan ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                    Subiendo...
+                  </>
+                ) : form.floorPlanUrl ? (
+                  <>
+                    <FileText className="size-4 text-neon-cyan" aria-hidden="true" />
+                    Plano cargado -- clic para reemplazar
+                  </>
+                ) : (
+                  <>
+                    <UploadCloud className="size-4" aria-hidden="true" />
+                    Subir plano (imagen o PDF)
+                  </>
+                )}
+              </label>
+              <input
+                id="floorPlanFile"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,application/pdf"
+                className="hidden"
+                disabled={uploadingFloorPlan}
+                onChange={(e) => {
+                  handleFloorPlanSelected(e.target.files)
+                  e.target.value = ""
+                }}
+              />
+              {form.floorPlanUrl && (
+                <div className="mt-1 flex items-center gap-2">
+                  <a
+                    href={form.floorPlanUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-neon-cyan underline underline-offset-2"
+                  >
+                    Ver plano actual
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, floorPlanUrl: "" }))}
+                    className="text-xs text-text-tertiary hover:text-error"
+                  >
+                    Quitar
+                  </button>
+                </div>
+              )}
+            </Field>
 
-          <Field>
-            <FieldLabel htmlFor="videoUrl">URL del video (opcional)</FieldLabel>
-            <Input
-              id="videoUrl"
-              className="bg-surface-elevated border-glass-border"
-              value={form.videoUrl}
-              onChange={(e) => setForm((f) => ({ ...f, videoUrl: e.target.value }))}
-              placeholder="https://.../video.mp4"
-            />
-          </Field>
+            <Field>
+              <FieldLabel htmlFor="videoFile">Video (opcional)</FieldLabel>
+              <label
+                htmlFor="videoFile"
+                className="border-glass-border bg-surface-elevated hover:border-neon-cyan/50 mt-1 flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed px-4 py-3 text-sm text-text-secondary transition-colors duration-200"
+              >
+                {uploadingVideo ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                    Subiendo...
+                  </>
+                ) : form.videoUrl ? (
+                  <>
+                    <Video className="size-4 text-neon-cyan" aria-hidden="true" />
+                    Video cargado -- clic para reemplazar
+                  </>
+                ) : (
+                  <>
+                    <UploadCloud className="size-4" aria-hidden="true" />
+                    Subir video (MP4/WEBM)
+                  </>
+                )}
+              </label>
+              <input
+                id="videoFile"
+                type="file"
+                accept="video/mp4,video/webm,video/quicktime"
+                className="hidden"
+                disabled={uploadingVideo}
+                onChange={(e) => {
+                  handleVideoSelected(e.target.files)
+                  e.target.value = ""
+                }}
+              />
+              {form.videoUrl && (
+                <div className="mt-1 flex items-center gap-2">
+                  <a
+                    href={form.videoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-neon-cyan underline underline-offset-2"
+                  >
+                    Ver video actual
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, videoUrl: "" }))}
+                    className="text-xs text-text-tertiary hover:text-error"
+                  >
+                    Quitar
+                  </button>
+                </div>
+              )}
+            </Field>
+          </div>
 
           <Field>
             <FieldLabel>¿Para qué destino es ideal esta propiedad?</FieldLabel>
