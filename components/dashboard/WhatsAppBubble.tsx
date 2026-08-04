@@ -3,16 +3,25 @@
 import { ChevronRight, User } from "lucide-react"
 
 export interface WhatsAppBubbleProps {
-  /** Número de WhatsApp en formato internacional (sin "+", sin espacios). Mock hasta que se guarde un teléfono real por asesor. */
+  /** Número mock usado solo si el asesor asignado aún no cargó su teléfono
+   * real desde "Editar mis datos" (ver EditStaffProfileDialog.tsx). */
   whatsappNumber?: string
   /** Nombre y apellido del asesor asignado a la solicitud (si ya hay uno). */
   advisorName?: string | null
+  /** Teléfono real del asesor asignado (users.phone), en cualquier formato
+   * -- se limpia a solo dígitos para armar el enlace wa.me. */
+  advisorPhone?: string | null
 }
 
 function initialsFrom(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean)
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
   return name.slice(0, 2).toUpperCase()
+}
+
+/** Deja solo dígitos -- wa.me no acepta "+", espacios ni guiones. */
+function digitsOnly(value: string) {
+  return value.replace(/\D/g, "")
 }
 
 /**
@@ -27,8 +36,9 @@ function initialsFrom(name: string) {
  * WhatsApp queda como detalle secundario (indicador verde), no como
  * protagonista del botón.
  */
-function WhatsAppBubble({ whatsappNumber = "56900000000", advisorName }: WhatsAppBubbleProps) {
-  const waHref = `https://wa.me/${whatsappNumber}`
+function WhatsAppBubble({ whatsappNumber = "56900000000", advisorName, advisorPhone }: WhatsAppBubbleProps) {
+  const phoneDigits = advisorPhone ? digitsOnly(advisorPhone) : ""
+  const waHref = `https://wa.me/${phoneDigits || whatsappNumber}`
   const name = advisorName?.trim() || null
 
   return (

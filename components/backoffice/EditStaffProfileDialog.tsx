@@ -19,6 +19,7 @@ interface StaffUser {
   email?: string | null
   full_name?: string | null
   role?: string | null
+  phone?: string | null
 }
 
 interface EditStaffProfileDialogProps {
@@ -36,9 +37,10 @@ const ROLE_LABELS: Record<string, string> = {
 /**
  * Modal "Editar mis datos" para usuarios de backend (asesor/admin/gerencia)
  * -- separado de `EditProfileDialog` (clientes), que pide RUT, renta, tipo
- * de inversión, etc. Los usuarios `users` solo tienen `full_name` como
- * campo editable (ver database/schema.sql); el email es la identidad de
- * Supabase Auth y no se cambia acá.
+ * de inversión, etc. El email es la identidad de Supabase Auth y no se
+ * cambia acá. El teléfono es especialmente importante para el rol asesor:
+ * es el número que arma el enlace de WhatsApp que ve el cliente asignado
+ * en su dashboard (ver WhatsAppBubble.tsx) en vez de un número mock fijo.
  */
 function EditStaffProfileDialog({ open, onOpenChange, onUpdated }: EditStaffProfileDialogProps) {
   const [loading, setLoading] = React.useState(false)
@@ -46,6 +48,7 @@ function EditStaffProfileDialog({ open, onOpenChange, onUpdated }: EditStaffProf
   const [email, setEmail] = React.useState("")
   const [role, setRole] = React.useState("")
   const [fullName, setFullName] = React.useState("")
+  const [phone, setPhone] = React.useState("")
 
   React.useEffect(() => {
     if (!open) return
@@ -57,6 +60,7 @@ function EditStaffProfileDialog({ open, onOpenChange, onUpdated }: EditStaffProf
         setEmail(staffUser.email ?? "")
         setRole(staffUser.role ?? "")
         setFullName(staffUser.full_name ?? "")
+        setPhone(staffUser.phone ?? "")
       })
       .catch(() => toast.error("No se pudo cargar tu perfil."))
       .finally(() => setLoading(false))
@@ -69,7 +73,7 @@ function EditStaffProfileDialog({ open, onOpenChange, onUpdated }: EditStaffProf
       const response = await fetch("/api/users/me", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName }),
+        body: JSON.stringify({ fullName, phone }),
       })
       const data = await response.json().catch(() => null)
       if (!response.ok) {
@@ -107,6 +111,23 @@ function EditStaffProfileDialog({ open, onOpenChange, onUpdated }: EditStaffProf
                 onChange={(e) => setFullName(e.target.value)}
                 required
               />
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor="staff-phone">Teléfono (WhatsApp)</FieldLabel>
+              <Input
+                id="staff-phone"
+                type="tel"
+                className="bg-surface-elevated border-glass-border"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+56 9 1234 5678"
+              />
+              {role === "asesor" && (
+                <p className="mt-1 text-xs text-text-tertiary">
+                  Es el número que usará tu cliente asignado para contactarte por WhatsApp desde su panel.
+                </p>
+              )}
             </Field>
 
             <Field>

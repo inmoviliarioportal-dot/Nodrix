@@ -320,7 +320,10 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <WhatsAppBubble advisorName={application?.assigned_advisor?.full_name} />
+      <WhatsAppBubble
+        advisorName={application?.assigned_advisor?.full_name}
+        advisorPhone={application?.assigned_advisor?.phone}
+      />
     </Layout>
   )
 }

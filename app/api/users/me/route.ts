@@ -16,7 +16,7 @@ export const GET = withErrorHandling(async () => {
   const supabase = createSupabaseServiceRoleClient() as any;
   const { data: staffUser, error } = await supabase
     .from("users")
-    .select("id, email, role, full_name")
+    .select("id, email, role, full_name, phone")
     .eq("id", auth.user.id)
     .maybeSingle();
 
@@ -32,6 +32,7 @@ export const GET = withErrorHandling(async () => {
 
 type UpdateBody = {
   fullName?: string;
+  phone?: string;
 };
 
 export const PATCH = withErrorHandling(async (request: Request) => {
@@ -49,6 +50,7 @@ export const PATCH = withErrorHandling(async (request: Request) => {
   const supabase = createSupabaseServiceRoleClient() as any;
   const update: Record<string, unknown> = {};
   if (body.fullName !== undefined) update.full_name = body.fullName.trim();
+  if (body.phone !== undefined) update.phone = body.phone.trim() || null;
 
   if (Object.keys(update).length === 0) {
     return apiError("Nada para actualizar", HTTP_STATUS.BAD_REQUEST, "EMPTY_UPDATE");
@@ -58,7 +60,7 @@ export const PATCH = withErrorHandling(async (request: Request) => {
     .from("users")
     .update(update)
     .eq("id", auth.user.id)
-    .select("id, email, role, full_name")
+    .select("id, email, role, full_name, phone")
     .single();
 
   if (error) {

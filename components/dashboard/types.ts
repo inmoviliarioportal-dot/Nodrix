@@ -155,7 +155,7 @@ export interface ApplicationRecord {
   /** Asesor asignado a la solicitud (solo nombre, ver GET /api/applications/[id]) --
    * usado en la burbuja de WhatsApp del dashboard para mostrar a quién
    * contactar por nombre y apellido. */
-  assigned_advisor?: { full_name: string | null } | null;
+  assigned_advisor?: { full_name: string | null; phone: string | null } | null;
   created_at?: string;
   updated_at?: string;
 }

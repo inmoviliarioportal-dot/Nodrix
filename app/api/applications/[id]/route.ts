@@ -49,19 +49,22 @@ export const GET = withErrorHandling(async (_request: Request, context: { params
       .select("*")
       .eq("application_id", id)
       .order("created_at", { ascending: false }),
-    // Nombre del asesor asignado (si hay uno) -- se muestra en la burbuja de
-    // WhatsApp del dashboard cliente para generar cercanía. No se expone el
-    // email/id del asesor al cliente, solo su nombre.
+    // Nombre + teléfono del asesor asignado (si hay uno) -- se muestran en la
+    // burbuja de WhatsApp del dashboard cliente para generar cercanía y
+    // armar el enlace de contacto real. No se expone el email/id del asesor
+    // al cliente, solo nombre y teléfono.
     applicationRow.assigned_advisor_id
-      ? supabase.from("users").select("full_name").eq("id", applicationRow.assigned_advisor_id).maybeSingle()
+      ? supabase.from("users").select("full_name, phone").eq("id", applicationRow.assigned_advisor_id).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
+
+  const advisorRow = advisor as { full_name: string | null; phone: string | null } | null;
 
   return NextResponse.json({
     application: {
       ...application,
       documents: documents ?? [],
-      assigned_advisor: advisor ? { full_name: (advisor as { full_name: string | null }).full_name } : null,
+      assigned_advisor: advisorRow ? { full_name: advisorRow.full_name, phone: advisorRow.phone } : null,
     },
     customer: customer ?? null,
     stageHistory: history ?? [],
