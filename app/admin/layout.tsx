@@ -25,7 +25,7 @@ export default async function AdminLayout({
     { href: "/admin/assignments", label: "Asignar asesor", iconKey: "userPlus" as const },
     { href: "/admin/properties", label: "Propiedades", iconKey: "building" as const },
     { href: "/admin/regions", label: "Regiones", iconKey: "mapPin" as const },
-    { href: "/admin/users/new", label: "Crear usuario", iconKey: "users" as const },
+    { href: "/admin/users", label: "Usuarios", iconKey: "users" as const },
     { href: "/admin/roles", label: "Roles", iconKey: "shield" as const },
   ]
 

@@ -22,7 +22,11 @@ export async function requireRolePage(allowedRoles: UserRole[]) {
     redirect("/auth/login");
   }
 
-  const { role, customRoleId } = await getUserRoleAndCustomRoleId(user.id);
+  const { role, customRoleId, active } = await getUserRoleAndCustomRoleId(user.id);
+  if (!active) {
+    await supabase.auth.signOut();
+    redirect("/auth/login?disabled=1");
+  }
   if (!allowedRoles.includes(role)) {
     redirect("/dashboard");
   }
@@ -49,7 +53,11 @@ export async function requirePermissionPage(module: PermissionModule, level: Per
     redirect("/auth/login");
   }
 
-  const { role, customRoleId } = await getUserRoleAndCustomRoleId(user.id);
+  const { role, customRoleId, active } = await getUserRoleAndCustomRoleId(user.id);
+  if (!active) {
+    await supabase.auth.signOut();
+    redirect("/auth/login?disabled=1");
+  }
   if (role === "cliente") {
     redirect("/dashboard");
   }

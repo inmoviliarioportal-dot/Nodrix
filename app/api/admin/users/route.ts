@@ -2,11 +2,15 @@ import { NextResponse } from "next/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase";
 import { apiError, requireRole, withErrorHandling, HTTP_STATUS, type UserRole } from "@/app/api/_shared";
 import { MVP_ORG_ID } from "@/app/api/auth/_constants";
+import { isValidRut, cleanRut } from "@/lib/rut";
 
 type CreateUserBody = {
   email?: string;
   password?: string;
-  fullName?: string;
+  firstName?: string;
+  lastName?: string;
+  rut?: string;
+  phone?: string;
   role?: string;
   customRoleId?: string;
 };
@@ -22,8 +26,13 @@ const CREATABLE_ROLES_BY_CREATOR: Record<string, UserRole[]> = {
 /**
  * GET /api/admin/users?role=asesor
  *
- * Lista usuarios internos (staff) por rol -- usado para poblar el selector
- * de "Asignar asesor". Requiere admin/gerencia.
+ * Lista usuarios internos (staff). Con `?role=` filtra por ese rol exacto
+ * (usado para poblar el selector de "Asignar asesor"). Sin filtro, devuelve
+ * solo los roles que el creador puede GESTIONAR (mismo set que puede crear,
+ * ver `CREATABLE_ROLES_BY_CREATOR`) -- así el mantenedor de usuarios
+ * (app/admin/users/page.tsx) nunca expone cuentas admin a gerencia, ni
+ * permite a nadie deshabilitar cuentas fuera de su alcance. Requiere
+ * admin/gerencia.
  */
 export const GET = withErrorHandling(async (request: Request) => {
   const auth = await requireRole(["admin", "gerencia"]);
@@ -33,8 +42,17 @@ export const GET = withErrorHandling(async (request: Request) => {
   const role = searchParams.get("role");
 
   const supabase = createSupabaseServiceRoleClient() as any;
-  let query = supabase.from("users").select("id, email, full_name, role").eq("org_id", MVP_ORG_ID);
-  if (role) query = query.eq("role", role);
+  let query = supabase
+    .from("users")
+    .select("id, email, first_name, last_name, full_name, rut, phone, role, active, created_at")
+    .eq("org_id", MVP_ORG_ID);
+
+  if (role) {
+    query = query.eq("role", role);
+  } else {
+    const manageableRoles = CREATABLE_ROLES_BY_CREATOR[auth.role] ?? [];
+    query = query.in("role", manageableRoles);
+  }
 
   const { data, error } = await query.order("full_name", { ascending: true });
   if (error) {
@@ -61,9 +79,9 @@ export const POST = withErrorHandling(async (request: Request) => {
   if (!auth.authorized) return auth.response;
 
   const body = (await request.json().catch(() => null)) as CreateUserBody | null;
-  if (!body?.email || !body?.password || !body?.fullName || !body?.role) {
+  if (!body?.email || !body?.password || !body?.firstName || !body?.lastName || !body?.rut || !body?.role) {
     return apiError(
-      "email, password, fullName y role son requeridos",
+      "email, password, firstName, lastName, rut y role son requeridos",
       HTTP_STATUS.BAD_REQUEST,
       "INVALID_BODY"
     );
@@ -80,8 +98,22 @@ export const POST = withErrorHandling(async (request: Request) => {
   if (body.password.length < 8) {
     return apiError("La contraseña debe tener al menos 8 caracteres", HTTP_STATUS.BAD_REQUEST, "PASSWORD_TOO_SHORT");
   }
+  if (!isValidRut(body.rut)) {
+    return apiError("El RUT ingresado no es válido", HTTP_STATUS.BAD_REQUEST, "INVALID_RUT");
+  }
 
   const supabase = createSupabaseServiceRoleClient() as any;
+
+  const normalizedRut = cleanRut(body.rut);
+  const { data: existingRut } = await supabase
+    .from("users")
+    .select("id")
+    .eq("org_id", MVP_ORG_ID)
+    .eq("rut", normalizedRut)
+    .maybeSingle();
+  if (existingRut) {
+    return apiError("Ya existe un usuario con ese RUT", HTTP_STATUS.CONFLICT, "RUT_ALREADY_EXISTS");
+  }
 
   if (body.role === "custom") {
     if (!body.customRoleId) {
@@ -98,11 +130,13 @@ export const POST = withErrorHandling(async (request: Request) => {
     }
   }
 
+  const fullName = `${body.firstName.trim()} ${body.lastName.trim()}`.trim();
+
   const { data: created, error: createError } = await supabase.auth.admin.createUser({
     email: body.email,
     password: body.password,
     email_confirm: true,
-    user_metadata: { name: body.fullName },
+    user_metadata: { name: fullName },
   });
 
   if (createError || !created?.user) {
@@ -119,9 +153,14 @@ export const POST = withErrorHandling(async (request: Request) => {
       id: created.user.id,
       org_id: MVP_ORG_ID,
       email: body.email,
-      full_name: body.fullName,
+      first_name: body.firstName.trim(),
+      last_name: body.lastName.trim(),
+      full_name: fullName,
+      rut: normalizedRut,
+      phone: body.phone?.trim() || null,
       role: body.role,
       custom_role_id: body.role === "custom" ? body.customRoleId : null,
+      active: true,
     })
     .select()
     .single();

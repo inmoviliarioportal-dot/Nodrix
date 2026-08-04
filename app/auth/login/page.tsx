@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
 import { Layout } from "@/components/Layout"
@@ -26,6 +26,15 @@ export default function LoginPage() {
   const [form, setForm] = useState<FormState>(initialForm)
   const [errors, setErrors] = useState<FormErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    // Redirigido acá tras detectar `active = false` en un guard de rol (ver
+    // lib/auth-guards.ts) -- la sesión ya fue cerrada del lado del servidor,
+    // solo falta explicarle al usuario por qué volvió al login.
+    if (new URLSearchParams(window.location.search).get("disabled") === "1") {
+      toast.error("Tu cuenta ha sido deshabilitada. Contacta a tu administrador.")
+    }
+  }, [])
 
   function handleChange(field: keyof FormState, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))

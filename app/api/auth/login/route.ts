@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase";
-import { apiError, withErrorHandling, HTTP_STATUS, getUserRole } from "@/app/api/_shared";
+import { apiError, withErrorHandling, HTTP_STATUS, getUserRoleAndCustomRoleId } from "@/app/api/_shared";
 
 type LoginBody = {
   email?: string;
@@ -36,7 +36,19 @@ export const POST = withErrorHandling(async (request: Request) => {
     return apiError(error.message, HTTP_STATUS.UNAUTHORIZED, "LOGIN_FAILED");
   }
 
-  const role = data.user ? await getUserRole(data.user.id) : "cliente";
+  const { role, active } = data.user
+    ? await getUserRoleAndCustomRoleId(data.user.id)
+    : { role: "cliente" as const, active: true };
+
+  if (!active) {
+    // La cuenta de backend fue deshabilitada desde el mantenedor de
+    // usuarios (ver app/admin/users/page.tsx) -- cerramos la sesión que
+    // Supabase Auth acaba de crear para no dejarla "colgada" y devolvemos
+    // un mensaje claro en vez de dejar que el resto de la app lo eche por
+    // los guards de rol sin explicación.
+    await supabase.auth.signOut();
+    return apiError("Tu cuenta ha sido deshabilitada. Contacta a tu administrador.", HTTP_STATUS.FORBIDDEN, "USER_DISABLED");
+  }
 
   return NextResponse.json({ user: data.user, session: data.session, role });
 });

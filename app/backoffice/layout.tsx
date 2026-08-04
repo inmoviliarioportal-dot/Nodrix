@@ -28,7 +28,11 @@ export default async function BackofficeLayout({
   } = await supabase.auth.getUser()
   if (!user) redirect("/auth/login")
 
-  const { role, customRoleId } = await getUserRoleAndCustomRoleId(user.id)
+  const { role, customRoleId, active } = await getUserRoleAndCustomRoleId(user.id)
+  if (!active) {
+    await supabase.auth.signOut()
+    redirect("/auth/login?disabled=1")
+  }
   if (role === "cliente") redirect("/dashboard")
 
   const permissions = await getEffectivePermissions(role, customRoleId)
