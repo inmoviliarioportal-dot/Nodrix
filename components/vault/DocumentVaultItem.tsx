@@ -123,19 +123,19 @@ function DocumentVaultItem({
 
   return (
     <div className="glass-card interactive-lift flex flex-col gap-2.5 rounded-2xl p-4">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2.5">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex min-w-0 items-start gap-2.5">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-dark-tertiary">
             <FileTextIcon className="size-4.5 text-neon-cyan" />
           </div>
-          <div className="flex min-w-0 flex-col">
-            <span className="truncate text-sm font-semibold text-text-primary">{typeLabel}</span>
-            {hint && <span className="truncate text-[11px] text-text-tertiary">{hint}</span>}
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <span className="text-sm leading-snug font-semibold text-text-primary">{typeLabel}</span>
+            {hint && <span className="text-[11px] leading-snug text-text-tertiary">{hint}</span>}
           </div>
         </div>
         <span
           className={cn(
-            "shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold",
+            "shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[11px] font-semibold",
             statusPillClass
           )}
         >
