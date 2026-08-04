@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Bell, LayoutDashboard, FileText, Menu } from "lucide-react"
@@ -46,6 +47,20 @@ function Layout({
   ...props
 }: LayoutProps) {
   const pathname = usePathname()
+  const [logoHref, setLogoHref] = React.useState("/")
+
+  React.useEffect(() => {
+    let cancelled = false
+    fetch("/api/auth/user")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.user) setLogoHref("/dashboard")
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   return (
     <div
@@ -56,7 +71,7 @@ function Layout({
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 px-6">
           <div className="flex items-center gap-7">
             <Link
-              href="/"
+              href={logoHref}
               className="flex items-center gap-2 font-heading text-base font-semibold tracking-tight text-text-primary transition-colors duration-200 hover:text-gold"
             >
               <svg width="26" height="26" viewBox="0 0 34 34" aria-hidden="true">
