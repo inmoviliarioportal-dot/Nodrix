@@ -254,13 +254,13 @@ export default function DashboardPage() {
               <span>Duración estimada: {stageContent.estimatedDuration}</span>
             </div>
 
-            {/* Fila de acciones -- CTA principal de documentos (si aplica) y,
-                debajo, el par "Actualizar mis datos" + "Ver video guía"
-                juntos como acciones secundarias destacadas. */}
-            <div className="flex flex-col gap-2">
+            {/* Fila de acciones -- los 3 botones (subir documentos, actualizar
+                datos, video guía) uno al lado del otro, misma tipografía y
+                tamaño para que se vean como un solo grupo coherente. */}
+            <div className="flex flex-wrap items-center gap-2">
               {stageContent.showUploadCta && (
                 <Button
-                  className="glow-cyan w-fit gap-2 rounded-full bg-neon-cyan px-5 text-white hover:bg-neon-cyan/90"
+                  className="glow-cyan gap-2 rounded-full bg-neon-cyan px-5 py-2.5 text-[13.5px] font-semibold text-white hover:bg-neon-cyan/90"
                   render={<Link href="/dashboard/documents" />}
                 >
                   <UploadCloud className="size-4" aria-hidden="true" />
@@ -268,18 +268,16 @@ export default function DashboardPage() {
                   <ArrowRight className="size-4" aria-hidden="true" />
                 </Button>
               )}
-              <div className="flex flex-wrap items-center gap-2">
-                {(stage === "SCORING_COMPLETADO" || stage === "DOCUMENTOS_PENDIENTES") && (
-                  <Button
-                    className="gap-2 rounded-full border border-neon-cyan/40 bg-neon-cyan/[0.06] px-5 py-2.5 text-[13.5px] font-semibold text-neon-cyan hover:bg-neon-cyan/10"
-                    variant="outline"
-                    render={<Link href="/onboarding/wizard?edit=true" />}
-                  >
-                    Actualizar mis datos
-                  </Button>
-                )}
-                <GuideVideoOverlay title={stageContent.videoTitle} videoUrl={stageContent.videoUrl} stageKey={stage} />
-              </div>
+              {(stage === "SCORING_COMPLETADO" || stage === "DOCUMENTOS_PENDIENTES") && (
+                <Button
+                  className="gap-2 rounded-full border border-neon-cyan/40 bg-neon-cyan/[0.06] px-5 py-2.5 text-[13.5px] font-semibold text-neon-cyan hover:bg-neon-cyan/10"
+                  variant="outline"
+                  render={<Link href="/onboarding/wizard?edit=true" />}
+                >
+                  Actualizar mis datos
+                </Button>
+              )}
+              <GuideVideoOverlay title={stageContent.videoTitle} videoUrl={stageContent.videoUrl} stageKey={stage} />
             </div>
 
             {stage === "SCORING_COMPLETADO" && application ? (
