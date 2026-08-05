@@ -10,6 +10,7 @@ export const PERMISSION_MODULES = [
   "usuarios",
   "reportes",
   "propiedades",
+  "variables",
 ] as const;
 
 export type PermissionModule = (typeof PERMISSION_MODULES)[number];
@@ -23,6 +24,7 @@ export const PERMISSION_MODULE_LABELS: Record<PermissionModule, string> = {
   usuarios: "Usuarios",
   reportes: "Reportes",
   propiedades: "Propiedades y regiones",
+  variables: "Variables del wizard",
 };
 
 export type PermissionMap = Record<PermissionModule, PermissionLevel>;
@@ -35,6 +37,7 @@ const NONE_ALL: PermissionMap = {
   usuarios: "none",
   reportes: "none",
   propiedades: "none",
+  variables: "none",
 };
 
 const EDIT_ALL: PermissionMap = {
@@ -45,6 +48,7 @@ const EDIT_ALL: PermissionMap = {
   usuarios: "edit",
   reportes: "edit",
   propiedades: "edit",
+  variables: "edit",
 };
 
 /** Permisos por defecto de los roles fijos del sistema. `admin` es
