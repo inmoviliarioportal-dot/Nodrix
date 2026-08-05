@@ -44,7 +44,13 @@ export default async function BackofficeLayout({
     ...(canSeeQueue ? [{ href: "/backoffice/queue", label: "Bandeja" }] : []),
     ...(canSeeVisits ? [{ href: "/backoffice/visits", label: "Visitas" }] : []),
     { href: "/backoffice/properties", label: "Propiedades" },
-    ...(role === "admin" || role === "gerencia"
+    // "Panel Admin" solo aparece si el rol realmente puede entrar a algo
+    // ahí -- admin siempre; gerencia solo si tiene al menos un módulo
+    // habilitado (mismo chequeo que filtra su menú dentro de /admin, ver
+    // app/admin/layout.tsx), para no ofrecer un atajo a un menú vacío.
+    ...(role === "admin" ||
+    (role === "gerencia" &&
+      (canSeeQueue || canSeeVisits || hasPermission(permissions, "reportes", "view") || hasPermission(permissions, "usuarios", "view") || hasPermission(permissions, "propiedades", "view")))
       ? [{ href: "/admin/dashboard", label: "Panel Admin" }]
       : []),
   ]

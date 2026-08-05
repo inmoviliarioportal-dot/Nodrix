@@ -16,6 +16,7 @@ const MODULES = [
   { key: "scoring", label: "Scoring" },
   { key: "usuarios", label: "Usuarios" },
   { key: "reportes", label: "Reportes" },
+  { key: "propiedades", label: "Propiedades y regiones" },
 ] as const
 
 type ModuleKey = (typeof MODULES)[number]["key"]
@@ -29,6 +30,17 @@ const EMPTY_PERMISSIONS: PermissionMap = {
   scoring: "none",
   usuarios: "none",
   reportes: "none",
+  propiedades: "none",
+}
+
+const GERENCIA_EDIT_ALL: PermissionMap = {
+  bandeja: "edit",
+  visitas: "edit",
+  documentos: "edit",
+  scoring: "edit",
+  usuarios: "edit",
+  reportes: "edit",
+  propiedades: "edit",
 }
 
 interface CustomRole {
@@ -101,6 +113,9 @@ export default function RolesPage() {
   const [permissions, setPermissions] = React.useState<PermissionMap>({ ...EMPTY_PERMISSIONS })
   const [editingId, setEditingId] = React.useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [gerenciaPermissions, setGerenciaPermissions] = React.useState<PermissionMap>({ ...GERENCIA_EDIT_ALL })
+  const [loadingGerencia, setLoadingGerencia] = React.useState(true)
+  const [savingGerencia, setSavingGerencia] = React.useState(false)
 
   const load = React.useCallback(() => {
     setLoading(true)
@@ -110,13 +125,45 @@ export default function RolesPage() {
       .finally(() => setLoading(false))
   }, [])
 
+  const loadGerenciaPermissions = React.useCallback(() => {
+    setLoadingGerencia(true)
+    fetch("/api/admin/role-permissions")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.permissions) setGerenciaPermissions({ ...EMPTY_PERMISSIONS, ...data.permissions })
+      })
+      .finally(() => setLoadingGerencia(false))
+  }, [])
+
   React.useEffect(() => {
     load()
     fetch("/api/auth/user")
       .then((res) => (res.ok ? res.json() : null))
-      .then((data) => setCreatorRole(data?.role ?? null))
+      .then((data) => {
+        setCreatorRole(data?.role ?? null)
+        if (data?.role === "admin") loadGerenciaPermissions()
+      })
       .catch(() => {})
-  }, [load])
+  }, [load, loadGerenciaPermissions])
+
+  async function handleSaveGerenciaPermissions() {
+    setSavingGerencia(true)
+    try {
+      const res = await fetch("/api/admin/role-permissions", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ permissions: gerenciaPermissions }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok) {
+        toast.error(data?.error ?? "No se pudieron guardar los permisos de gerencia.")
+        return
+      }
+      toast.success("Permisos de gerencia actualizados. El menú se ajustará en su próxima sesión.")
+    } finally {
+      setSavingGerencia(false)
+    }
+  }
 
   function resetForm() {
     setName("")
@@ -177,7 +224,45 @@ export default function RolesPage() {
     <div className="flex flex-col gap-6">
       <Toaster />
       <div className="flex flex-col gap-1">
-        <h1 className="font-heading text-2xl font-semibold text-text-primary">Roles personalizados</h1>
+        <h1 className="font-heading text-2xl font-semibold text-text-primary">Roles y permisos</h1>
+        <p className="text-sm text-text-secondary">
+          Controla qué ve y edita cada nivel de acceso -- gerencia solo verá en su menú los módulos que habilites acá.
+        </p>
+      </div>
+
+      <div className="glass-card rounded-2xl p-6">
+        <div className="mb-4 flex flex-col gap-1">
+          <h2 className="font-heading text-sm font-semibold uppercase tracking-wide text-text-tertiary">
+            Permisos de Gerencia
+          </h2>
+          <p className="text-xs text-text-tertiary">
+            Los módulos en "Sin acceso" desaparecen del menú de gerencia (ej. "Roles" queda siempre oculto para
+            gerencia, no es configurable). Gerencia puede crear usuarios asesores pero no editarlos ni cambiarles la
+            contraseña -- eso también sigue siendo exclusivo de admin sin importar esta matriz.
+          </p>
+        </div>
+        {loadingGerencia ? (
+          <p className="text-sm text-text-tertiary">Cargando...</p>
+        ) : (
+          <>
+            <PermissionMatrix
+              permissions={gerenciaPermissions}
+              onChange={(m, l) => setGerenciaPermissions((p) => ({ ...p, [m]: l }))}
+            />
+            <Button
+              type="button"
+              disabled={savingGerencia}
+              onClick={handleSaveGerenciaPermissions}
+              className="glow-cyan bg-neon-cyan text-deep hover:bg-neon-cyan/90 mt-4 w-fit"
+            >
+              {savingGerencia ? "Guardando..." : "Guardar permisos de gerencia"}
+            </Button>
+          </>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <h2 className="font-heading text-xl font-semibold text-text-primary">Roles personalizados</h2>
         <p className="text-sm text-text-secondary">
           Define qué puede ver y editar cada rol. Ej: un rol "consulta" con todo en Ver, o "solo reagendamiento" con
           Visitas en Editar y el resto en Sin acceso.
