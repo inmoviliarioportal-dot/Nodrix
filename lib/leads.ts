@@ -54,6 +54,11 @@ export interface ApplicationRow {
   pre_evaluation_min_uf: number | null;
   pre_evaluation_max_uf: number | null;
   assigned_advisor_id?: string | null;
+  /** Versión de wizard_variable_sets a la que quedó anclada esta solicitud
+   * (ver lib/wizard-variables.ts). Solo presente cuando el endpoint de
+   * detalle (`/api/applications/[id]`) la resuelve explícitamente; no es una
+   * columna real de `applications`. */
+  variable_set_version?: number | null;
   created_at: string;
   updated_at: string;
 }

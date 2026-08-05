@@ -35,9 +35,14 @@ export const GET = withErrorHandling(async (_request: Request, context: { params
     return apiError("Application not found", HTTP_STATUS.NOT_FOUND, "APPLICATION_NOT_FOUND");
   }
 
-  const applicationRow = application as { customer_id: string; assigned_advisor_id: string | null };
+  const applicationRow = application as {
+    customer_id: string;
+    assigned_advisor_id: string | null;
+    wizard_variable_set_id: string | null;
+  };
 
-  const [{ data: customer }, { data: history }, { data: documents }, { data: advisor }] = await Promise.all([
+  const [{ data: customer }, { data: history }, { data: documents }, { data: advisor }, { data: variableSet }] =
+    await Promise.all([
     supabase.from("customers").select("*").eq("id", applicationRow.customer_id).maybeSingle(),
     supabase
       .from("application_stage_history")
@@ -56,15 +61,24 @@ export const GET = withErrorHandling(async (_request: Request, context: { params
     applicationRow.assigned_advisor_id
       ? supabase.from("users").select("full_name, phone").eq("id", applicationRow.assigned_advisor_id).maybeSingle()
       : Promise.resolve({ data: null }),
+    // Versión de wizard_variable_sets a la que quedó anclada esta solicitud
+    // (ver lib/wizard-variables.ts) -- solo se usa para mostrarle al asesor
+    // un dato discreto ("Parámetros vN") en el backoffice, no se expone el
+    // contenido completo del set.
+    applicationRow.wizard_variable_set_id
+      ? supabase.from("wizard_variable_sets").select("version").eq("id", applicationRow.wizard_variable_set_id).maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
 
   const advisorRow = advisor as { full_name: string | null; phone: string | null } | null;
+  const variableSetRow = variableSet as { version: number } | null;
 
   return NextResponse.json({
     application: {
       ...application,
       documents: documents ?? [],
       assigned_advisor: advisorRow ? { full_name: advisorRow.full_name, phone: advisorRow.phone } : null,
+      variable_set_version: variableSetRow?.version ?? null,
     },
     customer: customer ?? null,
     stageHistory: history ?? [],

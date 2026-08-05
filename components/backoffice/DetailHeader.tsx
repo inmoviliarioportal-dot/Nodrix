@@ -55,6 +55,11 @@ function DetailHeader({ application, customer }: DetailHeaderProps) {
           <span className="rounded-full border border-glass-border bg-glass px-3 py-1 text-xs text-text-secondary">
             Estado: {STAGE_LABELS[application.stage as keyof typeof STAGE_LABELS] ?? application.stage}
           </span>
+          {application.variable_set_version != null && (
+            <span className="text-[11px] text-text-tertiary">
+              Parámetros v{application.variable_set_version}
+            </span>
+          )}
         </div>
       </div>
     </div>

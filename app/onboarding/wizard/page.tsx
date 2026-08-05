@@ -223,6 +223,12 @@ function WizardPageInner() {
   // en vez de un salto instantáneo que no comunica que se está reprocesando.
   const [recalculating, setRecalculating] = useState(false);
   const [recalculatePercent, setRecalculatePercent] = useState(0);
+  // true solo cuando el recálculo cambió de versión de parámetros de
+  // evaluación (wizard_variable_sets) Y ese cambio efectivamente movió el
+  // monto aprobado -- ver bloque `if (recalculating)` más abajo, donde se
+  // muestra un mensaje aclaratorio al cliente. Si no hay ambas condiciones,
+  // no se muestra nada (requisito duro: cero ruido si no le afectó).
+  const [variableVersionChanged, setVariableVersionChanged] = useState(false);
   const hasRestored = useRef(false);
 
   useEffect(() => {
@@ -418,6 +424,20 @@ function WizardPageInner() {
           setProfileError(true);
           return;
         }
+        // Detectar si el recálculo re-ancló la solicitud a una versión
+        // distinta de parámetros de evaluación Y eso cambió el monto
+        // aprobado -- ver lib/wizard-variables.ts / update-financial-profile
+        // route. Solo en ese caso mostramos el mensaje aclaratorio; si el
+        // cliente no se vio afectado por el cambio de parámetros, no le
+        // mostramos nada (no le interesa la versión interna).
+        const resultJson = await res.json().catch(() => null);
+        const versionChanged =
+          resultJson?.previousVariableVersion != null &&
+          resultJson?.newVariableVersion != null &&
+          resultJson.previousVariableVersion !== resultJson.newVariableVersion;
+        const amountChanged =
+          resultJson?.previousPreEvaluation?.maxUF !== resultJson?.newPreEvaluation?.maxUF;
+        setVariableVersionChanged(Boolean(versionChanged && amountChanged));
         // Pantalla puente antes de saltar a la propuesta recalculada -- ver
         // estado `recalculating` más abajo. Duración mínima fija (no depende
         // de un timer de progreso real) porque el fetch ya terminó acá.
@@ -476,6 +496,15 @@ function WizardPageInner() {
         <div className="flex min-h-[3rem] flex-col items-center gap-2 text-center">
           <RotatingMessage messages={RECALCULATE_MESSAGES} intervalMs={900} />
         </div>
+        {variableVersionChanged && (
+          <div
+            className="max-w-md rounded-xl border p-4 text-center text-sm"
+            style={{ borderColor: "#4F46E5", color: "#D1D5DB" }}
+          >
+            Tu nueva estimación considera tanto los datos que actualizaste como una revisión de
+            nuestras condiciones de evaluación.
+          </div>
+        )}
       </main>
     );
   }
