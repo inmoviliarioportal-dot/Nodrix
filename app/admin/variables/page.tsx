@@ -73,7 +73,18 @@ export default function VariablesPage() {
   const loadVersions = React.useCallback(() => {
     setLoadingVersions(true)
     fetch("/api/admin/wizard-variables")
-      .then((res) => (res.ok ? res.json() : null))
+      .then(async (res) => {
+        const data = await res.json().catch(() => null)
+        if (!res.ok) {
+          // No tragarse el error como si fuera "lista vacía" -- sin esto un
+          // 500 real se ve idéntico a "todavía no hay versiones", que es
+          // justo lo que pasó cuando el join a `users` tenía una columna
+          // que no existe (name en vez de full_name).
+          toast.error(data?.error ?? "No se pudo cargar el historial de versiones.")
+          return null
+        }
+        return data
+      })
       .then((data) => setVersions(data?.versions ?? []))
       .finally(() => setLoadingVersions(false))
   }, [])
@@ -82,7 +93,14 @@ export default function VariablesPage() {
     setLoadingDetail(true)
     setSimulationResult(null)
     fetch(`/api/admin/wizard-variables/${version}`)
-      .then((res) => (res.ok ? res.json() : null))
+      .then(async (res) => {
+        const data = await res.json().catch(() => null)
+        if (!res.ok) {
+          toast.error(data?.error ?? `No se pudo cargar la versión ${version}.`)
+          return null
+        }
+        return data
+      })
       .then((data) => {
         const vs = data?.variableSet as VariableSetDetail | undefined
         if (!vs) return

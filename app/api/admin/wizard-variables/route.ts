@@ -24,7 +24,7 @@ export const GET = withErrorHandling(async () => {
   const supabase = createSupabaseServiceRoleClient() as unknown as AnySupabaseClient;
 
   const { data, error } = await (supabase.from("wizard_variable_sets") as any)
-    .select("version, status, note, simulated_at, created_at, created_by, creator:users ( id, name, email )")
+    .select("version, status, note, simulated_at, created_at, created_by, creator:users ( id, full_name, email )")
     .eq("org_id", MVP_ORG_ID)
     .order("version", { ascending: false });
 

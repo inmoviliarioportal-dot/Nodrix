@@ -9,7 +9,7 @@ export interface VersionListItem {
   simulated_at: string | null
   created_at: string
   created_by: string | null
-  creator?: { id: string; name: string | null; email: string | null } | null
+  creator?: { id: string; full_name: string | null; email: string | null } | null
 }
 
 const STATUS_LABELS: Record<VersionListItem["status"], string> = {
@@ -70,7 +70,7 @@ export function VersionHistoryTable({
               </td>
               <td className="px-2 py-2 text-text-secondary">{v.note ?? "--"}</td>
               <td className="px-2 py-2 text-text-secondary">
-                {v.creator?.name ?? v.creator?.email ?? (v.created_by ? "--" : "sistema")}
+                {v.creator?.full_name ?? v.creator?.email ?? (v.created_by ? "--" : "sistema")}
               </td>
               <td className="px-2 py-2 text-xs text-text-tertiary">
                 {v.created_at ? new Date(v.created_at).toLocaleString("es-CL") : "--"}
