@@ -27,19 +27,22 @@
  */
 
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import type { LoanTermTier } from "@/lib/loan-term";
+import type { ProfessionalLevel } from "@/lib/proposal-risk";
 
 // =============================================================================
 // Tipos — derivados 1:1 de los comentarios COMMENT ON COLUMN de la migración
 // 031_wizard_variable_sets.sql. No inventar campos que no estén en el seed.
 // =============================================================================
 
-/** Plazo del crédito. `tiers` es placeholder vacío hasta que un agente C1
- * posterior defina la matriz edad x nivel profesional. */
+/** Plazo del crédito. `tiers` es la matriz edad x nivel profesional (ver
+ * lib/loan-term.ts) -- objeto vacío `{}` cuando aún no está poblada (v1),
+ * en cuyo caso el motor usa `fallbackYears` para todos los casos. */
 export interface LoanTermsConfig {
   maxAgeAtApplication: number;
   fallbackYears: number;
-  /** Matriz edad x nivel profesional, aún sin definir (placeholder `{}`). */
-  tiers: Record<string, { maxAge?: number; termYears?: number }>;
+  /** Matriz edad x nivel profesional. `{}` = sin poblar (usa fallback plano). */
+  tiers: Partial<Record<ProfessionalLevel, LoanTermTier[]>>;
 }
 
 /** Umbrales mínimos de calificación para optar a evaluación de compra. */
@@ -173,16 +176,17 @@ export function validateVariableSetHardLimits(set: VariableSet): string[] {
   const violations: string[] = [];
 
   // 1. loan_terms.tiers: ningún tramo puede producir edad + plazo > 80.
-  //    `tiers` está vacío `{}` hoy (placeholder para un agente C1 posterior),
-  //    así que este chequeo es un no-op en la práctica hasta que tenga
-  //    contenido, pero queda activo y listo para cuando se llene.
-  for (const [key, tier] of Object.entries(set.loanTerms.tiers ?? {})) {
-    const maxAge = tier?.maxAge;
-    const termYears = tier?.termYears;
-    if (typeof maxAge === "number" && typeof termYears === "number" && maxAge + termYears > 80) {
-      violations.push(
-        `loan_terms.tiers["${key}"]: edad + plazo (${maxAge} + ${termYears} = ${maxAge + termYears}) excede 80`
-      );
+  //    `tiers` está vacío `{}` en la versión 1 (fallback plano), así que
+  //    este chequeo es un no-op en la práctica hasta que tenga contenido.
+  for (const [level, levelTiers] of Object.entries(set.loanTerms.tiers ?? {})) {
+    for (const tier of levelTiers ?? []) {
+      const maxAge = tier?.maxAge;
+      const termYears = tier?.years;
+      if (typeof maxAge === "number" && typeof termYears === "number" && maxAge + termYears > 80) {
+        violations.push(
+          `loan_terms.tiers["${level}"]: edad + plazo (${maxAge} + ${termYears} = ${maxAge + termYears}) excede 80`
+        );
+      }
     }
   }
 

@@ -43,13 +43,16 @@ export const GET = withErrorHandling(async (_request: Request, context: { params
   }
 
   const { data: customer } = await (supabase.from("customers") as any)
-    .select("investment_type, property_destination, monthly_income, professional_level")
+    .select("investment_type, property_destination, monthly_income, professional_level, birth_date")
     .eq("id", application.customer_id)
     .maybeSingle();
 
   // Si el cliente declaró un aval/codeudor en el wizard, su renta suma a la
   // capacidad de pago (ver lib/uf-preevaluation.ts) -- a lo más un aval por
-  // application (ver migración 017_guarantors.sql).
+  // application (ver migración 017_guarantors.sql). La tabla `guarantors`
+  // hoy no guarda fecha de nacimiento del aval (solo renta/parentesco/tipo
+  // de contrato), así que `avalBirthDate` queda indefinida por ahora -- el
+  // motor de plazo (lib/loan-term.ts) ya soporta el campo cuando exista.
   const { data: guarantor } = await (supabase.from("guarantors") as any)
     .select("monthly_income")
     .eq("application_id", id)
@@ -89,12 +92,15 @@ export const GET = withErrorHandling(async (_request: Request, context: { params
       savingsAmountCLP: application.savings_amount ?? 0,
       avalMonthlySalaryCLP: guarantor?.monthly_income ?? undefined,
       maxLeverageMultipleOverride,
+      birthDate: customer?.birth_date ?? undefined,
+      professionalLevel: customer?.professional_level === "profesional" ? "profesional" : customer?.professional_level === "tecnico" ? "tecnico" : undefined,
+      avalBirthDate: undefined,
     },
     {
       qualification: variables.qualification,
       bankingParams: variables.bankingParams,
       assumptions: variables.assumptions,
-      loanTerms: { fallbackYears: variables.loanTerms.fallbackYears },
+      loanTerms: { fallbackYears: variables.loanTerms.fallbackYears, tiers: variables.loanTerms.tiers },
     }
   );
 

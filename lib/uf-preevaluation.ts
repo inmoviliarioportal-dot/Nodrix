@@ -11,6 +11,8 @@
  */
 
 import { MIN_QUALIFYING_TOTAL_INCOME_CLP } from "./income-types";
+import { loanTermYearsFor, type LoanTermTier } from "./loan-term";
+import type { ProfessionalLevel } from "./proposal-risk";
 
 /**
  * Valor aproximado de la UF en pesos chilenos. Placeholder documentado para
@@ -71,10 +73,12 @@ function tierFor<T extends { maxIncome: number }>(tiers: T[], income: number): T
  * campo individual), se usa la constante hardcodeada de siempre -- ninguna
  * llamada existente sin `config` cambia de comportamiento.
  *
- * `loanTerms.fallbackYears`, si viene como número, se expone para que un
- * agente C1 posterior pueda conectarlo sin volver a tocar esta función --
- * hoy NO se usa para nada más que reemplazar `LOAN_TERM_YEARS` como
- * fallback plano (no hay selección por edad, eso es scope de C1).
+ * `loanTerms.fallbackYears` reemplaza `LOAN_TERM_YEARS` como fallback plano
+ * cuando falta `tiers` o faltan los datos del cliente (`birthDate` /
+ * `professionalLevel`) en el input. `loanTerms.tiers`, si viene poblado Y el
+ * input trae `birthDate` + `professionalLevel`, se usa junto con
+ * `loanTermYearsFor` (lib/loan-term.ts) para determinar el plazo real por
+ * edad x nivel profesional -- ver `disqualifiedByAge` en el resultado.
  */
 export interface UFPreEvaluationConfig {
   qualification?: {
@@ -92,6 +96,7 @@ export interface UFPreEvaluationConfig {
   };
   loanTerms?: {
     fallbackYears?: number;
+    tiers?: Partial<Record<ProfessionalLevel, LoanTermTier[]>>;
   };
 }
 
@@ -130,6 +135,18 @@ export interface UFPreEvaluationInput {
    * renta tal cual (comportamiento idéntico al anterior, sueldo fijo puro).
    */
   maxLeverageMultipleOverride?: number;
+  /**
+   * Fecha de nacimiento del cliente (ISO), y nivel profesional declarado --
+   * datos de ESTA llamada específica (no política congelada), usados junto
+   * a `config.loanTerms.tiers` para determinar el plazo real por edad x
+   * nivel profesional (ver lib/loan-term.ts). Si se omiten, o `tiers` no
+   * está poblado en el config, el cálculo usa el fallback plano de siempre
+   * -- comportamiento idéntico al anterior.
+   */
+  birthDate?: string | null;
+  professionalLevel?: ProfessionalLevel | null;
+  /** Fecha de nacimiento del aval/codeudor, si lo hay (mejora el plazo si es más joven). */
+  avalBirthDate?: string | null;
 }
 
 export interface UFPreEvaluationResult {
@@ -153,6 +170,16 @@ export interface UFPreEvaluationResult {
    * ninguna compra.
    */
   disqualifiedByMinimumIncome: boolean;
+  /**
+   * `true` si la edad efectiva (cliente, o aval si es más joven) supera
+   * `MAX_AGE_AT_APPLICATION` (65) y por lo tanto no hay plazo automático --
+   * gate independiente de los otros dos: `maxMonthlyInstallmentCLP` se
+   * fuerza a 0 (mismo patrón). Solo puede ser `true` cuando
+   * `config.loanTerms.tiers` está poblado Y el input trae `birthDate` +
+   * `professionalLevel`; en cualquier otro caso queda en `false` (fallback
+   * plano, comportamiento idéntico al anterior).
+   */
+  disqualifiedByAge: boolean;
 }
 
 const DISCLAIMER =
@@ -179,8 +206,33 @@ export function calculateUFPreEvaluation(
   const shortTermDebtAmortizationMonths =
     config?.bankingParams?.shortTermDebtAmortizationMonths ?? SHORT_TERM_DEBT_AMORTIZATION_MONTHS;
   const annualInterestRate = config?.assumptions?.annualInterestRate ?? ANNUAL_INTEREST_RATE;
-  const loanTermYears =
+  const fallbackYears =
     typeof config?.loanTerms?.fallbackYears === "number" ? config.loanTerms.fallbackYears : LOAN_TERM_YEARS;
+
+  // Plazo por edad x nivel profesional: solo se activa si hay tiers
+  // poblados en el config Y el input trae birthDate + professionalLevel.
+  // En cualquier otro caso se mantiene el fallback plano de siempre (no
+  // cambia el resultado de ninguna llamada existente).
+  const tiersPopulated = !!config?.loanTerms?.tiers && Object.keys(config.loanTerms.tiers).length > 0;
+  const hasClientAgeData = !!input.birthDate && !!input.professionalLevel;
+
+  let loanTermYears = fallbackYears;
+  let disqualifiedByAge = false;
+  if (tiersPopulated && hasClientAgeData) {
+    const termResult = loanTermYearsFor({
+      birthDate: input.birthDate,
+      professionalLevel: input.professionalLevel ?? null,
+      avalBirthDate: input.avalBirthDate,
+      tiers: config!.loanTerms!.tiers as Record<ProfessionalLevel, LoanTermTier[]>,
+      fallbackYears,
+    });
+    if (termResult.years === null) {
+      disqualifiedByAge = true;
+      loanTermYears = fallbackYears; // valor irrelevante, cuota se fuerza a 0 igual
+    } else {
+      loanTermYears = termResult.years;
+    }
+  }
 
   const monthlySalaryCLP = safeNonNegative(input.monthlySalaryCLP);
   const totalDebtBalanceCLP = safeNonNegative(input.totalDebtBalanceCLP);
@@ -225,7 +277,7 @@ export function calculateUFPreEvaluation(
     effectiveIncomeCLP * cargaFinancieraTier.maxRatio - existingMonthlyDebtEstimateCLP;
 
   const maxMonthlyInstallmentCLP =
-    disqualifiedByLeverage || disqualifiedByMinimumIncome
+    disqualifiedByLeverage || disqualifiedByMinimumIncome || disqualifiedByAge
       ? 0
       : safeNonNegative(Math.min(rrdCapCLP, cargaFinancieraCapCLP));
 
@@ -253,5 +305,6 @@ export function calculateUFPreEvaluation(
     disclaimer: DISCLAIMER,
     disqualifiedByLeverage,
     disqualifiedByMinimumIncome,
+    disqualifiedByAge,
   };
 }
