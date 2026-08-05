@@ -7,6 +7,7 @@ import type { CustomerFinancialProfile } from "@/lib/scoring";
 import { evaluateIncomeSources, type IncomeSource } from "@/lib/income-types";
 import { normalizeEmail, type AnySupabaseClient } from "@/lib/leads";
 import { updateCustomerProfileFields, parseIncomeSources } from "@/app/api/leads/route";
+import { pinActiveVariables } from "@/lib/wizard-variables";
 
 const VALID_EMPLOYMENT_TYPES = ["indefinido", "plazo_fijo", "honorarios", "independiente"];
 const VALID_RELATIONSHIPS = ["conyuge", "padre", "madre", "hijo", "hermano"];
@@ -101,7 +102,7 @@ export const POST = withErrorHandling(async (request: Request, context: { params
   }
 
   const { data: application } = await (supabase.from("applications") as any)
-    .select("id, stage, customer_id")
+    .select("id, stage, customer_id, pre_evaluation_min_uf, pre_evaluation_max_uf")
     .eq("id", id)
     .eq("org_id", MVP_ORG_ID)
     .maybeSingle();
@@ -210,5 +211,40 @@ export const POST = withErrorHandling(async (request: Request, context: { params
     .eq("id", customer.id)
     .maybeSingle();
 
-  return NextResponse.json({ application: updatedApplication, customer: updatedCustomer });
+  // 8. Anclar (o re-anclar) la solicitud a la versión de wizard_variable_sets
+  // vigente en el momento de este recálculo -- edición de perfil financiero,
+  // reason = "profile_update" (ver lib/wizard-variables.ts). Best-effort: si
+  // falla, no debe tumbar una respuesta que ya recalculó y persistió el
+  // scoring correctamente; la solicitud simplemente se queda con su ancla
+  // anterior (o sin ancla) y `resolveVariablesForRead` cae a la versión 1.
+  let previousVariableVersion: number | null = null;
+  let newVariableVersion: number | null = null;
+  try {
+    const pinResult = await pinActiveVariables(id, "profile_update");
+    previousVariableVersion = pinResult.previousVersion;
+    newVariableVersion = pinResult.set.version;
+  } catch (err) {
+    console.warn(
+      `[update-financial-profile] fallo al anclar variables para la solicitud ${id}, se continúa sin actualizar el ancla.`,
+      err
+    );
+  }
+
+  return NextResponse.json({
+    application: updatedApplication,
+    customer: updatedCustomer,
+    previousVariableVersion,
+    newVariableVersion,
+    // Monto/UF aprobado antes y después de este recálculo -- mismos campos
+    // que ya expone `application.pre_evaluation_min_uf/max_uf`, no se
+    // inventan nombres nuevos (ver lib/pre-evaluation.ts).
+    previousPreEvaluation: {
+      minUF: application.pre_evaluation_min_uf ?? null,
+      maxUF: application.pre_evaluation_max_uf ?? null,
+    },
+    newPreEvaluation: {
+      minUF: updatedApplication.pre_evaluation_min_uf ?? null,
+      maxUF: updatedApplication.pre_evaluation_max_uf ?? null,
+    },
+  });
 });

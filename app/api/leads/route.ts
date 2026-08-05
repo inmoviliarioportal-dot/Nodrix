@@ -16,6 +16,7 @@ import {
 import { MVP_ORG_ID } from "@/app/api/auth/_constants";
 import { applyAutomaticTransitions } from "@/lib/stage-machine";
 import { notifyStageChange } from "@/lib/notifications";
+import { pinActiveVariables } from "@/lib/wizard-variables";
 
 /**
  * POST /api/leads
@@ -124,6 +125,10 @@ export const POST = withErrorHandling(async (request: Request) => {
       );
       latestApplication = (scored ?? newApplication) as ApplicationRow;
 
+      // Application nueva -> nunca tuvo ancla todavía, se ancla acá mismo,
+      // justo tras crearla (ver maybePinVariables arriba).
+      await maybePinVariables((newApplication as ApplicationRow).id, "first_calculation");
+
       // Rama real de la mayoría de los clientes: ya se registraron (el
       // customer existe) y esta es su PRIMERA application, recién creada
       // acá mismo. El aval solo aplica a una application recién creada, así
@@ -140,11 +145,21 @@ export const POST = withErrorHandling(async (request: Request) => {
       // (Análisis de perfil o Documentación pendiente, antes de que el
       // banco reciba algo), recalculamos con los datos nuevos -- mismo
       // criterio que usa POST /api/applications/[id]/update-financial-profile.
+      // Solo se re-ancla si esta application reutilizada NUNCA tuvo ancla
+      // (histórica, previa a esta migración) -- si ya estaba anclada, el
+      // ancla se mueve únicamente al editar el perfil financiero desde
+      // POST /api/applications/[id]/update-financial-profile, no acá.
+      const wasUnpinned = !(latestApplication as unknown as { wizard_variable_set_id?: string | null })
+        .wizard_variable_set_id;
+
       const rescored = await maybeApplyScoring(
         supabase,
         latestApplication as { id: string; stage: string },
         financial
       );
+      if (rescored && wasUnpinned) {
+        await maybePinVariables(latestApplication.id, "first_calculation");
+      }
       if (rescored) {
         await (supabase.from("applications") as any)
           .update({
@@ -215,6 +230,10 @@ export const POST = withErrorHandling(async (request: Request) => {
     financial
   );
 
+  // Application (y customer) recién creados en esta misma request -> nunca
+  // tuvo ancla, se ancla acá mismo antes de responder.
+  await maybePinVariables((application as ApplicationRow).id, "first_calculation");
+
   await maybeInsertGuarantor(supabase, (application as ApplicationRow).id, financial);
 
   return NextResponse.json(
@@ -222,6 +241,29 @@ export const POST = withErrorHandling(async (request: Request) => {
     { status: 201 }
   );
 });
+
+/**
+ * Ancla (`wizard_variable_set_id`) una application a la versión de
+ * `wizard_variable_sets` vigente en el momento del cálculo, best-effort: un
+ * fallo acá (ej. infraestructura caída) NUNCA debe tumbar la respuesta de
+ * este endpoint -- mismo criterio defensivo que `updateCustomerProfileFields`
+ * y `maybeInsertGuarantor` arriba. Si falla, la solicitud simplemente queda
+ * sin ancla (o con la anterior) y `resolveVariablesForRead` cae a la versión
+ * 1 por defecto para esa solicitud (ver lib/wizard-variables.ts).
+ */
+async function maybePinVariables(
+  applicationId: string,
+  reason: "first_calculation" | "profile_update"
+): Promise<void> {
+  try {
+    await pinActiveVariables(applicationId, reason);
+  } catch (err) {
+    console.warn(
+      `[leads] maybePinVariables: fallo al anclar variables para la solicitud ${applicationId}, se continúa sin ancla.`,
+      err
+    );
+  }
+}
 
 const VALID_AVAL_RELATIONSHIPS = ["conyuge", "padre", "madre", "hijo", "hermano"];
 const VALID_AVAL_EMPLOYMENT_TYPES = ["indefinido", "plazo_fijo", "honorarios", "independiente"];
