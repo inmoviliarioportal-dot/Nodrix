@@ -46,6 +46,15 @@ import { readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
 import { loanTermYearsFor } from "../lib/loan-term";
 import type { ProfessionalLevel } from "../lib/proposal-risk";
+import {
+  ageTierLabel,
+  impliedMonthlyInstallmentFromMaxUF,
+  recalcMaxLoanUF,
+  SIMULATION_ANNUAL_INTEREST_RATE,
+  SIMULATION_FALLBACK_YEARS_V1,
+  SIMULATION_MIN_QUALIFYING_UF,
+  SIMULATION_UF_VALUE_CLP,
+} from "../lib/loan-term-simulation";
 
 function loadEnvLocal(): void {
   try {
@@ -68,58 +77,15 @@ const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const MVP_ORG_ID = "00000000-0000-0000-0000-000000000001";
 
 // -----------------------------------------------------------------------------
-// Espejo mínimo de lib/uf-preevaluation.ts -- solo lo necesario para
-// recalcular maxLoanUF con el plazo nuevo. Usa los mismos supuestos
-// hardcodeados de v1 (annualInterestRate 0.045, UF_VALUE_CLP 39000) porque
-// la matriz v2 en borrador NO toca esos otros grupos (ver migración 033,
-// son copia exacta de v1).
+// Fórmulas compartidas ahora viven en lib/loan-term-simulation.ts (usadas
+// también por app/api/admin/wizard-variables/simulate/route.ts) -- este
+// script solo reexpone los alias locales que usaba antes para no tocar el
+// resto del archivo.
 // -----------------------------------------------------------------------------
-const UF_VALUE_CLP = 39000;
-const ANNUAL_INTEREST_RATE = 0.045;
-const MIN_QUALIFYING_UF = 1700;
-const FALLBACK_YEARS_V1 = 25; // plazo plano usado para calcular el pre_evaluation_max_uf ya persistido
-
-/**
- * Recalcula maxLoanUF dado un `maxMonthlyInstallmentCLP` YA conocido (el
- * gate de capacidad de pago -- RRD/Carga Financiera/Leverage -- no cambia
- * con la matriz v2, solo el plazo/annuityFactor). Si `years` es null
- * (disqualifiedByAge), el monto se fuerza a 0, igual que
- * disqualifiedByLeverage/disqualifiedByMinimumIncome en
- * calculateUFPreEvaluation.
- */
-function recalcMaxLoanUF(maxMonthlyInstallmentCLP: number, years: number | null): number {
-  if (years === null || !(maxMonthlyInstallmentCLP > 0)) return 0;
-  const monthlyRate = ANNUAL_INTEREST_RATE / 12;
-  const numPayments = years * 12;
-  const annuityFactor = (1 - Math.pow(1 + monthlyRate, -numPayments)) / monthlyRate;
-  return (maxMonthlyInstallmentCLP * annuityFactor) / UF_VALUE_CLP;
-}
-
-/**
- * Deriva `maxMonthlyInstallmentCLP` desde el `pre_evaluation_max_uf` YA
- * persistido, invirtiendo la fórmula de anualidad con el plazo v1 (25 años,
- * el fallback plano usado para calcular ese valor originalmente). Esto
- * evita tener que releer renta/deuda/ahorro de cada solicitud para
- * reconstruir el gate de capacidad de pago, que no cambia entre v1 y v2
- * (v2 solo agrega `loan_terms.tiers`, el resto de los grupos es copia
- * exacta -- ver migración 033).
- */
-function impliedMonthlyInstallmentFromMaxUF(maxUF: number): number {
-  if (!(maxUF > 0)) return 0;
-  const maxLoanCLP = maxUF * UF_VALUE_CLP;
-  const monthlyRate = ANNUAL_INTEREST_RATE / 12;
-  const numPayments = FALLBACK_YEARS_V1 * 12;
-  const annuityFactor = (1 - Math.pow(1 + monthlyRate, -numPayments)) / monthlyRate;
-  return maxLoanCLP / annuityFactor;
-}
-
-function ageTierLabel(age: number | null): string {
-  if (age === null) return "sin_edad";
-  if (age <= 44) return "hasta_44";
-  if (age <= 54) return "45_54";
-  if (age <= 65) return "55_65";
-  return "66_mas";
-}
+const MIN_QUALIFYING_UF = SIMULATION_MIN_QUALIFYING_UF;
+const FALLBACK_YEARS_V1 = SIMULATION_FALLBACK_YEARS_V1;
+void SIMULATION_UF_VALUE_CLP;
+void SIMULATION_ANNUAL_INTEREST_RATE;
 
 interface ApplicationRow {
   id: string;

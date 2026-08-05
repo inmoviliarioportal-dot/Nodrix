@@ -36,6 +36,7 @@ export default async function AdminLayout({
     { href: "/admin/properties", label: "Propiedades", iconKey: "building" as const, module: "propiedades" as const },
     { href: "/admin/regions", label: "Regiones", iconKey: "mapPin" as const, module: "propiedades" as const },
     { href: "/admin/users", label: "Usuarios", iconKey: "users" as const, module: "usuarios" as const },
+    { href: "/admin/variables", label: "Variables del wizard", iconKey: "sliders" as const, module: "variables" as const },
     // "Roles" no lleva `module`: se filtra aparte, siempre admin-only.
   ]
 

@@ -16,6 +16,7 @@ import {
   MapPin,
   Users,
   Shield,
+  SlidersHorizontal,
   type LucideIcon,
 } from "lucide-react"
 
@@ -44,6 +45,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   mapPin: MapPin,
   users: Users,
   shield: Shield,
+  sliders: SlidersHorizontal,
 }
 
 export interface LayoutNavLink {
