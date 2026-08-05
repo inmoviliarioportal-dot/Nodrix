@@ -17,6 +17,7 @@ import {
   Users,
   Shield,
   SlidersHorizontal,
+  ChevronDown,
   type LucideIcon,
 } from "lucide-react"
 
@@ -54,11 +55,26 @@ export interface LayoutNavLink {
   iconKey?: keyof typeof ICON_MAP
 }
 
+/** Grupo de links que se muestra como un único ítem desplegable en el header
+ * (ej. "Usuarios" agrupando Mantenedor + Roles) en vez de una entrada plana
+ * por link. Un `navLinks` puede mezclar links sueltos y grupos. */
+export interface LayoutNavGroup {
+  label: string
+  iconKey?: keyof typeof ICON_MAP
+  items: LayoutNavLink[]
+}
+
+function isNavGroup(entry: LayoutNavLink | LayoutNavGroup): entry is LayoutNavGroup {
+  return "items" in entry
+}
+
 export interface LayoutProps extends React.ComponentProps<"div"> {
   /** Texto del logo/marca. Placeholder hasta definir branding final. */
   brand?: string
-  /** Links de navegación del header. Por defecto: Panel + Documentos (portal cliente). */
-  navLinks?: LayoutNavLink[]
+  /** Links de navegación del header -- acepta links sueltos y/o grupos
+   * desplegables (`LayoutNavGroup`). Por defecto: Panel + Documentos
+   * (portal cliente). */
+  navLinks?: (LayoutNavLink | LayoutNavGroup)[]
 }
 
 const DEFAULT_NAV_LINKS: LayoutNavLink[] = [
@@ -122,16 +138,53 @@ function Layout({
               </svg>
               {brand}
             </Link>
-            <nav className="flex items-center gap-5 text-sm">
-              {navLinks.map((link) => {
-                const isActive = pathname === link.href
-                const Icon = link.iconKey ? ICON_MAP[link.iconKey] : undefined
+            <nav className="hidden items-center gap-5 text-sm sm:flex">
+              {navLinks.map((entry) => {
+                if (isNavGroup(entry)) {
+                  const isGroupActive = entry.items.some((item) => pathname === item.href)
+                  const GroupIcon = entry.iconKey ? ICON_MAP[entry.iconKey] : undefined
+                  return (
+                    <DropdownMenu key={entry.label}>
+                      <DropdownMenuTrigger
+                        className={cn(
+                          "flex items-center gap-1.5 border-b-2 px-1 py-2 text-[13.5px] font-medium transition-colors duration-200",
+                          isGroupActive
+                            ? "border-neon-cyan text-neon-cyan"
+                            : "border-transparent text-text-tertiary hover:text-text-primary"
+                        )}
+                      >
+                        {GroupIcon && <GroupIcon className="size-4 shrink-0" aria-hidden="true" />}
+                        {entry.label}
+                        <ChevronDown className="size-3.5 shrink-0" aria-hidden="true" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start">
+                        {entry.items.map((item) => {
+                          const isActive = pathname === item.href
+                          const Icon = item.iconKey ? ICON_MAP[item.iconKey] : undefined
+                          return (
+                            <DropdownMenuItem
+                              key={item.href}
+                              render={<Link href={item.href} aria-current={isActive ? "page" : undefined} />}
+                              className={cn(isActive && "text-neon-cyan")}
+                            >
+                              {Icon && <Icon className="size-4 shrink-0" aria-hidden="true" />}
+                              {item.label}
+                            </DropdownMenuItem>
+                          )
+                        })}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )
+                }
+
+                const isActive = pathname === entry.href
+                const Icon = entry.iconKey ? ICON_MAP[entry.iconKey] : undefined
                 return (
                   <Link
-                    key={link.href}
-                    href={link.href}
+                    key={entry.href}
+                    href={entry.href}
                     className={cn(
-                      "hidden items-center gap-1.5 border-b-2 px-1 py-2 text-[13.5px] font-medium transition-colors duration-200 sm:flex",
+                      "flex items-center gap-1.5 border-b-2 px-1 py-2 text-[13.5px] font-medium transition-colors duration-200",
                       isActive
                         ? "border-neon-cyan text-neon-cyan"
                         : "border-transparent text-text-tertiary hover:text-text-primary"
@@ -139,7 +192,7 @@ function Layout({
                     aria-current={isActive ? "page" : undefined}
                   >
                     {Icon && <Icon className="size-4 shrink-0" aria-hidden="true" />}
-                    {link.label}
+                    {entry.label}
                   </Link>
                 )
               })}
@@ -163,19 +216,46 @@ function Layout({
                 <Menu className="size-5" aria-hidden="true" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {navLinks.map((link) => {
-                  const isActive = pathname === link.href
-                  const Icon = link.iconKey ? ICON_MAP[link.iconKey] : undefined
-                  return (
+                {navLinks.flatMap((entry) => {
+                  if (isNavGroup(entry)) {
+                    const GroupIcon = entry.iconKey ? ICON_MAP[entry.iconKey] : undefined
+                    return [
+                      <div
+                        key={`${entry.label}-heading`}
+                        className="flex items-center gap-1.5 px-2 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-text-tertiary"
+                      >
+                        {GroupIcon && <GroupIcon className="size-3.5 shrink-0" aria-hidden="true" />}
+                        {entry.label}
+                      </div>,
+                      ...entry.items.map((item) => {
+                        const isActive = pathname === item.href
+                        const Icon = item.iconKey ? ICON_MAP[item.iconKey] : undefined
+                        return (
+                          <DropdownMenuItem
+                            key={item.href}
+                            render={<Link href={item.href} aria-current={isActive ? "page" : undefined} />}
+                            className={cn("pl-5", isActive && "text-neon-cyan")}
+                          >
+                            {Icon && <Icon className="size-4 shrink-0" aria-hidden="true" />}
+                            {item.label}
+                          </DropdownMenuItem>
+                        )
+                      }),
+                    ]
+                  }
+
+                  const isActive = pathname === entry.href
+                  const Icon = entry.iconKey ? ICON_MAP[entry.iconKey] : undefined
+                  return [
                     <DropdownMenuItem
-                      key={link.href}
-                      render={<Link href={link.href} aria-current={isActive ? "page" : undefined} />}
+                      key={entry.href}
+                      render={<Link href={entry.href} aria-current={isActive ? "page" : undefined} />}
                       className={cn(isActive && "text-neon-cyan")}
                     >
                       {Icon && <Icon className="size-4 shrink-0" aria-hidden="true" />}
-                      {link.label}
-                    </DropdownMenuItem>
-                  )
+                      {entry.label}
+                    </DropdownMenuItem>,
+                  ]
                 })}
               </DropdownMenuContent>
             </DropdownMenu>

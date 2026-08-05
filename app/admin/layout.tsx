@@ -1,6 +1,6 @@
 import { requireRolePage } from "@/lib/auth-guards"
 import { hasPermission } from "@/lib/permissions"
-import { Layout } from "@/components/Layout"
+import { Layout, type LayoutNavLink, type LayoutNavGroup } from "@/components/Layout"
 
 /**
  * Guard for the whole `/admin/*` tree: only `admin` and `gerencia` roles
@@ -27,23 +27,71 @@ export default async function AdminLayout({
   const { role, permissions } = await requireRolePage(["admin", "gerencia"])
   const isAdmin = role === "admin"
 
-  const allLinks = [
-    { href: "/admin/dashboard", label: "KPIs", iconKey: "chart" as const, module: "reportes" as const },
-    { href: "/admin/reports", label: "Reportes", iconKey: "report" as const, module: "reportes" as const },
-    { href: "/backoffice/queue", label: "Backoffice", iconKey: "dashboard" as const, module: "bandeja" as const },
-    { href: "/backoffice/visits", label: "Visitas", iconKey: "calendar" as const, module: "visitas" as const },
-    { href: "/admin/assignments", label: "Asignar asesor", iconKey: "userPlus" as const, module: "usuarios" as const },
-    { href: "/admin/properties", label: "Propiedades", iconKey: "building" as const, module: "propiedades" as const },
-    { href: "/admin/regions", label: "Regiones", iconKey: "mapPin" as const, module: "propiedades" as const },
-    { href: "/admin/users", label: "Usuarios", iconKey: "users" as const, module: "usuarios" as const },
-    { href: "/admin/variables", label: "Variables del wizard", iconKey: "sliders" as const, module: "variables" as const },
-    // "Roles" no lleva `module`: se filtra aparte, siempre admin-only.
+  /** Cada item se filtra por su `module` de permiso, igual que antes -- lo
+   * único que cambia es que ahora se agrupan bajo un único desplegable por
+   * área en vez de aparecer todos como entradas planas en el header. Un
+   * grupo entero desaparece si ninguno de sus items quedó visible. */
+  type Item = LayoutNavLink & { module: Parameters<typeof hasPermission>[1] }
+
+  function visible(items: Item[]): LayoutNavLink[] {
+    return items.filter((item) => isAdmin || hasPermission(permissions, item.module, "view"))
+  }
+
+  const groupDefs: { label: string; iconKey: LayoutNavGroup["iconKey"]; items: Item[] }[] = [
+    {
+      label: "Dashboard",
+      iconKey: "chart",
+      items: [
+        { href: "/admin/dashboard", label: "KPIs", iconKey: "chart", module: "reportes" },
+        { href: "/admin/reports", label: "Reportes", iconKey: "report", module: "reportes" },
+      ],
+    },
+    {
+      label: "Asesor",
+      iconKey: "dashboard",
+      items: [
+        { href: "/backoffice/queue", label: "Backoffice", iconKey: "dashboard", module: "bandeja" },
+        { href: "/admin/assignments", label: "Asignar asesor", iconKey: "userPlus", module: "usuarios" },
+        { href: "/backoffice/visits", label: "Visitas", iconKey: "calendar", module: "visitas" },
+      ],
+    },
+    {
+      label: "Propiedades",
+      iconKey: "building",
+      items: [
+        { href: "/admin/properties", label: "Crear", iconKey: "building", module: "propiedades" },
+        { href: "/admin/regions", label: "Regiones", iconKey: "mapPin", module: "propiedades" },
+      ],
+    },
+    {
+      label: "Usuarios",
+      iconKey: "users",
+      items: [{ href: "/admin/users", label: "Mantenedor", iconKey: "users", module: "usuarios" }],
+    },
+    {
+      label: "Wizard",
+      iconKey: "sliders",
+      items: [{ href: "/admin/variables", label: "Variables", iconKey: "sliders", module: "variables" }],
+    },
   ]
 
-  const navLinks = [
-    ...allLinks.filter((link) => isAdmin || hasPermission(permissions, link.module, "view")),
-    ...(isAdmin ? [{ href: "/admin/roles", label: "Roles", iconKey: "shield" as const }] : []),
-  ]
+  const navLinks: (LayoutNavLink | LayoutNavGroup)[] = groupDefs
+    .map((group) => ({ label: group.label, iconKey: group.iconKey, items: visible(group.items) }))
+    .filter((group) => group.items.length > 0)
+
+  // "Roles" se agrega directo al grupo "Usuarios" (sin `module`: siempre
+  // admin-only, nunca configurable por permiso -- ver nota histórica abajo).
+  if (isAdmin) {
+    const usersGroup = navLinks.find(
+      (entry): entry is LayoutNavGroup => "items" in entry && entry.label === "Usuarios"
+    )
+    const rolesLink: LayoutNavLink = { href: "/admin/roles", label: "Roles", iconKey: "shield" }
+    if (usersGroup) {
+      usersGroup.items.push(rolesLink)
+    } else {
+      navLinks.push({ label: "Usuarios", iconKey: "users", items: [rolesLink] })
+    }
+  }
 
   return <Layout navLinks={navLinks}>{children}</Layout>
 }
