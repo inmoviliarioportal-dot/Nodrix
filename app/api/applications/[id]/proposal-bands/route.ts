@@ -5,6 +5,7 @@ import { MVP_ORG_ID } from "@/app/api/auth/_constants";
 import { calculateProposalBands, type ProfessionalLevel } from "@/lib/proposal-risk";
 import { calculateUFPreEvaluation } from "@/lib/uf-preevaluation";
 import { evaluateIncomeSources, type IncomeSource } from "@/lib/income-types";
+import { resolveVariablesForRead } from "@/lib/wizard-variables";
 import type { AnySupabaseClient } from "@/lib/leads";
 
 /**
@@ -24,6 +25,10 @@ export const GET = withErrorHandling(async (_request: Request, context: { params
 
   const { id } = await context.params;
   const supabase = createSupabaseServiceRoleClient() as unknown as AnySupabaseClient;
+
+  // Parámetros financieros anclados a esta solicitud (o versión 1 si es
+  // histórica) -- ver lib/wizard-variables.ts. Solo lectura, nunca ancla.
+  const variables = await resolveVariablesForRead(id);
 
   const { data: application } = await (supabase.from("applications") as any)
     .select(
@@ -59,7 +64,10 @@ export const GET = withErrorHandling(async (_request: Request, context: { params
   // equipo (asesor/gerencia/admin) -- ya NO se usa para descontar el
   // crédito teórico del cliente (ver lib/uf-preevaluation.ts). Se sigue
   // calculando y devolviendo acá para esa vista interna futura.
-  const bands = calculateProposalBands(application.scoring_score ?? 0, professionalLevel);
+  const bands = calculateProposalBands(application.scoring_score ?? 0, professionalLevel, {
+    bandDifficulty: variables.probabilities.bandDifficulty,
+    professionalLevelProbabilityCap: variables.probabilities.professionalLevelProbabilityCap,
+  });
 
   // Si el cliente declaró ingreso mixto (wizard nuevo -- ver
   // lib/income-types.ts), el tope de Leverage puede ser más estricto que el
@@ -74,13 +82,21 @@ export const GET = withErrorHandling(async (_request: Request, context: { params
     ? (evaluateIncomeSources(incomeSources).maxLeverageMultiple ?? undefined)
     : undefined;
 
-  const ufPreEvaluation = calculateUFPreEvaluation({
-    monthlySalaryCLP: customer?.monthly_income ?? 0,
-    totalDebtBalanceCLP: application.total_debt_balance ?? 0,
-    savingsAmountCLP: application.savings_amount ?? 0,
-    avalMonthlySalaryCLP: guarantor?.monthly_income ?? undefined,
-    maxLeverageMultipleOverride,
-  });
+  const ufPreEvaluation = calculateUFPreEvaluation(
+    {
+      monthlySalaryCLP: customer?.monthly_income ?? 0,
+      totalDebtBalanceCLP: application.total_debt_balance ?? 0,
+      savingsAmountCLP: application.savings_amount ?? 0,
+      avalMonthlySalaryCLP: guarantor?.monthly_income ?? undefined,
+      maxLeverageMultipleOverride,
+    },
+    {
+      qualification: variables.qualification,
+      bankingParams: variables.bankingParams,
+      assumptions: variables.assumptions,
+      loanTerms: { fallbackYears: variables.loanTerms.fallbackYears },
+    }
+  );
 
   return NextResponse.json({
     bands,

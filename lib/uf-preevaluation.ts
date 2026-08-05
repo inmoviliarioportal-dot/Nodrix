@@ -65,6 +65,44 @@ function tierFor<T extends { maxIncome: number }>(tiers: T[], income: number): T
 }
 
 /**
+ * Configuración opcional para `calculateUFPreEvaluation`, estructuralmente
+ * compatible con los grupos `qualification` / `bankingParams` / `assumptions`
+ * de `VariableSet` (lib/wizard-variables.ts). Si se omite (o se omite un
+ * campo individual), se usa la constante hardcodeada de siempre -- ninguna
+ * llamada existente sin `config` cambia de comportamiento.
+ *
+ * `loanTerms.fallbackYears`, si viene como número, se expone para que un
+ * agente C1 posterior pueda conectarlo sin volver a tocar esta función --
+ * hoy NO se usa para nada más que reemplazar `LOAN_TERM_YEARS` como
+ * fallback plano (no hay selección por edad, eso es scope de C1).
+ */
+export interface UFPreEvaluationConfig {
+  qualification?: {
+    minQualifyingUF?: number;
+    minQualifyingTotalIncomeCLP?: number;
+  };
+  bankingParams?: {
+    minRentaDividendoRatio?: number;
+    cargaFinancieraTiers?: { maxIncome: number | null; maxRatio: number }[];
+    leverageTiers?: { maxIncome: number | null; maxMultiple: number }[];
+    shortTermDebtAmortizationMonths?: number;
+  };
+  assumptions?: {
+    annualInterestRate?: number;
+  };
+  loanTerms?: {
+    fallbackYears?: number;
+  };
+}
+
+/** Normaliza `maxIncome: null` (sin techo) a `Infinity` para reusar `tierFor`. */
+function normalizeIncomeTiers<T extends { maxIncome: number | null }>(
+  tiers: T[]
+): (Omit<T, "maxIncome"> & { maxIncome: number })[] {
+  return tiers.map((t) => ({ ...t, maxIncome: t.maxIncome ?? Infinity }));
+}
+
+/**
  * Umbral mínimo de UF estimadas para que el cliente "califique" para acceder
  * a un inmueble en la pre-evaluación. Por debajo de este número, el cliente
  * no ve bandas/propuesta -- solo un mensaje de que por ahora no califica
@@ -125,7 +163,25 @@ function safeNonNegative(value: number): number {
   return Number.isFinite(value) ? Math.max(0, value) : 0;
 }
 
-export function calculateUFPreEvaluation(input: UFPreEvaluationInput): UFPreEvaluationResult {
+export function calculateUFPreEvaluation(
+  input: UFPreEvaluationInput,
+  config?: UFPreEvaluationConfig
+): UFPreEvaluationResult {
+  const minQualifyingTotalIncomeCLP =
+    config?.qualification?.minQualifyingTotalIncomeCLP ?? MIN_QUALIFYING_TOTAL_INCOME_CLP;
+  const minRentaDividendoRatio = config?.bankingParams?.minRentaDividendoRatio ?? MIN_RENTA_DIVIDENDO_RATIO;
+  const cargaFinancieraTiers = config?.bankingParams?.cargaFinancieraTiers
+    ? normalizeIncomeTiers(config.bankingParams.cargaFinancieraTiers)
+    : CARGA_FINANCIERA_TIERS;
+  const leverageTiers = config?.bankingParams?.leverageTiers
+    ? normalizeIncomeTiers(config.bankingParams.leverageTiers)
+    : LEVERAGE_TIERS;
+  const shortTermDebtAmortizationMonths =
+    config?.bankingParams?.shortTermDebtAmortizationMonths ?? SHORT_TERM_DEBT_AMORTIZATION_MONTHS;
+  const annualInterestRate = config?.assumptions?.annualInterestRate ?? ANNUAL_INTEREST_RATE;
+  const loanTermYears =
+    typeof config?.loanTerms?.fallbackYears === "number" ? config.loanTerms.fallbackYears : LOAN_TERM_YEARS;
+
   const monthlySalaryCLP = safeNonNegative(input.monthlySalaryCLP);
   const totalDebtBalanceCLP = safeNonNegative(input.totalDebtBalanceCLP);
   const savingsAmountCLP = safeNonNegative(input.savingsAmountCLP);
@@ -142,7 +198,7 @@ export function calculateUFPreEvaluation(input: UFPreEvaluationInput): UFPreEval
   // Parámetro 3: Leverage -- deuda de corto plazo total / ingresos. Es un
   // gate de calificación: si se excede, el cliente no califica sin importar
   // los otros dos parámetros.
-  const leverageTier = tierFor(LEVERAGE_TIERS, effectiveIncomeCLP);
+  const leverageTier = tierFor(leverageTiers, effectiveIncomeCLP);
   // El override (tipos de ingreso distintos a sueldo fijo puro) nunca puede
   // SUBIR el tope del tramo por renta, solo bajarlo (más estricto).
   const effectiveMaxLeverageMultiple =
@@ -152,19 +208,19 @@ export function calculateUFPreEvaluation(input: UFPreEvaluationInput): UFPreEval
   const disqualifiedByLeverage =
     effectiveIncomeCLP > 0 && totalDebtBalanceCLP > effectiveIncomeCLP * effectiveMaxLeverageMultiple;
 
-  const disqualifiedByMinimumIncome = effectiveIncomeCLP < MIN_QUALIFYING_TOTAL_INCOME_CLP;
+  const disqualifiedByMinimumIncome = effectiveIncomeCLP < minQualifyingTotalIncomeCLP;
 
   // Cuota mensual estimada de la deuda existente (saldo total / 12 meses,
   // mismo supuesto de "corto plazo" que lib/scoring.ts).
-  const existingMonthlyDebtEstimateCLP = totalDebtBalanceCLP / SHORT_TERM_DEBT_AMORTIZATION_MONTHS;
+  const existingMonthlyDebtEstimateCLP = totalDebtBalanceCLP / shortTermDebtAmortizationMonths;
 
   // Parámetro 1: RRD (renta/dividendo >= 3) -- el dividendo nuevo no puede
   // superar 1/3 del ingreso total.
-  const rrdCapCLP = effectiveIncomeCLP / MIN_RENTA_DIVIDENDO_RATIO;
+  const rrdCapCLP = effectiveIncomeCLP / minRentaDividendoRatio;
 
   // Parámetro 2: Carga Financiera -- (cuotas existentes + dividendo nuevo) /
   // ingreso total no puede superar el máximo del tramo de renta.
-  const cargaFinancieraTier = tierFor(CARGA_FINANCIERA_TIERS, effectiveIncomeCLP);
+  const cargaFinancieraTier = tierFor(cargaFinancieraTiers, effectiveIncomeCLP);
   const cargaFinancieraCapCLP =
     effectiveIncomeCLP * cargaFinancieraTier.maxRatio - existingMonthlyDebtEstimateCLP;
 
@@ -173,8 +229,8 @@ export function calculateUFPreEvaluation(input: UFPreEvaluationInput): UFPreEval
       ? 0
       : safeNonNegative(Math.min(rrdCapCLP, cargaFinancieraCapCLP));
 
-  const monthlyRate = ANNUAL_INTEREST_RATE / 12;
-  const numPayments = LOAN_TERM_YEARS * 12;
+  const monthlyRate = annualInterestRate / 12;
+  const numPayments = loanTermYears * 12;
   const annuityFactor = (1 - Math.pow(1 + monthlyRate, -numPayments)) / monthlyRate;
   const maxLoanCLP = maxMonthlyInstallmentCLP * annuityFactor;
 

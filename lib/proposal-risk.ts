@@ -71,9 +71,27 @@ const PROFESSIONAL_LEVEL_PROBABILITY_CAP: Record<ProfessionalLevel, number> = {
   tecnico: 80,
 };
 
-function probabilityFor(score: number, band: ProposalBand, professionalLevel: ProfessionalLevel): number {
-  const raw = score * BAND_DIFFICULTY[band];
-  const cap = PROFESSIONAL_LEVEL_PROBABILITY_CAP[professionalLevel];
+/**
+ * Configuración opcional para `calculateProposalBands`, estructuralmente
+ * compatible con el grupo `probabilities` de `VariableSet`
+ * (lib/wizard-variables.ts). Si se omite (o se omite un campo individual),
+ * se usa la constante hardcodeada de siempre -- ninguna llamada existente
+ * sin `config` cambia de comportamiento.
+ */
+export interface ProposalBandsConfig {
+  bandDifficulty?: Partial<Record<ProposalBand, number>>;
+  professionalLevelProbabilityCap?: Partial<Record<ProfessionalLevel, number>>;
+}
+
+function probabilityFor(
+  score: number,
+  band: ProposalBand,
+  professionalLevel: ProfessionalLevel,
+  bandDifficulty: Record<ProposalBand, number>,
+  professionalLevelProbabilityCap: Record<ProfessionalLevel, number>
+): number {
+  const raw = score * (bandDifficulty[band] ?? BAND_DIFFICULTY[band]);
+  const cap = professionalLevelProbabilityCap[professionalLevel] ?? PROFESSIONAL_LEVEL_PROBABILITY_CAP[professionalLevel];
   return Math.min(cap, MAX_PROBABILITY, Math.max(MIN_PROBABILITY, Math.round(raw)));
 }
 
@@ -96,12 +114,18 @@ export interface ProposalBandResult {
  */
 export function calculateProposalBands(
   score: number,
-  professionalLevel: ProfessionalLevel = "tecnico"
+  professionalLevel: ProfessionalLevel = "tecnico",
+  config?: ProposalBandsConfig
 ): ProposalBandResult[] {
   const clamped = Number.isFinite(score) ? Math.min(100, Math.max(0, score)) : 0;
+  const bandDifficulty = { ...BAND_DIFFICULTY, ...(config?.bandDifficulty ?? {}) };
+  const professionalLevelProbabilityCap = {
+    ...PROFESSIONAL_LEVEL_PROBABILITY_CAP,
+    ...(config?.professionalLevelProbabilityCap ?? {}),
+  };
   return PROPOSAL_BANDS.map((band) => ({
     band,
     label: PROPOSAL_BAND_LABELS[band],
-    approvalProbability: probabilityFor(clamped, band, professionalLevel),
+    approvalProbability: probabilityFor(clamped, band, professionalLevel, bandDifficulty, professionalLevelProbabilityCap),
   }));
 }
