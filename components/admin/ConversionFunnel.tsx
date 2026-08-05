@@ -2,16 +2,21 @@
 
 import { useEffect, useState } from "react"
 
-import { MOCK_FUNNEL } from "@/components/admin/types"
+import { STAGE_LABELS } from "@/components/dashboard/types"
+
+export interface FunnelStageData {
+  stage: string
+  count: number
+}
 
 /**
- * Funnel de conversión — barras horizontales de progreso, una por etapa del
- * pipeline. Label + conteo arriba de cada barra, ancho proporcional al
- * conteo relativo a la primera etapa. Acento único (cyan), sin degradé
- * multicolor compitiendo con el resto del dashboard.
+ * Funnel de conversión -- barras horizontales, una por etapa del pipeline.
+ * `funnel[i].count` es ACUMULATIVO: cuántas solicitudes alguna vez
+ * alcanzaron esa etapa (ver GET /api/admin/kpis), no solo las que están
+ * ahí ahora mismo.
  */
-export function ConversionFunnel() {
-  const maxCount = MOCK_FUNNEL[0]?.count ?? 1
+export function ConversionFunnel({ funnel }: { funnel: FunnelStageData[] }) {
+  const maxCount = funnel[0]?.count ?? 1
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -26,14 +31,15 @@ export function ConversionFunnel() {
       </h2>
 
       <div className="mt-3.5 flex flex-col gap-2.5">
-        {MOCK_FUNNEL.map((stage) => {
+        {funnel.map((stage) => {
           const widthPct = Math.max(4, (stage.count / maxCount) * 100)
+          const label = STAGE_LABELS[stage.stage] ?? stage.stage
 
           return (
             <div key={stage.stage}>
               <div className="mb-1 flex items-center justify-between text-xs text-text-secondary">
-                <span className="truncate" title={stage.label}>
-                  {stage.label}
+                <span className="truncate" title={label}>
+                  {label}
                 </span>
                 <span
                   className="font-heading font-semibold text-text-primary"

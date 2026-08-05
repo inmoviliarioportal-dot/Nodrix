@@ -1,6 +1,15 @@
 import { TrendingUpIcon, PercentIcon, ClockIcon, WalletIcon } from "lucide-react"
 
-import { formatCLP, MOCK_KPI_SUMMARY } from "@/components/admin/types"
+import { formatCLP } from "@/components/admin/types"
+
+export interface KpiSummaryData {
+  totalLeadsThisMonth: number
+  leadsMomChangePct: number | null
+  conversionRate: number
+  avgDaysToClose: number
+  revenueThisMonth: number
+  revenueMomChangePct: number | null
+}
 
 interface KpiCardDef {
   label: string
@@ -36,38 +45,44 @@ function iconBgClass(accent: KpiCardDef["accent"]) {
   }
 }
 
+function momHint(label: string, pct: number | null): string {
+  if (pct === null) return label
+  const sign = pct >= 0 ? "+" : ""
+  return `${label} · ${sign}${pct.toFixed(0)}% vs. mes anterior`
+}
+
 /**
- * Top 4 KPI cards del Admin Dashboard — cards compactas y neutras
- * (`glass-surface`), con UN solo acento de color por card aplicado solo al
- * icono y al número (sin glow, sin colorear la card completa).
+ * Top 4 KPI cards del Admin Dashboard -- data REAL (ver GET /api/admin/kpis),
+ * cards compactas y neutras (`glass-surface`), con UN solo acento de color
+ * por card aplicado solo al icono y al número.
  */
-export function KpiCards() {
+export function KpiCards({ summary }: { summary: KpiSummaryData }) {
   const cards: KpiCardDef[] = [
     {
       label: "Leads este mes",
-      value: MOCK_KPI_SUMMARY.totalLeadsThisMonth.toLocaleString("es-CL"),
-      hint: "Total capturados en el periodo",
+      value: summary.totalLeadsThisMonth.toLocaleString("es-CL"),
+      hint: momHint("Total capturados en el periodo", summary.leadsMomChangePct),
       icon: TrendingUpIcon,
       accent: "cyan",
     },
     {
       label: "Tasa de conversión",
-      value: `${MOCK_KPI_SUMMARY.conversionRate.toFixed(1)}%`,
-      hint: "Recepcionada → Cierre",
+      value: `${summary.conversionRate.toFixed(1)}%`,
+      hint: "Recepcionada → Cierre, histórico",
       icon: PercentIcon,
       accent: "purple",
     },
     {
       label: "Días promedio a cierre",
-      value: `${MOCK_KPI_SUMMARY.avgDaysToClose}`,
+      value: `${summary.avgDaysToClose}`,
       hint: "Desde recepción hasta cierre",
       icon: ClockIcon,
       accent: "green",
     },
     {
-      label: "Ingresos este mes",
-      value: formatCLP(MOCK_KPI_SUMMARY.revenueThisMonth),
-      hint: "Comisiones estimadas (mock)",
+      label: "UF gestionadas este mes",
+      value: formatCLP(summary.revenueThisMonth),
+      hint: momHint("Valor de propiedades cerradas (proyección)", summary.revenueMomChangePct),
       icon: WalletIcon,
       accent: "gold",
     },

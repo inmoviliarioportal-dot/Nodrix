@@ -3,17 +3,21 @@
 import { useEffect, useState } from "react"
 import { TrendingUpIcon } from "lucide-react"
 
-import { MOCK_TIMELINE } from "@/components/admin/types"
+export interface TimelinePointData {
+  day: number
+  closures: number
+}
 
 /**
- * Timeline de cierres — line chart vía SVG puro (sin librería externa).
- * X: día del mes. Y: cierres ese día. Incluye indicador de tendencia semanal.
+ * Timeline de cierres -- line chart vía SVG puro (sin librería externa).
+ * X: día del mes en curso. Y: cierres reales ese día (ver GET /api/admin/kpis,
+ * calculado desde application_stage_history donde to_stage = 'CIERRE').
  */
-export function ConversionTimeline() {
+export function ConversionTimeline({ timeline }: { timeline: TimelinePointData[] }) {
   const width = 640
   const height = 180
   const padding = 24
-  const maxClosures = Math.max(...MOCK_TIMELINE.map((p) => p.closures), 1)
+  const maxClosures = Math.max(...timeline.map((p) => p.closures), 1)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -21,17 +25,21 @@ export function ConversionTimeline() {
     return () => cancelAnimationFrame(id)
   }, [])
 
-  const points = MOCK_TIMELINE.map((p, i) => {
-    const x = padding + (i / (MOCK_TIMELINE.length - 1)) * (width - padding * 2)
+  const points = timeline.map((p, i) => {
+    const x = padding + (i / Math.max(1, timeline.length - 1)) * (width - padding * 2)
     const y = height - padding - (p.closures / maxClosures) * (height - padding * 2)
     return { x, y, ...p }
   })
 
   const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ")
-  const areaPath = `${linePath} L${points[points.length - 1].x.toFixed(1)},${height - padding} L${points[0].x.toFixed(1)},${height - padding} Z`
+  const areaPath =
+    points.length > 0
+      ? `${linePath} L${points[points.length - 1].x.toFixed(1)},${height - padding} L${points[0].x.toFixed(1)},${height - padding} Z`
+      : ""
 
-  const lastWeek = MOCK_TIMELINE.slice(-7).reduce((sum, p) => sum + p.closures, 0)
-  const prevWeek = MOCK_TIMELINE.slice(-14, -7).reduce((sum, p) => sum + p.closures, 0)
+  const totalClosures = timeline.reduce((sum, p) => sum + p.closures, 0)
+  const lastWeek = timeline.slice(-7).reduce((sum, p) => sum + p.closures, 0)
+  const prevWeek = timeline.slice(-14, -7).reduce((sum, p) => sum + p.closures, 0)
   const trendPct = prevWeek > 0 ? (((lastWeek - prevWeek) / prevWeek) * 100).toFixed(0) : "0"
   const trendUp = Number(trendPct) >= 0
 
@@ -39,8 +47,8 @@ export function ConversionTimeline() {
     <div className="glass-card animate-fade-in rounded-2xl p-5">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-text-primary">Timeline de conversión</h3>
-          <p className="text-xs text-text-tertiary">Cierres por día — mes en curso</p>
+          <h3 className="text-sm font-semibold text-text-primary">Timeline de cierres</h3>
+          <p className="text-xs text-text-tertiary">{totalClosures} cierres — mes en curso</p>
         </div>
         <div
           className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
@@ -87,7 +95,7 @@ export function ConversionTimeline() {
       </div>
       <div className="mt-1 flex justify-between text-[11px] text-text-tertiary">
         <span>Día 1</span>
-        <span>Día {MOCK_TIMELINE.length}</span>
+        <span>Día {timeline.length}</span>
       </div>
     </div>
   )

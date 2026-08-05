@@ -1,21 +1,16 @@
 import Link from "next/link"
 import { FileBarChart2Icon } from "lucide-react"
 
-import { KpiCards } from "@/components/admin/KpiCards"
-import { ConversionFunnel } from "@/components/admin/ConversionFunnel"
-import { ScoringDistribution } from "@/components/admin/ScoringDistribution"
-import { ConversionTimeline } from "@/components/admin/ConversionTimeline"
-import { TopLeadsTable } from "@/components/admin/TopLeadsTable"
-import { ApplicationsSummary } from "@/components/admin/ApplicationsSummary"
+import { AdminKpiDashboard } from "@/components/admin/AdminKpiDashboard"
 
 export const metadata = {
   title: "Dashboard Ejecutivo — Nodrix",
 }
 
 /**
- * Admin Dashboard (Release 3) — KPIs + Funnels.
- * Toda la data es MOCK hasta que existan endpoints agregados (ej.
- * `/api/admin/kpis`); ver `components/admin/types.ts` para la fuente única.
+ * Admin Dashboard (Release 3) — KPIs, funnel, scoring, desviaciones,
+ * desempeño por asesor e inventario, todo calculado en vivo desde la base
+ * de datos (ver GET /api/admin/kpis y AdminKpiDashboard).
  */
 export default function AdminDashboardPage() {
   return (
@@ -28,7 +23,7 @@ export default function AdminDashboardPage() {
                 Dashboard Ejecutivo
               </h1>
               <p className="text-sm text-text-tertiary">
-                Visión general del pipeline — KPIs, funnel y scoring (data mock, Release 3)
+                Visión general del pipeline — KPIs, funnel, scoring, desviaciones y desempeño, en vivo
               </p>
             </div>
             <Link
@@ -40,18 +35,7 @@ export default function AdminDashboardPage() {
             </Link>
           </div>
 
-          <KpiCards />
-
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
-            <ConversionFunnel />
-            <ScoringDistribution />
-          </div>
-
-          <ApplicationsSummary />
-
-          <ConversionTimeline />
-
-          <TopLeadsTable />
+          <AdminKpiDashboard />
         </div>
       </div>
     </>

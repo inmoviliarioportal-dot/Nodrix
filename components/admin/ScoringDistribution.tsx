@@ -1,11 +1,31 @@
-import { MOCK_SCORING_DISTRIBUTION } from "@/components/admin/types"
+const CATEGORY_LABELS: Record<string, string> = {
+  BRONCE: "Bronce",
+  PLATA: "Plata",
+  ORO: "Oro",
+  PLATINO: "Platino",
+  BLACK: "Black",
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  BRONCE: "var(--bronce)",
+  PLATA: "var(--plata)",
+  ORO: "var(--oro)",
+  PLATINO: "var(--platino)",
+  BLACK: "var(--neon-purple)",
+}
+
+export interface ScoringDistributionData {
+  category: string
+  count: number
+  percentage: number
+}
 
 /**
- * Distribución de scoring — filas compactas por categoría (label coloreado
- * por su tono de scoring + % en la esquina), sin doughnut chart. Data mock
- * hasta que exista agregación real por scoring_category.
+ * Distribución de scoring -- filas compactas por categoría, data REAL (ver
+ * GET /api/admin/kpis) calculada sobre todas las solicitudes con
+ * scoring_category asignado.
  */
-export function ScoringDistribution() {
+export function ScoringDistribution({ distribution }: { distribution: ScoringDistributionData[] }) {
   return (
     <div className="glass-surface animate-fade-in rounded-2xl p-5">
       <h2 className="text-xs font-bold uppercase tracking-wide text-text-tertiary">
@@ -13,7 +33,7 @@ export function ScoringDistribution() {
       </h2>
 
       <div className="mt-3.5 flex flex-col gap-2">
-        {MOCK_SCORING_DISTRIBUTION.map((item, index) => (
+        {distribution.map((item, index) => (
           <div
             key={item.category}
             className="animate-fade-in-up flex items-center justify-between rounded-lg bg-deep px-2.5 py-2"
@@ -22,16 +42,19 @@ export function ScoringDistribution() {
             <span className="flex items-center gap-2 text-xs font-semibold text-text-secondary">
               <span
                 className="size-2.5 shrink-0 rounded-full"
-                style={{ backgroundColor: item.color }}
+                style={{ backgroundColor: CATEGORY_COLORS[item.category] ?? "var(--text-tertiary)" }}
                 aria-hidden="true"
               />
-              {item.label}
+              {CATEGORY_LABELS[item.category] ?? item.category}
             </span>
-            <span
-              className="font-heading text-[13px] font-semibold text-text-primary"
-              style={{ fontVariantNumeric: "tabular-nums" }}
-            >
-              {item.percentage}%
+            <span className="flex items-baseline gap-1.5">
+              <span
+                className="font-heading text-[13px] font-semibold text-text-primary"
+                style={{ fontVariantNumeric: "tabular-nums" }}
+              >
+                {item.percentage}%
+              </span>
+              <span className="text-[11px] text-text-tertiary">({item.count})</span>
             </span>
           </div>
         ))}
