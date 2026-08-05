@@ -1,24 +1,32 @@
 "use client"
 
 import { toast } from "sonner"
-import { FileTextIcon, FileSpreadsheetIcon, FileIcon } from "lucide-react"
+import { FileSpreadsheetIcon, PrinterIcon } from "lucide-react"
 
-import { MOCK_FUNNEL } from "@/components/admin/types"
+import { STAGE_LABELS } from "@/components/dashboard/types"
+import type { ReportData } from "@/components/admin/ReportSections"
 
 /**
- * Botones de exportación. CSV es una exportación REAL (genera un Blob
- * client-side con el resumen del funnel). PDF y Excel son decorativos
- * (mock) hasta que se incorpore una librería de generación real
- * (ej. jspdf / exceljs) — ver reporte de este agente.
+ * Exportación de reportes. CSV es real (Blob client-side con el funnel +
+ * cierres filtrados actuales). "Imprimir / PDF" usa el diálogo de impresión
+ * del navegador (la página ya tiene estilos `print:` dedicados) en vez de
+ * una librería de generación de PDF -- cubre el caso de uso sin sumar una
+ * dependencia nueva solo para esto.
  */
-export function ExportButtons() {
+export function ExportButtons({ data }: { data: ReportData }) {
   function handleExportCsv() {
-    const header = "Estado,Leads,% del total\n"
-    const total = MOCK_FUNNEL[0]?.count ?? 1
-    const rows = MOCK_FUNNEL.map(
-      (s) => `${s.label},${s.count},${((s.count / total) * 100).toFixed(1)}%`
-    ).join("\n")
-    const blob = new Blob([header + rows], { type: "text/csv;charset=utf-8;" })
+    const funnelHeader = "Estado,Leads,% del total\n"
+    const total = data.funnel[0]?.count ?? 1
+    const funnelRows = data.funnel
+      .map((s) => `${STAGE_LABELS[s.stage] ?? s.stage},${s.count},${((s.count / total) * 100).toFixed(1)}%`)
+      .join("\n")
+
+    const closuresHeader = "\n\nCliente,Fecha,UF\n"
+    const closuresRows = data.closuresDetail.map((c) => `${c.client},${c.date.slice(0, 10)},${c.uf}`).join("\n")
+
+    const blob = new Blob([funnelHeader + funnelRows + closuresHeader + closuresRows], {
+      type: "text/csv;charset=utf-8;",
+    })
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
     link.href = url
@@ -28,10 +36,6 @@ export function ExportButtons() {
     link.remove()
     URL.revokeObjectURL(url)
     toast.success("CSV exportado.")
-  }
-
-  function handleExportMock(format: string) {
-    toast.info(`Exportación a ${format} pendiente de librería (mock en Release 3).`)
   }
 
   return (
@@ -46,19 +50,11 @@ export function ExportButtons() {
       </button>
       <button
         type="button"
-        onClick={() => handleExportMock("PDF")}
+        onClick={() => window.print()}
         className="inline-flex items-center gap-2 rounded-lg border border-glass-border bg-glass px-3.5 py-2 text-sm font-medium text-text-secondary transition-colors duration-200 hover:text-text-primary"
       >
-        <FileTextIcon className="size-4 text-neon-purple" />
-        Exportar PDF
-      </button>
-      <button
-        type="button"
-        onClick={() => handleExportMock("Excel")}
-        className="inline-flex items-center gap-2 rounded-lg border border-glass-border bg-glass px-3.5 py-2 text-sm font-medium text-text-secondary transition-colors duration-200 hover:text-text-primary"
-      >
-        <FileIcon className="size-4 text-neon-green" />
-        Exportar Excel
+        <PrinterIcon className="size-4 text-neon-purple" />
+        Imprimir / PDF
       </button>
     </div>
   )

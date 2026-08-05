@@ -21,11 +21,25 @@ import { UF_VALUE_CLP } from "@/lib/uf-preevaluation";
  * comisión. Se rotula como "gestionado", no "comisión", para no insinuar
  * un número que no podemos respaldar.
  *
+ * Acepta filtros opcionales por querystring (usados por /admin/reports;
+ * /admin/dashboard llama sin filtros = todo el histórico):
+ *   - `from`, `to` (YYYY-MM-DD): filtra por `applications.created_at`.
+ *   - `advisorId`: filtra por `assigned_advisor_id`.
+ *   - `stage`: filtra por `stage` exacto.
+ *   - `category`: filtra por `scoring_category` exacto.
+ *
  * Requiere admin/gerencia con el módulo "reportes" habilitado.
  */
-export const GET = withErrorHandling(async () => {
+export const GET = withErrorHandling(async (request: Request) => {
   const auth = await requireRole(["admin", "gerencia"]);
   if (!auth.authorized) return auth.response;
+
+  const { searchParams } = new URL(request.url);
+  const filterFrom = searchParams.get("from");
+  const filterTo = searchParams.get("to");
+  const filterAdvisorId = searchParams.get("advisorId");
+  const filterStage = searchParams.get("stage");
+  const filterCategory = searchParams.get("category");
 
   const supabase = createSupabaseServiceRoleClient() as any;
 
@@ -65,11 +79,25 @@ export const GET = withErrorHandling(async () => {
   type HistoryRow = { application_id: string; to_stage: string; created_at: string };
   type PropertyRow = { id: string; price_uf: number; available: boolean };
 
-  const applications: AppRow[] = applicationsRes.data ?? [];
+  const allApplications: AppRow[] = applicationsRes.data ?? [];
   const history: HistoryRow[] = historyRes.data ?? [];
   const properties: PropertyRow[] = propertiesRes.data ?? [];
   const advisors: { id: string; full_name: string | null }[] = advisorsRes.data ?? [];
   const customers: { id: string; name: string }[] = customersRes.data ?? [];
+
+  const fromDate = filterFrom ? new Date(filterFrom) : null;
+  // `to` es inclusivo del día completo -- se compara contra el inicio del
+  // día siguiente para no cortar solicitudes creadas esa misma fecha.
+  const toDateExclusive = filterTo ? new Date(new Date(filterTo).getTime() + 86_400_000) : null;
+
+  const applications: AppRow[] = allApplications.filter((app) => {
+    if (fromDate && new Date(app.created_at) < fromDate) return false;
+    if (toDateExclusive && new Date(app.created_at) >= toDateExclusive) return false;
+    if (filterAdvisorId && filterAdvisorId !== "Todos" && app.assigned_advisor_id !== filterAdvisorId) return false;
+    if (filterStage && filterStage !== "Todos" && app.stage !== filterStage) return false;
+    if (filterCategory && filterCategory !== "Todas" && app.scoring_category !== filterCategory) return false;
+    return true;
+  });
 
   const customerNameById = new Map(customers.map((c) => [c.id, c.name]));
   const priceByPropertyId = new Map(properties.map((p) => [p.id, p.price_uf]));
@@ -166,10 +194,12 @@ export const GET = withErrorHandling(async () => {
   // ---------------------------------------------------------------------
   // Timeline: cierres por día, mes en curso
   // ---------------------------------------------------------------------
+  const filteredAppIds = new Set(applications.map((a) => a.id));
   const daysInMonth = new Date(startOfThisMonth.getFullYear(), startOfThisMonth.getMonth() + 1, 0).getDate();
   const closuresByDay = new Array(daysInMonth).fill(0);
   for (const row of history) {
     if (row.to_stage !== "CIERRE") continue;
+    if (!filteredAppIds.has(row.application_id)) continue;
     const d = new Date(row.created_at);
     if (d >= startOfThisMonth) {
       const dayIndex = d.getDate() - 1;
@@ -276,9 +306,12 @@ export const GET = withErrorHandling(async () => {
   };
 
   // ---------------------------------------------------------------------
-  // Detalle de cierres del mes
+  // Detalle de cierres -- si hay filtro de fecha explícito (reportes), usa
+  // TODOS los cierres dentro del rango filtrado; si no (dashboard sin
+  // filtros), se limita al mes en curso como antes.
   // ---------------------------------------------------------------------
-  const closuresDetail = closedThisMonth
+  const closuresSource = fromDate || toDateExclusive ? closedApps : closedThisMonth;
+  const closuresDetail = closuresSource
     .map((a) => ({
       id: a.id,
       client: customerNameById.get(a.customer_id) ?? "Cliente sin nombre",
@@ -307,5 +340,6 @@ export const GET = withErrorHandling(async () => {
     advisorPerformance,
     propertiesInventory,
     closuresDetail,
+    advisors: advisors.map((a) => ({ id: a.id, name: advisorNameById.get(a.id) ?? "Sin nombre" })),
   });
 });

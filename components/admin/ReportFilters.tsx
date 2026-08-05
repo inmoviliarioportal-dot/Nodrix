@@ -1,9 +1,6 @@
 "use client"
 
-import * as React from "react"
-
 import { APPLICATION_STAGES, STAGE_LABELS } from "@/components/dashboard/types"
-import { MOCK_ADVISOR_PERFORMANCE } from "@/components/admin/types"
 
 const CATEGORIES = ["Todas", "BRONCE", "PLATA", "ORO", "PLATINO", "BLACK"] as const
 
@@ -14,7 +11,7 @@ function fieldClass() {
 export interface ReportFiltersState {
   from: string
   to: string
-  advisor: string
+  advisorId: string
   stage: string
   category: string
 }
@@ -22,10 +19,12 @@ export interface ReportFiltersState {
 interface ReportFiltersProps {
   value: ReportFiltersState
   onChange: (next: ReportFiltersState) => void
+  advisors: { id: string; name: string }[]
 }
 
-/** Filtros de la página de Reportes — puramente client-side, filtran las secciones mock. */
-export function ReportFilters({ value, onChange }: ReportFiltersProps) {
+/** Filtros de la página de Reportes -- cada cambio dispara un fetch real a
+ * GET /api/admin/kpis con estos parámetros (ver app/admin/reports/page.tsx). */
+export function ReportFilters({ value, onChange, advisors }: ReportFiltersProps) {
   function set<K extends keyof ReportFiltersState>(key: K, v: ReportFiltersState[K]) {
     onChange({ ...value, [key]: v })
   }
@@ -65,13 +64,13 @@ export function ReportFilters({ value, onChange }: ReportFiltersProps) {
           <select
             id="report-advisor"
             className={fieldClass()}
-            value={value.advisor}
-            onChange={(e) => set("advisor", e.target.value)}
+            value={value.advisorId}
+            onChange={(e) => set("advisorId", e.target.value)}
           >
             <option value="Todos">Todos</option>
-            {MOCK_ADVISOR_PERFORMANCE.map((a) => (
-              <option key={a.advisor} value={a.advisor}>
-                {a.advisor}
+            {advisors.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
               </option>
             ))}
           </select>
