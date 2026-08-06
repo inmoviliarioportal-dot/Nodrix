@@ -1,0 +1,411 @@
+<title>Nodrix — Documento Funcional</title>
+<style>
+  :root{
+    --bg:#F6F7FB; --surface:#FFFFFF; --surface-2:#EEF0FA;
+    --ink:#14172B; --ink-soft:#4B4F6B; --ink-faint:#8286A6;
+    --border:#DFE2F0; --accent:#4F46E5; --accent-soft:#EEECFC;
+    --gold:#9A7B12; --gold-fill:#D4AF37;
+    --good:#0E8F6B; --warn:#B4790A; --crit:#C23B3B;
+    --shadow:0 1px 2px rgba(20,23,43,.05), 0 10px 28px -14px rgba(20,23,43,.18);
+    --radius:12px;
+  }
+  :root[data-theme="dark"]{
+    --bg:#0F0F1E; --surface:#171826; --surface-2:#1D1F33;
+    --ink:#F3F4F6; --ink-soft:#B7BAD1; --ink-faint:#7C7FA0;
+    --border:#2C2F4A; --accent:#8B85F2; --accent-soft:#232244;
+    --gold:#E8C567; --gold-fill:#D4AF37;
+    --good:#3FCB9E; --warn:#E0A63C; --crit:#F0716C;
+    --shadow:0 1px 2px rgba(0,0,0,.35), 0 14px 34px -14px rgba(0,0,0,.55);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0F0F1E; --surface:#171826; --surface-2:#1D1F33;
+      --ink:#F3F4F6; --ink-soft:#B7BAD1; --ink-faint:#7C7FA0;
+      --border:#2C2F4A; --accent:#8B85F2; --accent-soft:#232244;
+      --gold:#E8C567; --gold-fill:#D4AF37;
+      --good:#3FCB9E; --warn:#E0A63C; --crit:#F0716C;
+      --shadow:0 1px 2px rgba(0,0,0,.35), 0 14px 34px -14px rgba(0,0,0,.55);
+    }
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{
+    font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+    text-wrap:balance; color:var(--ink); font-weight:600; margin:0;
+  }
+  a{color:var(--accent);}
+  .page{max-width:900px; margin:0 auto; padding:56px 24px 96px;}
+
+  /* Cover / header */
+  .cover{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:40px 44px; margin-bottom:28px;
+  }
+  .eyebrow{
+    font-size:11.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--gold); margin-bottom:14px; display:block;
+  }
+  .cover h1{font-size:34px; line-height:1.15; margin-bottom:8px;}
+  .cover .subtitle{color:var(--ink-soft); font-size:16.5px; max-width:60ch; margin-bottom:24px;}
+  .meta{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:0;
+    border-top:1px solid var(--border); padding-top:18px;
+  }
+  .meta div{padding:0 16px; border-left:1px solid var(--border);}
+  .meta div:first-child{padding-left:0; border-left:none;}
+  .meta dt{font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-faint); margin-bottom:4px;}
+  .meta dd{margin:0; font-size:14px; font-weight:600; font-variant-numeric:tabular-nums;}
+
+  .callout{
+    background:var(--accent-soft); border:1px solid var(--border); border-radius:var(--radius);
+    padding:16px 20px; font-size:14.5px; color:var(--ink-soft); margin-bottom:28px;
+  }
+  .callout strong{color:var(--ink);}
+
+  /* TOC */
+  nav.toc{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:24px 28px; margin-bottom:40px;
+  }
+  nav.toc h2{font-size:13px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-faint); margin-bottom:14px;}
+  nav.toc ol{margin:0; padding:0; list-style:none; columns:2; column-gap:32px;}
+  nav.toc li{margin-bottom:8px; break-inside:avoid;}
+  nav.toc a{color:var(--ink); text-decoration:none; font-size:14.5px;}
+  nav.toc a:hover{color:var(--accent);}
+  nav.toc .num{color:var(--gold); font-weight:700; margin-right:6px; font-variant-numeric:tabular-nums;}
+
+  /* Sections */
+  section{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:36px 44px; margin-bottom:24px; scroll-margin-top:24px;
+  }
+  section h2{font-size:23px; padding-bottom:14px; border-bottom:1px solid var(--border); margin-bottom:20px;}
+  section h3{font-size:17px; margin:28px 0 10px;}
+  section h3:first-of-type{margin-top:0;}
+  p{margin:0 0 14px; max-width:70ch; color:var(--ink);}
+  p.lede{color:var(--ink-soft);}
+  ul,ol{margin:0 0 14px; padding-left:22px;}
+  li{margin-bottom:6px;}
+  strong{color:var(--ink); font-weight:650;}
+  code{
+    font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace; font-size:.9em;
+    background:var(--surface-2); border:1px solid var(--border); border-radius:5px; padding:1px 6px;
+  }
+
+  table{width:100%; border-collapse:collapse; margin:8px 0 20px; font-size:14px;}
+  caption{text-align:left; font-size:12px; color:var(--ink-faint); margin-bottom:6px;}
+  th{
+    text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--ink-faint); font-weight:700; padding:8px 12px; border-bottom:2px solid var(--border);
+  }
+  td{padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:top; color:var(--ink-soft);}
+  td:first-child{color:var(--ink); font-weight:600;}
+  tr:last-child td{border-bottom:none;}
+  .table-wrap{overflow-x:auto; margin-bottom:20px;}
+
+  .diagram{
+    background:var(--surface-2); border:1px solid var(--border); border-radius:10px;
+    padding:20px; margin:8px 0 24px; overflow-x:auto;
+  }
+
+  .badge{
+    display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600;
+    padding:3px 10px; border-radius:999px; border:1px solid var(--border); background:var(--surface-2);
+    color:var(--ink-soft); white-space:nowrap;
+  }
+  .badge.role-cliente{color:#0E8F6B; border-color:#0E8F6B44; background:#0E8F6B14;}
+  .badge.role-asesor{color:var(--accent); border-color:color-mix(in srgb, var(--accent) 40%, transparent); background:var(--accent-soft);}
+  .badge.role-admin{color:var(--gold); border-color:color-mix(in srgb, var(--gold) 40%, transparent); background:color-mix(in srgb, var(--gold) 10%, transparent);}
+
+  .shot-marker{
+    display:block; margin:14px 0; padding:14px 16px; border:1px dashed var(--border);
+    border-radius:8px; font-size:12.5px; color:var(--ink-faint); background:var(--surface-2);
+  }
+  .shot-marker b{color:var(--ink-soft); font-family:ui-monospace,monospace;}
+
+  .rules-table td:nth-child(1){font-variant-numeric:tabular-nums; color:var(--ink-faint); width:32px;}
+
+  footer{text-align:center; color:var(--ink-faint); font-size:13px; padding-top:20px;}
+  footer a{color:var(--ink-faint);}
+
+  @media (max-width:640px){
+    .page{padding:32px 14px 64px;}
+    .cover{padding:28px 24px;}
+    .cover h1{font-size:26px;}
+    .meta{grid-template-columns:1fr 1fr; row-gap:16px;}
+    nav.toc ol{columns:1;}
+    section{padding:24px 22px;}
+  }
+  @media print{
+    body{background:#fff;}
+    .cover,section,nav.toc{box-shadow:none; break-inside:avoid;}
+  }
+</style>
+
+<div class="page">
+
+  <div class="cover">
+    <span class="eyebrow">NODRIX-DOC-FUN-01 · Documento Funcional</span>
+    <h1>Nodrix — Plataforma Inmobiliaria Inteligente</h1>
+    <p class="subtitle">Descripción funcional completa del sistema: pantallas, roles, flujo de negocio de extremo a extremo y reglas de negocio aplicadas — para presentación a gerencia.</p>
+    <dl class="meta">
+      <div><dt>Versión</dt><dd>1.0</dd></div>
+      <div><dt>Fecha</dt><dd>06 ago 2026</dd></div>
+      <div><dt>Clasificación</dt><dd>Uso interno</dd></div>
+      <div><dt>Audiencia</dt><dd>Gerencia</dd></div>
+    </dl>
+  </div>
+
+  <div class="callout">
+    <strong>Nota sobre imágenes:</strong> las capturas de pantalla (marcadas como <code>[CAPTURA N.N]</code>) se completan siguiendo la guía de capturas del proyecto. Este documento incluye descripción textual completa de cada pantalla mientras se incorporan las imágenes.
+  </div>
+
+  <nav class="toc">
+    <h2>Contenido</h2>
+    <ol>
+      <li><a href="#objetivo"><span class="num">1</span>Objetivo</a></li>
+      <li><a href="#alcance"><span class="num">2</span>Alcance</a></li>
+      <li><a href="#definiciones"><span class="num">3</span>Definiciones y acrónimos</a></li>
+      <li><a href="#roles"><span class="num">4</span>Roles del sistema</a></li>
+      <li><a href="#flujo"><span class="num">5</span>Flujo de negocio de extremo a extremo</a></li>
+      <li><a href="#cliente"><span class="num">6</span>Pantallas — Cliente</a></li>
+      <li><a href="#asesor"><span class="num">7</span>Pantallas — Asesor</a></li>
+      <li><a href="#admin"><span class="num">8</span>Pantallas — Admin / Gerencia</a></li>
+      <li><a href="#reglas"><span class="num">9</span>Reglas de negocio clave</a></li>
+      <li><a href="#anexos"><span class="num">10</span>Anexos</a></li>
+    </ol>
+  </nav>
+
+  <section id="objetivo">
+    <h2>1. Objetivo</h2>
+    <p>Describir, para una audiencia de gerencia y negocio, qué hace Nodrix hoy: los procesos que automatiza, las pantallas que existen para cada tipo de usuario, y las reglas de negocio que el sistema aplica de forma determinística — sin intervención de IA generativa en ninguna decisión financiera o de scoring.</p>
+  </section>
+
+  <section id="alcance">
+    <h2>2. Alcance</h2>
+    <p>Cubre las tres etapas del proceso comercial soportadas por el sistema: <strong>(1)</strong> captación y evaluación del cliente, <strong>(2)</strong> gestión del expediente por el equipo de asesoría, y <strong>(3)</strong> supervisión, reportería y administración por parte de gerencia. No cubre integraciones bancarias reales, notariales reales, ni procesos fuera del sistema.</p>
+  </section>
+
+  <section id="definiciones">
+    <h2>3. Definiciones y acrónimos</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Término</th><th>Significado</th></tr></thead>
+        <tbody>
+          <tr><td>Lead</td><td>Persona que se registra en la plataforma y da inicio a una solicitud.</td></tr>
+          <tr><td>Solicitud</td><td>El expediente completo de un cliente, desde que se recibe hasta el cierre (tabla <code>applications</code>).</td></tr>
+          <tr><td>Scoring</td><td>Puntaje de 0 a 100 que categoriza la capacidad financiera del cliente.</td></tr>
+          <tr><td>UF</td><td>Unidad de Fomento, unidad de referencia chilena para precios inmobiliarios.</td></tr>
+          <tr><td>Pre-evaluación</td><td>Estimación del monto de crédito hipotecario al que podría optar el cliente.</td></tr>
+          <tr><td>Etapa / Stage</td><td>Estado del expediente dentro del flujo de 9 pasos de backend.</td></tr>
+          <tr><td>Asesor</td><td>Usuario que gestiona la cartera de solicitudes asignadas.</td></tr>
+          <tr><td>OCR</td><td>Reconocimiento óptico de caracteres, usado para validar documentos subidos.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="roles">
+    <h2>4. Roles del sistema</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Rol</th><th>Descripción</th><th>Acceso</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge role-cliente">Cliente</span></td><td>Persona natural que busca invertir/adquirir una propiedad con crédito hipotecario.</td><td><code>/dashboard</code></td></tr>
+          <tr><td><span class="badge role-asesor">Asesor</span></td><td>Ejecutivo comercial que gestiona la cartera de leads asignados.</td><td><code>/backoffice</code></td></tr>
+          <tr><td><span class="badge role-asesor">Gerencia</span></td><td>Supervisión de KPIs, reportes y configuración de negocio; permisos configurables por admin.</td><td><code>/admin</code> (según permisos)</td></tr>
+          <tr><td><span class="badge role-admin">Admin</span></td><td>Superusuario técnico/operativo; único rol no restringible.</td><td><code>/admin</code> (acceso total)</td></tr>
+          <tr><td>Roles personalizados</td><td>Roles definidos ad-hoc por admin, con permisos por módulo.</td><td><code>/admin</code> (según configuración)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="flujo">
+    <h2>5. Flujo de negocio de extremo a extremo</h2>
+    <pre class="mermaid diagram">
+flowchart LR
+    A["Landing / Registro"] --> B["Wizard de<br/>perfilamiento"]
+    B --> C["Scoring<br/>automático"]
+    C --> D["Bandas de riesgo<br/>6 tramos"]
+    D --> E["Subida de documentos<br/>con OCR"]
+    E --> F["Revisión<br/>del asesor"]
+    F --> G["Pre-evaluación UF"]
+    G --> H["Oferta por comuna<br/>+ Visita"]
+    H --> I["Envío a banco<br/>(simulado)"]
+    I --> J["Propuesta final<br/>del asesor"]
+    J --> K["Aceptación<br/>del cliente"]
+    K --> L["Escrituración<br/>agendada"]
+    L --> M["Cierre"]
+    </pre>
+
+    <h3>Los 9 estados reales del expediente (backend)</h3>
+    <p><code>RECEPCIONADA → SCORING_COMPLETADO → DOCUMENTOS_PENDIENTES → DOCUMENTOS_APROBADOS → PRE_EVALUACION_COMPLETADA → VISITA_COMPLETADA → ENVIADO_A_BANCO → ESCRITURACION_AGENDADA → CIERRE</code></p>
+
+    <h3>Los 7 pasos que ve el usuario</h3>
+    <p>En toda timeline del sistema (cliente, asesor, y en el Funnel de Estados de admin) se fusiona visualmente "Documentos pendientes" con "Visita" (ocurren en paralelo en la práctica) y se oculta "Pre-evaluación completada" (paso interno "Aprobado previo"). Este agrupamiento es <strong>idéntico en las 4 vistas del sistema</strong> que muestran progreso por etapa — por diseño, no hay dos pantallas que cuenten los pasos de forma distinta.</p>
+  </section>
+
+  <section id="cliente">
+    <h2>6. Pantallas — Vista Cliente</h2>
+
+    <h3>6.1 Landing (<code>/</code>)</h3>
+    <p><strong>Qué hace:</strong> primer contacto del visitante. Presenta la propuesta de valor ("Claridad total sobre mi capacidad de inversión") y un formulario de soft-login/registro rápido. No requiere sesión previa; es la puerta de entrada al wizard.</p>
+    <div class="shot-marker">Captura pendiente — <b>[CAPTURA 1.1]</b></div>
+
+    <h3>6.2 Registro (<code>/auth/register</code>)</h3>
+    <p><strong>Qué hace:</strong> captura identidad y datos base del cliente — nombre, apellidos, email, teléfono, RUT (con validación de dígito verificador módulo 11), sexo, fecha de nacimiento, renta declarada, tipo de inversión de interés y estado del inmueble deseado. Incluye indicador de fuerza de contraseña. Un RUT inválido bloquea el envío del formulario.</p>
+    <div class="shot-marker">Captura pendiente — <b>[CAPTURA 1.2]</b></div>
+
+    <h3>6.3 Login / Recuperación (<code>/auth/login</code>, <code>/auth/forgot-password</code>)</h3>
+    <p><strong>Qué hace:</strong> autenticación estándar por email/clave; recuperación por email con enlace de reseteo.</p>
+    <div class="shot-marker">Captura pendiente — <b>[CAPTURA 1.3]</b> · <b>[CAPTURA 1.4]</b></div>
+
+    <h3>6.4 Wizard de perfilamiento (<code>/onboarding/wizard</code>, 3 pasos)</h3>
+    <p><strong>Qué hace:</strong> recoge el perfil financiero completo del cliente en 3 pantallas:</p>
+    <ol>
+      <li><strong>Situación laboral / fuentes de ingreso</strong> — el cliente puede declarar más de una fuente (sueldo fijo, boleta, pensión, alquiler, sociedad); cada una pide los datos específicos que la banca chilena evalúa distinto para esa fuente.</li>
+      <li><strong>Antigüedad, tipo de contrato, ahorro disponible.</strong></li>
+      <li><strong>Destino del inmueble</strong> — vivir, Airbnb, arriendo tradicional o venta a corto plazo. Determina qué carrusel de propiedades ve más adelante.</li>
+    </ol>
+    <p>El wizard autoguarda el progreso; si el cliente sale y vuelve, retoma donde quedó.</p>
+    <div class="shot-marker">Captura pendiente — <b>[CAPTURA 2.2]</b> · <b>[CAPTURA 2.3]</b> · <b>[CAPTURA 2.4]</b></div>
+
+    <h3>6.5 Procesamiento (<code>/onboarding/processing</code>)</h3>
+    <p><strong>Qué hace:</strong> pantalla puente que ejecuta el cálculo real de scoring mientras muestra una animación de carga con textos dinámicos, para dar sensación de "análisis en curso" sin bloquear al usuario sobre una llamada de red instantánea.</p>
+    <div class="shot-marker">Captura pendiente — <b>[CAPTURA 2.5]</b></div>
+
+    <h3>6.6 Propuesta inicial — bandas de riesgo</h3>
+    <p><strong>Qué hace:</strong> muestra 6 tramos de departamentos (1 · 1-2 · 2-3 · 3-4 · 4-5 · 5-6), cada uno con un % estimado de aprobación bancaria, calculado a partir del score real del cliente. El cliente debe elegir un tramo para poder avanzar. Paso obligatorio del wizard, con una "rama de rescate" (modal de retención) si el cliente intenta salir sin elegir.</p>
+    <div class="shot-marker">Captura pendiente — <b>[CAPTURA 2.6]</b></div>
+
+    <h3>6.7 Dashboard cliente (<code>/dashboard</code>)</h3>
+    <p><strong>Qué hace:</strong> panel principal de seguimiento — muestra el estado actual de la solicitud sobre una timeline horizontal de 7 pasos, categoría de scoring obtenida, barra de progreso global, estimador de tiempo restante por etapa, alertas contextuales según el estado, y un video explicativo embebido por etapa.</p>
+    <div class="shot-marker">Captura pendiente — <b>[CAPTURA 2.7]</b></div>
+
+    <h3>6.8 Bóveda documental (<code>/dashboard/documents</code>)</h3>
+    <p><strong>Qué hace:</strong> checklist visual de los documentos que el cliente debe subir, calculado dinámicamente según su(s) situación(es) laboral(es) declarada(s) — no es una lista genérica fija. Cada documento muestra su estado (pendiente / en revisión / aprobado / rechazado) y, si fue rechazado, el motivo. El mismo checklist que ve el cliente aquí es exactamente el que ve el asesor.</p>
+    <div class="shot-marker">Captura pendiente — <b>[CAPTURA 2.8]</b></div>
+
+    <h3>6.9 Oferta por comuna + agenda de visita</h3>
+    <p><strong>Qué hace:</strong> una vez el cliente llega a "Pre-evaluación completada", ve propiedades disponibles filtradas por su comuna de preferencia, con opción de agendar una visita directamente desde su panel.</p>
+    <div class="shot-marker">Captura pendiente — <b>[CAPTURA 2.10]</b></div>
+
+    <h3>6.10 Menú de cuenta</h3>
+    <p><strong>Qué hace:</strong> editar datos personales, cambiar contraseña, cerrar sesión — accesible desde cualquier pantalla del dashboard.</p>
+    <div class="shot-marker">Captura pendiente — <b>[CAPTURA 2.9]</b></div>
+  </section>
+
+  <section id="asesor">
+    <h2>7. Pantallas — Vista Asesor (Backoffice)</h2>
+
+    <h3>7.1 Bandeja de leads (<code>/backoffice/queue</code>)</h3>
+    <p><strong>Qué hace:</strong> listado de todas las solicitudes visibles para el asesor, con filtros por etapa, categoría de scoring y días en la etapa actual; búsqueda por cliente/RUT. Dos vistas intercambiables: tabla (tipo Excel, para revisión masiva) y tarjetas (para triage visual rápido).</p>
+    <div class="shot-marker">Captura pendiente — <b>[CAPTURA 3.1]</b> · <b>[CAPTURA 3.2]</b></div>
+
+    <h3>7.2 Detalle de solicitud (<code>/backoffice/[id]</code>)</h3>
+    <p><strong>Qué hace:</strong> vista de trabajo del asesor sobre un expediente específico. Incluye:</p>
+    <ul>
+      <li><strong>Timeline horizontal de 7 pasos</strong> con la fecha real de llegada a cada uno (el asesor sí ve fechas, a diferencia del cliente).</li>
+      <li><strong>Pre-evaluación</strong> — botón para calcular/recalcular el rango de UF estimado con los datos reales del cliente.</li>
+      <li><strong>Documentos</strong> — el mismo checklist "cargado / no cargado" que ve el cliente, más las acciones de aprobar/rechazar (con motivo) y vista previa del archivo.</li>
+      <li><strong>Propuesta final</strong> — hasta 6 opciones concretas de propiedad (departamento, comuna, precio UF, notas) que el asesor carga para que el cliente elija y acepte.</li>
+      <li><strong>Notas</strong> — bitácora de seguimiento visible para todo el equipo.</li>
+      <li><strong>Aplicar estado</strong> — selector que ofrece únicamente la(s) siguiente(s) etapa(s) legal(es) según la máquina de estados.</li>
+    </ul>
+    <div class="shot-marker">Captura pendiente — <b>[CAPTURA 3.3]</b> · <b>[CAPTURA 3.4]</b> · <b>[CAPTURA 3.5]</b> · <b>[CAPTURA 3.6]</b></div>
+
+    <h3>7.3 Propiedades (<code>/backoffice/properties</code>)</h3>
+    <p><strong>Qué hace:</strong> catálogo de propiedades disponibles para ofrecer al cliente durante el proceso de selección/visita.</p>
+    <div class="shot-marker">Captura pendiente — <b>[CAPTURA 3.7]</b></div>
+
+    <h3>7.4 Visitas (<code>/backoffice/visits</code>)</h3>
+    <p><strong>Qué hace:</strong> listado de visitas programadas por todos los asesores, con estado (agendada / realizada).</p>
+    <div class="shot-marker">Captura pendiente — <b>[CAPTURA 3.8]</b></div>
+  </section>
+
+  <section id="admin">
+    <h2>8. Pantallas — Vista Admin / Gerencia</h2>
+
+    <h3>8.1 Dashboard ejecutivo (<code>/admin/dashboard</code>)</h3>
+    <p><strong>Qué hace:</strong> panel de control con métricas en vivo, calculadas directamente desde la base de datos en cada carga:</p>
+    <ul>
+      <li><strong>5 KPI cards:</strong> leads del mes (con variación vs. mes anterior), tasa de conversión histórica, días promedio a cierre, UF gestionadas este mes, y cierres proyectados a 30 días.</li>
+      <li><strong>Funnel de Estados:</strong> cuántas solicitudes alcanzaron cada uno de los 7 pasos visuales.</li>
+      <li><strong>Distribución de scoring:</strong> proporción de solicitudes por categoría (Bronce a Black).</li>
+      <li><strong>Solicitudes en curso por estado y por categoría</strong>, con drilldown directo a la bandeja del asesor filtrada.</li>
+      <li><strong>Timeline de cierres:</strong> cierres por día del mes en curso, con tendencia semanal.</li>
+      <li><strong>Proyección de cierres:</strong> cuántas solicitudes activas se estima que cierren en los próximos 30/60/90+ días, y qué UF representan.</li>
+      <li><strong>Top 10 leads que requieren seguimiento</strong> y <strong>desviaciones de proceso</strong> — alertas operativas.</li>
+      <li><strong>Desempeño por asesor</strong> e <strong>inventario de propiedades</strong>.</li>
+    </ul>
+    <p>Cada gráfico incluye un botón <strong>"?"</strong> que explica, en lenguaje de negocio, qué mide exactamente y cómo se calcula.</p>
+    <div class="shot-marker">Captura pendiente — <b>[CAPTURA 4.1]</b> · <b>[CAPTURA 4.2]</b> · <b>[CAPTURA 4.3]</b> · <b>[CAPTURA 4.4]</b></div>
+
+    <h3>8.2 Reportes (<code>/admin/reports</code>)</h3>
+    <p><strong>Qué hace:</strong> misma batería de gráficos que el dashboard, pero filtrable por rango de fechas, asesor, etapa y categoría, con exportación (CSV/impresión).</p>
+    <div class="shot-marker">Captura pendiente — <b>[CAPTURA 4.5]</b></div>
+
+    <h3>8.3 Usuarios (<code>/admin/users</code>, <code>/admin/users/new</code>)</h3>
+    <p><strong>Qué hace:</strong> mantenedor de cuentas del equipo. La creación respeta jerarquía: gerencia solo puede crear asesores; admin puede crear asesores y gerencia.</p>
+    <div class="shot-marker">Captura pendiente — <b>[CAPTURA 4.6]</b> · <b>[CAPTURA 4.7]</b></div>
+
+    <h3>8.4 Asignaciones (<code>/admin/assignments</code>)</h3>
+    <p><strong>Qué hace:</strong> asignar o reasignar el asesor responsable de cada solicitud.</p>
+    <div class="shot-marker">Captura pendiente — <b>[CAPTURA 4.8]</b></div>
+
+    <h3>8.5 Propiedades y Regiones</h3>
+    <p><strong>Qué hace:</strong> CRUD del catálogo de propiedades (comuna, propósito, plano, precio en UF) y de las regiones geográficas habilitadas para operar.</p>
+    <div class="shot-marker">Captura pendiente — <b>[CAPTURA 4.9]</b> · <b>[CAPTURA 4.10]</b></div>
+
+    <h3>8.6 Variables del wizard (<code>/admin/variables</code>)</h3>
+    <p><strong>Qué hace:</strong> permite a gerencia ajustar en vivo los parámetros financieros del motor de pre-evaluación (tramos de carga financiera, leverage máximo, plazos de crédito por edad/nivel profesional) sin tocar código. Cada publicación queda versionada: una solicitud ya calculada nunca cambia retroactivamente.</p>
+    <div class="shot-marker">Captura pendiente — <b>[CAPTURA 4.11]</b></div>
+
+    <h3>8.7 Roles y permisos (<code>/admin/roles</code>)</h3>
+    <p><strong>Qué hace:</strong> pantalla central de control de acceso con 5 secciones: Perfil Asesor / Perfil Gerencia (matriz de permisos por vista del sistema), Perfil Admin (solo lectura), Roles personalizados, y Permisos temporales (habilitar a un usuario un permiso adicional por un período que expira automáticamente).</p>
+    <div class="shot-marker">Captura pendiente — <b>[CAPTURA 4.12]</b> · <b>[CAPTURA 4.13]</b></div>
+
+    <h3>8.8 Herramienta manual (<code>/admin/manual</code>)</h3>
+    <p><strong>Qué hace:</strong> panel heredado para hacer overrides directos de estado/documentos sin pasar por la máquina de estados — palanca de excepción, no flujo normal de trabajo.</p>
+    <div class="shot-marker">Captura pendiente — <b>[CAPTURA 4.14]</b></div>
+  </section>
+
+  <section id="reglas">
+    <h2>9. Reglas de negocio clave</h2>
+    <div class="table-wrap">
+      <table class="rules-table">
+        <thead><tr><th>#</th><th>Regla</th><th>Dónde se aplica</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>El scoring pondera renta (35%), ahorro (25%), estabilidad laboral (20%) y carga financiera (20%).</td><td>Motor de scoring</td></tr>
+          <tr><td>2</td><td>5 categorías de cliente: Bronce, Plata, Oro, Platino, Black.</td><td>Motor de scoring</td></tr>
+          <tr><td>3</td><td>El cliente debe elegir una banda de riesgo antes de subir documentos.</td><td>Wizard</td></tr>
+          <tr><td>4</td><td>El checklist de documentos depende de la situación laboral declarada, no es fijo.</td><td>Bóveda / Backoffice</td></tr>
+          <tr><td>5</td><td>Documentos válidos por OCR se auto-aprueban y avanzan la etapa automáticamente.</td><td>Motor de documentos</td></tr>
+          <tr><td>6</td><td>No se puede escriturar sin que el cliente acepte una opción de la propuesta final.</td><td>Máquina de estados</td></tr>
+          <tr><td>7</td><td>Los 7 pasos visuales son idénticos en cliente, asesor y admin.</td><td>Timeline unificada</td></tr>
+          <tr><td>8</td><td>El admin nunca es restringible vía configuración de permisos.</td><td>Sistema de permisos</td></tr>
+          <tr><td>9</td><td>Un permiso temporal solo puede elevar acceso, nunca restringirlo, y expira solo.</td><td>Sistema de permisos</td></tr>
+          <tr><td>10</td><td>Una solicitud ya calculada no cambia de parámetros financieros aunque se publique una versión nueva.</td><td>Variables del wizard</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="anexos">
+    <h2>10. Anexos</h2>
+    <ul>
+      <li>Esquema de datos completo — <code>02-esquema-de-datos.html</code></li>
+      <li>Arquitectura y tecnología — <code>03-arquitectura-tecnologia.html</code></li>
+      <li>Manual de usuario — <code>manual-de-usuario.html</code></li>
+      <li>Estado general y línea de tiempo del proyecto — <code>README.md</code> (repositorio)</li>
+    </ul>
+  </section>
+
+  <footer>Nodrix — Plataforma Inmobiliaria Inteligente · Documento Funcional v1.0 · 06 de agosto de 2026</footer>
+</div>

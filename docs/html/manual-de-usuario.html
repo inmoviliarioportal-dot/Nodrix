@@ -1,0 +1,271 @@
+<title>Nodrix — Manual de Usuario</title>
+<style>
+  :root{
+    --bg:#F6F7FB; --surface:#FFFFFF; --surface-2:#EEF0FA;
+    --ink:#14172B; --ink-soft:#4B4F6B; --ink-faint:#8286A6;
+    --border:#DFE2F0; --accent:#4F46E5; --accent-soft:#EEECFC;
+    --gold:#9A7B12; --gold-fill:#D4AF37;
+    --good:#0E8F6B; --warn:#B4790A; --crit:#C23B3B;
+    --shadow:0 1px 2px rgba(20,23,43,.05), 0 10px 28px -14px rgba(20,23,43,.18);
+    --radius:12px;
+  }
+  :root[data-theme="dark"]{
+    --bg:#0F0F1E; --surface:#171826; --surface-2:#1D1F33;
+    --ink:#F3F4F6; --ink-soft:#B7BAD1; --ink-faint:#7C7FA0;
+    --border:#2C2F4A; --accent:#8B85F2; --accent-soft:#232244;
+    --gold:#E8C567; --gold-fill:#D4AF37;
+    --good:#3FCB9E; --warn:#E0A63C; --crit:#F0716C;
+    --shadow:0 1px 2px rgba(0,0,0,.35), 0 14px 34px -14px rgba(0,0,0,.55);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0F0F1E; --surface:#171826; --surface-2:#1D1F33;
+      --ink:#F3F4F6; --ink-soft:#B7BAD1; --ink-faint:#7C7FA0;
+      --border:#2C2F4A; --accent:#8B85F2; --accent-soft:#232244;
+      --gold:#E8C567; --gold-fill:#D4AF37;
+      --good:#3FCB9E; --warn:#E0A63C; --crit:#F0716C;
+      --shadow:0 1px 2px rgba(0,0,0,.35), 0 14px 34px -14px rgba(0,0,0,.55);
+    }
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;}
+  h1,h2,h3{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif; text-wrap:balance; color:var(--ink); font-weight:600; margin:0;}
+  a{color:var(--accent);}
+  .page{max-width:920px; margin:0 auto; padding:56px 24px 96px;}
+  .cover{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:40px 44px; margin-bottom:28px;}
+  .eyebrow{font-size:11.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--gold); margin-bottom:14px; display:block;}
+  .cover h1{font-size:34px; line-height:1.15; margin-bottom:8px;}
+  .cover .subtitle{color:var(--ink-soft); font-size:16.5px; max-width:64ch; margin-bottom:0;}
+
+  /* Role tabs */
+  .tabs{position:sticky; top:0; z-index:10; display:flex; gap:8px; background:var(--bg); padding:14px 0 18px; margin-bottom:8px; border-bottom:1px solid var(--border);}
+  .tab-btn{
+    font:inherit; font-size:14.5px; font-weight:650; padding:10px 20px; border-radius:999px;
+    border:1px solid var(--border); background:var(--surface); color:var(--ink-soft);
+    cursor:pointer; transition:background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .tab-btn:hover{color:var(--ink);}
+  .tab-btn[aria-selected="true"]{background:var(--ink); color:var(--bg); border-color:var(--ink);}
+  :root[data-theme="dark"] .tab-btn[aria-selected="true"], @media (prefers-color-scheme:dark){.tab-btn[aria-selected="true"]{background:var(--accent); color:#fff; border-color:var(--accent);}}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  section{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:36px 44px; margin-bottom:24px; scroll-margin-top:90px;}
+  section > h2{font-size:22px; padding-bottom:14px; border-bottom:1px solid var(--border); margin-bottom:8px;}
+  section > .desc{color:var(--ink-soft); font-size:14.5px; margin-bottom:24px;}
+
+  .steps{counter-reset:step; margin:0; padding:0; list-style:none;}
+  .steps > li{
+    counter-increment:step; position:relative; padding:0 0 22px 46px; margin-bottom:6px;
+    border-left:2px solid var(--border); margin-left:15px;
+  }
+  .steps > li:last-child{border-left-color:transparent; padding-bottom:0;}
+  .steps > li::before{
+    content:counter(step); position:absolute; left:-15px; top:0;
+    width:30px; height:30px; border-radius:50%; background:var(--surface-2); border:1.5px solid var(--gold-fill);
+    color:var(--gold); font-weight:700; font-size:13px; display:flex; align-items:center; justify-content:center;
+    font-variant-numeric:tabular-nums;
+  }
+  .steps h3{font-size:15.5px; margin-bottom:4px;}
+  .steps p{margin:0 0 6px; color:var(--ink-soft); font-size:14.5px; max-width:66ch;}
+  .steps code{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace; font-size:.88em; background:var(--surface-2); border:1px solid var(--border); border-radius:5px; padding:1px 6px;}
+
+  .flow-nav{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:28px;}
+  .flow-nav a{
+    font-size:13px; font-weight:600; color:var(--ink-soft); text-decoration:none;
+    padding:6px 12px; border:1px solid var(--border); border-radius:999px; background:var(--surface-2);
+  }
+  .flow-nav a:hover{color:var(--accent); border-color:var(--accent);}
+
+  .tip{display:flex; gap:12px; background:var(--accent-soft); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin:14px 0 20px; font-size:14px; color:var(--ink-soft);}
+  .tip b{color:var(--ink);}
+  .tip .ico{flex-shrink:0; font-size:16px;}
+  .warn-box{display:flex; gap:12px; background:color-mix(in srgb, var(--warn) 10%, transparent); border:1px solid color-mix(in srgb, var(--warn) 30%, var(--border)); border-radius:10px; padding:14px 16px; margin:14px 0 20px; font-size:14px; color:var(--ink-soft);}
+  .warn-box b{color:var(--warn);}
+
+  .shot-marker{display:block; margin:10px 0 20px 0; padding:12px 14px; border:1px dashed var(--border); border-radius:8px; font-size:12.5px; color:var(--ink-faint); background:var(--surface-2);}
+  .shot-marker b{color:var(--ink-soft); font-family:ui-monospace,monospace;}
+
+  .faq{border-bottom:1px solid var(--border); padding:16px 0;}
+  .faq:last-child{border-bottom:none;}
+  .faq dt{font-weight:650; margin-bottom:6px;}
+  .faq dd{margin:0; color:var(--ink-soft); font-size:14.5px;}
+
+  footer{text-align:center; color:var(--ink-faint); font-size:13px; padding-top:20px;}
+  @media (max-width:640px){
+    .page{padding:32px 14px 64px;} .cover{padding:28px 24px;} .cover h1{font-size:26px;}
+    section{padding:24px 22px;} .steps{margin-left:0;}
+  }
+  @media print{ .tabs{display:none;} .tab-panel{display:block !important;} body{background:#fff;} .cover,section{box-shadow:none; break-inside:avoid;} }
+</style>
+
+<div class="page">
+
+  <div class="cover">
+    <span class="eyebrow">NODRIX-MAN-01 · Manual de Usuario</span>
+    <h1>Manual de Usuario — Nodrix</h1>
+    <p class="subtitle">Guía paso a paso para usar la plataforma según tu rol: Cliente, Asesor o Administración / Gerencia.</p>
+  </div>
+
+  <div class="tabs" role="tablist" aria-label="Selecciona tu rol">
+    <button class="tab-btn" role="tab" aria-selected="true" aria-controls="panel-cliente" id="tab-cliente" onclick="showTab('cliente')">🏠 Cliente</button>
+    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-asesor" id="tab-asesor" onclick="showTab('asesor')">💼 Asesor</button>
+    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-admin" id="tab-admin" onclick="showTab('admin')">⚙️ Admin / Gerencia</button>
+  </div>
+
+  <!-- ============ CLIENTE ============ -->
+  <div class="tab-panel active" id="panel-cliente" role="tabpanel" aria-labelledby="tab-cliente">
+
+    <section>
+      <h2>Crear tu cuenta y completar tu perfil</h2>
+      <p class="desc">Desde que entras a la página hasta que tu solicitud queda recepcionada y evaluada.</p>
+      <ol class="steps">
+        <li><h3>Entra a la landing y elige "Registrarme"</h3><p>En la página principal, completa el formulario con tu nombre, apellidos, email, teléfono y contraseña. Verás un indicador de fuerza de contraseña mientras escribes.</p><div class="shot-marker">Captura pendiente — <b>[CAPTURA 1.2]</b></div></li>
+        <li><h3>Completa tus datos personales</h3><p>Se te pedirá tu <b>RUT</b> — el sistema valida el dígito verificador automáticamente, así que si lo escribes mal el formulario te avisará antes de dejarte avanzar. También sexo, fecha de nacimiento, renta aproximada, tipo de inversión que te interesa y estado del inmueble que buscas.</p></li>
+        <li><h3>Responde el wizard de perfilamiento (3 pasos)</h3><p><b>Paso 1 — Situación laboral:</b> indica cómo generas tus ingresos (sueldo fijo, boleta, pensión, arriendo que recibes, o eres socio de una empresa). Puedes marcar más de una si tienes ingresos mixtos.</p><p><b>Paso 2 — Antigüedad y ahorro:</b> cuánto tiempo llevas en tu trabajo actual, tipo de contrato, y cuánto tienes ahorrado como pie.</p><p><b>Paso 3 — Qué buscas:</b> si quieres vivir en la propiedad, arrendarla tipo Airbnb, arrendarla tradicionalmente, o comprarla para vender pronto.</p><div class="tip"><span class="ico">💡</span><div>Si cierras la ventana a mitad del wizard, tus respuestas quedan guardadas — al volver a entrar retomas donde quedaste.</div></div><div class="shot-marker">Captura pendiente — <b>[CAPTURA 2.2]</b> · <b>[CAPTURA 2.3]</b> · <b>[CAPTURA 2.4]</b></div></li>
+        <li><h3>Espera el análisis (unos segundos)</h3><p>Verás una pantalla de "Procesando" mientras el sistema calcula tu puntaje financiero (scoring) con los datos que acabas de entregar.</p></li>
+        <li><h3>Elige tu tramo de propiedad</h3><p>El sistema te muestra <b>6 tramos de departamentos</b> (desde 1 hasta 5-6 dormitorios/unidades), cada uno con un porcentaje estimado de qué tan probable es que el banco lo apruebe según tu perfil. <b>Debes elegir uno para poder seguir</b> — no es una decisión final, es la simulación de con qué te conviene partir.</p><div class="warn-box"><b>Importante:</b> este porcentaje es una estimación, no una aprobación bancaria real. La confirmación llega después de que tu asesor revise tus documentos.</div><div class="shot-marker">Captura pendiente — <b>[CAPTURA 2.6]</b></div></li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Subir tus documentos</h2>
+      <p class="desc">La Bóveda documental (<code>/dashboard/documents</code>) te muestra exactamente qué necesitas subir.</p>
+      <ol class="steps">
+        <li><h3>Entra a "Documentos" desde tu panel</h3><p>Verás un checklist armado específicamente para tu situación laboral — si declaraste sueldo fijo, te pedirá liquidaciones y AFP; si declaraste arriendo, te pedirá tu contrato, etc. No es una lista genérica.</p><div class="shot-marker">Captura pendiente — <b>[CAPTURA 2.8]</b></div></li>
+        <li><h3>Sube cada archivo</h3><p>Al subir un documento, el sistema lo valida automáticamente (tipo de documento, que el nombre coincida con el titular, que el contenido tenga sentido). Si pasa la validación, queda aprobado al instante — no tienes que esperar a que tu asesor lo revise manualmente.</p></li>
+        <li><h3>Revisa el estado de cada documento</h3><p>Cada archivo muestra su estado: <i>pendiente</i>, <i>en revisión</i>, <i>aprobado</i> o <i>rechazado</i>. Si algo fue rechazado, verás el motivo exacto que indicó tu asesor para que lo corrijas y lo vuelvas a subir.</p></li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Seguir el avance de tu solicitud</h2>
+      <p class="desc">Tu panel principal (<code>/dashboard</code>) es tu centro de control.</p>
+      <ol class="steps">
+        <li><h3>Mira la línea de tiempo horizontal</h3><p>Muestra los 7 pasos de tu proceso, de izquierda a derecha, con el paso actual resaltado. Debajo tienes una barra de progreso general y una estimación de cuánto podría faltar según tu etapa actual.</p><div class="shot-marker">Captura pendiente — <b>[CAPTURA 2.7]</b></div></li>
+        <li><h3>Revisa las alertas y el video explicativo</h3><p>En cada etapa aparece un mensaje contextual explicando qué está pasando y, en algunos casos, un video corto. Puedes cerrarlo y volver a abrirlo cuando quieras.</p></li>
+        <li><h3>Cuando llegues a "Pre-evaluación", explora propiedades por comuna</h3><p>Verás propiedades disponibles en tu comuna de interés, con la opción de agendar una visita directamente desde tu panel.</p><div class="shot-marker">Captura pendiente — <b>[CAPTURA 2.10]</b></div></li>
+        <li><h3>Revisa y acepta la propuesta final de tu asesor</h3><p>Cuando tu asesor cargue las opciones concretas de propiedad (hasta 6), las verás en tu panel para elegir y aceptar una — este paso es obligatorio antes de avanzar a escrituración.</p></li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Gestionar tu cuenta</h2>
+      <ol class="steps">
+        <li><h3>Abre el menú de cuenta</h3><p>Desde cualquier pantalla del panel, haz clic en tu nombre/avatar arriba a la derecha.</p><div class="shot-marker">Captura pendiente — <b>[CAPTURA 2.9]</b></div></li>
+        <li><h3>Edita tus datos o cambia tu contraseña</h3><p>Ambas opciones están en ese mismo menú, junto con "Cerrar sesión".</p></li>
+        <li><h3>¿Olvidaste tu contraseña?</h3><p>Desde la pantalla de login, haz clic en "¿Olvidaste tu contraseña?" e ingresa tu email — te llegará un enlace para crear una nueva.</p></li>
+      </ol>
+    </section>
+
+  </div>
+
+  <!-- ============ ASESOR ============ -->
+  <div class="tab-panel" id="panel-asesor" role="tabpanel" aria-labelledby="tab-asesor">
+
+    <section>
+      <h2>Revisar tu bandeja de leads</h2>
+      <p class="desc"><code>/backoffice/queue</code> — todas las solicitudes que tienes que gestionar.</p>
+      <ol class="steps">
+        <li><h3>Elige tu vista</h3><p>Puedes alternar entre <b>vista tabla</b> (tipo Excel, útil para revisar muchas solicitudes de una vez) y <b>vista tarjetas</b> (mejor para revisar rápido cuáles necesitan atención urgente).</p><div class="shot-marker">Captura pendiente — <b>[CAPTURA 3.1]</b> · <b>[CAPTURA 3.2]</b></div></li>
+        <li><h3>Filtra por etapa, categoría o días de espera</h3><p>Los filtros persisten aunque cierres el navegador — no tienes que reconfigurarlos cada vez.</p></li>
+        <li><h3>Busca por cliente o RUT</h3><p>Usa la barra de búsqueda arriba de la tabla.</p></li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Trabajar el detalle de una solicitud</h2>
+      <p class="desc"><code>/backoffice/[id]</code> — haz clic en cualquier lead de la bandeja para entrar.</p>
+      <ol class="steps">
+        <li><h3>Revisa la línea de tiempo</h3><p>Verás los mismos 7 pasos que ve el cliente, pero con la <b>fecha real</b> en que se alcanzó cada uno — útil para saber cuánto tiempo lleva parado en una etapa.</p><div class="shot-marker">Captura pendiente — <b>[CAPTURA 3.3]</b></div></li>
+        <li><h3>Revisa el checklist de documentos</h3><p>Verás cada documento requerido marcado como <b>cargado</b> (con botones para aprobar o rechazar) o <b>"No cargado"</b> si el cliente todavía no lo sube. Si rechazas uno, escribe el motivo — el cliente lo verá en su Bóveda documental.</p><div class="shot-marker">Captura pendiente — <b>[CAPTURA 3.4]</b></div></li>
+        <li><h3>Calcula la pre-evaluación</h3><p>Con un clic, el sistema calcula el rango de UF al que podría optar el cliente usando sus datos reales (no una estimación genérica). Puedes recalcular si el cliente actualiza su información.</p></li>
+        <li><h3>Carga la propuesta final</h3><p>Una vez el cliente hizo la visita y se envió a banco, sube hasta 6 opciones concretas: departamento, comuna, precio en UF y notas. El cliente las verá en su panel para elegir una.</p><div class="shot-marker">Captura pendiente — <b>[CAPTURA 3.5]</b></div></li>
+        <li><h3>Deja una nota de seguimiento</h3><p>Las notas quedan visibles para todo el equipo, no solo para ti.</p></li>
+        <li><h3>Aplica el siguiente estado</h3><p>El selector de "Aplicar estado" solo te ofrece la etapa siguiente que es legal según el proceso — no puedes saltarte pasos por error.</p><div class="shot-marker">Captura pendiente — <b>[CAPTURA 3.6]</b></div></li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Gestionar propiedades y visitas</h2>
+      <ol class="steps">
+        <li><h3>Consulta el catálogo</h3><p>En <code>/backoffice/properties</code> ves todas las propiedades disponibles para ofrecer.</p><div class="shot-marker">Captura pendiente — <b>[CAPTURA 3.7]</b></div></li>
+        <li><h3>Revisa las visitas agendadas</h3><p>En <code>/backoffice/visits</code> ves todas las visitas programadas por el equipo, con su estado.</p><div class="shot-marker">Captura pendiente — <b>[CAPTURA 3.8]</b></div></li>
+      </ol>
+    </section>
+
+  </div>
+
+  <!-- ============ ADMIN ============ -->
+  <div class="tab-panel" id="panel-admin" role="tabpanel" aria-labelledby="tab-admin">
+
+    <section>
+      <h2>Leer el dashboard ejecutivo</h2>
+      <p class="desc"><code>/admin/dashboard</code> — tu vista de control diaria.</p>
+      <ol class="steps">
+        <li><h3>Revisa las 5 tarjetas superiores</h3><p>Leads del mes, conversión histórica, días promedio a cierre, UF gestionadas, y cierres proyectados a 30 días. Cada una tiene un botón <b>"?"</b> — haz clic para ver exactamente qué mide y cómo se calcula.</p><div class="shot-marker">Captura pendiente — <b>[CAPTURA 4.2]</b></div></li>
+        <li><h3>Mira el Funnel de Estados</h3><p>Te muestra cuántas solicitudes llegaron a cada uno de los 7 pasos del proceso — dónde se está cayendo más gente.</p><div class="shot-marker">Captura pendiente — <b>[CAPTURA 4.3]</b></div></li>
+        <li><h3>Revisa la Proyección de cierres</h3><p>Estima cuántas solicitudes activas van a cerrar en los próximos 30, 60 y 90+ días, con el valor UF que representan — útil para planificación comercial.</p><div class="shot-marker">Captura pendiente — <b>[CAPTURA 4.4]</b></div></li>
+        <li><h3>Haz clic en cualquier número para investigar</h3><p>Los conteos de "Solicitudes en curso" te llevan directo a la bandeja del asesor ya filtrada — no tienes que volver a aplicar el filtro manualmente.</p></li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Generar un reporte filtrado</h2>
+      <p class="desc"><code>/admin/reports</code></p>
+      <ol class="steps">
+        <li><h3>Aplica tus filtros</h3><p>Rango de fechas, asesor, etapa y/o categoría de scoring.</p><div class="shot-marker">Captura pendiente — <b>[CAPTURA 4.5]</b></div></li>
+        <li><h3>Exporta o imprime</h3><p>Usa el botón de exportación para obtener el reporte en un formato compartible.</p></li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Configurar roles y permisos</h2>
+      <p class="desc"><code>/admin/roles</code></p>
+      <ol class="steps">
+        <li><h3>Elige el perfil a editar</h3><p>Pestañas "Perfil Asesor" o "Perfil Gerencia" — ahí ves la matriz completa de vistas del sistema con nivel de acceso (ver / editar / sin acceso) por cada una.</p><div class="shot-marker">Captura pendiente — <b>[CAPTURA 4.12]</b></div></li>
+        <li><h3>Ajusta el nivel de acceso por vista</h3><p>Los cambios se aplican a todos los usuarios con ese rol.</p></li>
+        <li><h3>Otorga un permiso temporal a alguien puntual</h3><p>En la pestaña "Permisos temporales", selecciona el usuario, la vista, el nivel y la fecha de expiración. El acceso se apaga solo cuando vence — no tienes que acordarte de quitarlo.</p><div class="tip"><span class="ico">💡</span><div>Un permiso temporal solo puede <b>sumar</b> acceso por encima de lo que el perfil del usuario ya tiene — nunca puede quitarle algo que ya podía hacer.</div></div><div class="shot-marker">Captura pendiente — <b>[CAPTURA 4.13]</b></div></li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Administrar usuarios, propiedades y regiones</h2>
+      <ol class="steps">
+        <li><h3>Crea o edita cuentas del equipo</h3><p>En <code>/admin/users</code> → "Nuevo usuario". Si eres gerencia, solo puedes crear asesores; si eres admin, puedes crear asesores y gerencia.</p><div class="shot-marker">Captura pendiente — <b>[CAPTURA 4.6]</b> · <b>[CAPTURA 4.7]</b></div></li>
+        <li><h3>Asigna o reasigna un asesor</h3><p>En <code>/admin/assignments</code>, selecciona la solicitud y el asesor responsable.</p></li>
+        <li><h3>Administra el catálogo de propiedades</h3><p>En <code>/admin/properties</code> puedes crear, editar y ver todas las propiedades del sistema.</p><div class="shot-marker">Captura pendiente — <b>[CAPTURA 4.9]</b></div></li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Ajustar parámetros financieros</h2>
+      <p class="desc"><code>/admin/variables</code> — sin tocar código.</p>
+      <ol class="steps">
+        <li><h3>Revisa los valores actuales</h3><p>Tramos de carga financiera, leverage máximo, y plazos de crédito por edad/nivel profesional.</p><div class="shot-marker">Captura pendiente — <b>[CAPTURA 4.11]</b></div></li>
+        <li><h3>Ajusta lo que necesites y publica</h3><p>Al publicar, se crea una versión nueva. <b>Las solicitudes que ya fueron calculadas con la versión anterior no cambian</b> — solo las evaluaciones nuevas usan los parámetros actualizados.</p></li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Preguntas frecuentes</h2>
+      <div class="faq"><dt>¿Por qué un asesor no ve cierta pantalla del menú?</dt><dd>Porque su perfil no tiene permiso de "ver" sobre esa vista. Revísalo en <code>/admin/roles</code> → Perfil Asesor.</dd></div>
+      <div class="faq"><dt>¿Puedo quitarle acceso al usuario admin?</dt><dd>No — es una decisión de diseño de seguridad. El rol admin nunca aparece como configurable, para evitar que el sistema quede sin nadie con acceso total.</dd></div>
+      <div class="faq"><dt>¿Qué pasa si un permiso temporal vence a mitad de una tarea?</dt><dd>El acceso se retira en el momento exacto de expiración, sin necesidad de que nadie lo revoque manualmente.</dd></div>
+      <div class="faq"><dt>¿Los gráficos del dashboard son en tiempo real?</dt><dd>Sí — se recalculan desde la base de datos en cada carga de la página, no son datos de muestra.</dd></div>
+    </section>
+
+  </div>
+
+  <footer>Nodrix — Plataforma Inmobiliaria Inteligente · Manual de Usuario v1.0 · 06 de agosto de 2026</footer>
+</div>
+
+<script>
+  function showTab(role){
+    document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+    document.querySelectorAll('.tab-btn').forEach(function(b){ b.setAttribute('aria-selected','false'); });
+    document.getElementById('panel-' + role).classList.add('active');
+    document.getElementById('tab-' + role).setAttribute('aria-selected','true');
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+</script>

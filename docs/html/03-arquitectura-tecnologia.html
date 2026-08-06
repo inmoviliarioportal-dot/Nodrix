@@ -1,0 +1,268 @@
+<title>Nodrix — Arquitectura y Tecnología</title>
+<style>
+  :root{
+    --bg:#F6F7FB; --surface:#FFFFFF; --surface-2:#EEF0FA;
+    --ink:#14172B; --ink-soft:#4B4F6B; --ink-faint:#8286A6;
+    --border:#DFE2F0; --accent:#4F46E5; --accent-soft:#EEECFC;
+    --gold:#9A7B12; --gold-fill:#D4AF37;
+    --good:#0E8F6B; --warn:#B4790A; --crit:#C23B3B;
+    --shadow:0 1px 2px rgba(20,23,43,.05), 0 10px 28px -14px rgba(20,23,43,.18);
+    --radius:12px;
+  }
+  :root[data-theme="dark"]{
+    --bg:#0F0F1E; --surface:#171826; --surface-2:#1D1F33;
+    --ink:#F3F4F6; --ink-soft:#B7BAD1; --ink-faint:#7C7FA0;
+    --border:#2C2F4A; --accent:#8B85F2; --accent-soft:#232244;
+    --gold:#E8C567; --gold-fill:#D4AF37;
+    --good:#3FCB9E; --warn:#E0A63C; --crit:#F0716C;
+    --shadow:0 1px 2px rgba(0,0,0,.35), 0 14px 34px -14px rgba(0,0,0,.55);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0F0F1E; --surface:#171826; --surface-2:#1D1F33;
+      --ink:#F3F4F6; --ink-soft:#B7BAD1; --ink-faint:#7C7FA0;
+      --border:#2C2F4A; --accent:#8B85F2; --accent-soft:#232244;
+      --gold:#E8C567; --gold-fill:#D4AF37;
+      --good:#3FCB9E; --warn:#E0A63C; --crit:#F0716C;
+      --shadow:0 1px 2px rgba(0,0,0,.35), 0 14px 34px -14px rgba(0,0,0,.55);
+    }
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;}
+  h1,h2,h3{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif; text-wrap:balance; color:var(--ink); font-weight:600; margin:0;}
+  a{color:var(--accent);}
+  .page{max-width:900px; margin:0 auto; padding:56px 24px 96px;}
+  .cover{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:40px 44px; margin-bottom:28px;}
+  .eyebrow{font-size:11.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--gold); margin-bottom:14px; display:block;}
+  .cover h1{font-size:34px; line-height:1.15; margin-bottom:8px;}
+  .cover .subtitle{color:var(--ink-soft); font-size:16.5px; max-width:60ch; margin-bottom:24px;}
+  .meta{display:grid; grid-template-columns:repeat(4,1fr); gap:0; border-top:1px solid var(--border); padding-top:18px;}
+  .meta div{padding:0 16px; border-left:1px solid var(--border);}
+  .meta div:first-child{padding-left:0; border-left:none;}
+  .meta dt{font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-faint); margin-bottom:4px;}
+  .meta dd{margin:0; font-size:14px; font-weight:600; font-variant-numeric:tabular-nums;}
+  nav.toc{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:24px 28px; margin-bottom:40px;}
+  nav.toc h2{font-size:13px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-faint); margin-bottom:14px;}
+  nav.toc ol{margin:0; padding:0; list-style:none; columns:2; column-gap:32px;}
+  nav.toc li{margin-bottom:8px; break-inside:avoid;}
+  nav.toc a{color:var(--ink); text-decoration:none; font-size:14.5px;}
+  nav.toc a:hover{color:var(--accent);}
+  nav.toc .num{color:var(--gold); font-weight:700; margin-right:6px; font-variant-numeric:tabular-nums;}
+  section{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:36px 44px; margin-bottom:24px; scroll-margin-top:24px;}
+  section h2{font-size:23px; padding-bottom:14px; border-bottom:1px solid var(--border); margin-bottom:20px;}
+  section h3{font-size:17px; margin:28px 0 10px;}
+  section h3:first-of-type{margin-top:0;}
+  p{margin:0 0 14px; max-width:70ch; color:var(--ink);}
+  ul,ol{margin:0 0 14px; padding-left:22px;}
+  li{margin-bottom:6px;}
+  strong{color:var(--ink); font-weight:650;}
+  code{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace; font-size:.9em; background:var(--surface-2); border:1px solid var(--border); border-radius:5px; padding:1px 6px;}
+  pre.tree{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace; font-size:13px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:20px 22px; overflow-x:auto; line-height:1.7; color:var(--ink-soft); margin:0 0 20px;}
+  pre.tree .c{color:var(--ink-faint);}
+  table{width:100%; border-collapse:collapse; margin:8px 0 20px; font-size:14px;}
+  th{text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); font-weight:700; padding:8px 12px; border-bottom:2px solid var(--border);}
+  td{padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:top; color:var(--ink-soft);}
+  td:first-child{color:var(--ink); font-weight:600;}
+  tr:last-child td{border-bottom:none;}
+  .table-wrap{overflow-x:auto; margin-bottom:20px;}
+  .diagram{background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:20px; margin:8px 0 24px; overflow-x:auto;}
+  .status{display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600; padding:2px 10px; border-radius:999px; white-space:nowrap;}
+  .status.done{color:var(--good); background:color-mix(in srgb, var(--good) 12%, transparent);}
+  .status.pending{color:var(--warn); background:color-mix(in srgb, var(--warn) 12%, transparent);}
+  .stack-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; margin-bottom:20px;}
+  .stack-card{border:1px solid var(--border); border-radius:10px; padding:14px 16px; background:var(--surface-2);}
+  .stack-card .role{font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-faint); margin-bottom:4px;}
+  .stack-card .name{font-weight:650; font-size:14.5px;}
+  .stack-card .ver{font-size:12px; color:var(--ink-faint); font-variant-numeric:tabular-nums;}
+  footer{text-align:center; color:var(--ink-faint); font-size:13px; padding-top:20px;}
+  @media (max-width:640px){.page{padding:32px 14px 64px;} .cover{padding:28px 24px;} .cover h1{font-size:26px;} .meta{grid-template-columns:1fr 1fr; row-gap:16px;} nav.toc ol{columns:1;} section{padding:24px 22px;}}
+  @media print{body{background:#fff;} .cover,section,nav.toc{box-shadow:none; break-inside:avoid;}}
+</style>
+
+<div class="page">
+
+  <div class="cover">
+    <span class="eyebrow">NODRIX-DOC-ARQ-01 · Documento de Arquitectura y Tecnología</span>
+    <h1>Arquitectura y Tecnología</h1>
+    <p class="subtitle">Stack tecnológico, patrón de despliegue, estructura del código, modelo de seguridad y postura de calidad.</p>
+    <dl class="meta">
+      <div><dt>Versión</dt><dd>1.0</dd></div>
+      <div><dt>Fecha</dt><dd>06 ago 2026</dd></div>
+      <div><dt>Clasificación</dt><dd>Técnico</dd></div>
+      <div><dt>Hosting</dt><dd>Vercel</dd></div>
+    </dl>
+  </div>
+
+  <nav class="toc">
+    <h2>Contenido</h2>
+    <ol>
+      <li><a href="#objetivo"><span class="num">1</span>Objetivo</a></li>
+      <li><a href="#alto-nivel"><span class="num">2</span>Arquitectura de alto nivel</a></li>
+      <li><a href="#stack"><span class="num">3</span>Stack tecnológico</a></li>
+      <li><a href="#directorios"><span class="num">4</span>Estructura de directorios</a></li>
+      <li><a href="#auth"><span class="num">5</span>Autenticación y autorización</a></li>
+      <li><a href="#motores"><span class="num">6</span>Motores de negocio</a></li>
+      <li><a href="#calidad"><span class="num">7</span>Calidad y pruebas</a></li>
+      <li><a href="#despliegue"><span class="num">8</span>Despliegue</a></li>
+      <li><a href="#seguridad"><span class="num">9</span>Seguridad — postura actual</a></li>
+    </ol>
+  </nav>
+
+  <section id="objetivo">
+    <h2>1. Objetivo</h2>
+    <p>Documentar la arquitectura técnica del sistema: stack tecnológico, patrón de despliegue, estructura del código, decisiones de seguridad, y la postura de calidad (testing) — como soporte a procesos de gestión de calidad y auditoría técnica.</p>
+  </section>
+
+  <section id="alto-nivel">
+    <h2>2. Arquitectura de alto nivel</h2>
+    <pre class="mermaid diagram">
+flowchart TB
+    subgraph Cliente["Navegador del usuario"]
+        UI["Next.js App Router<br/>React 19 + TypeScript"]
+    end
+
+    subgraph Vercel["Vercel (hosting)"]
+        UI -->|"SSR / RSC"| RH["Route Handlers<br/>app/api/*"]
+        UI -->|"Server Components"| SC["Server Components<br/>app/*/page.tsx"]
+    end
+
+    subgraph Supabase["Supabase (backend gestionado)"]
+        RH --> DB[("PostgreSQL 15<br/>Schema multi-tenant ready")]
+        RH --> AUTH["Supabase Auth<br/>JWT + sesiones"]
+        RH --> STORAGE["Supabase Storage<br/>Documentos del cliente"]
+        SC --> DB
+    end
+
+    UI -.->|"OCR client-side"| TESS["Tesseract.js"]
+    RH -->|"Notificaciones"| SMTP["Nodemailer<br/>Email transaccional"]
+
+    subgraph CI["Flujo de despliegue"]
+        DEV["git push a master"] --> BUILD["Build automático"]
+        BUILD --> DEPLOY["Deploy en Vercel"]
+    end
+    </pre>
+    <p><strong>Patrón:</strong> Next.js App Router con una mezcla deliberada de <strong>Server Components</strong> (páginas que requieren guard de sesión/permiso antes de renderizar, para que la restricción de acceso ocurra en servidor y no sea evitable) y <strong>Client Components</strong> (interactividad: formularios, gráficos, timelines animadas). Los <strong>Route Handlers</strong> exponen la lógica de negocio como REST interno, consumido tanto por Server como por Client Components.</p>
+  </section>
+
+  <section id="stack">
+    <h2>3. Stack tecnológico</h2>
+    <div class="stack-grid">
+      <div class="stack-card"><div class="role">Framework</div><div class="name">Next.js</div><div class="ver">16.2.10 · App Router</div></div>
+      <div class="stack-card"><div class="role">UI Library</div><div class="name">React</div><div class="ver">19.2.4</div></div>
+      <div class="stack-card"><div class="role">Lenguaje</div><div class="name">TypeScript</div><div class="ver">^5 · estricto</div></div>
+      <div class="stack-card"><div class="role">Estilos</div><div class="name">Tailwind CSS</div><div class="ver">^4</div></div>
+      <div class="stack-card"><div class="role">Componentes</div><div class="name">shadcn/ui</div><div class="ver">@base-ui/react ^1.6.0</div></div>
+      <div class="stack-card"><div class="role">Gráficos</div><div class="name">Recharts</div><div class="ver">dashboards analíticos</div></div>
+      <div class="stack-card"><div class="role">BaaS</div><div class="name">Supabase</div><div class="ver">SDK ^2.110.3</div></div>
+      <div class="stack-card"><div class="role">OCR</div><div class="name">Tesseract.js</div><div class="ver">^7.0.0</div></div>
+      <div class="stack-card"><div class="role">Email</div><div class="name">Nodemailer</div><div class="ver">^9.0.3</div></div>
+      <div class="stack-card"><div class="role">Unit tests</div><div class="name">Vitest</div><div class="ver">^4.1.10</div></div>
+      <div class="stack-card"><div class="role">E2E tests</div><div class="name">Playwright</div><div class="ver">^1.61.1</div></div>
+      <div class="stack-card"><div class="role">Hosting</div><div class="name">Vercel</div><div class="ver">auto-deploy</div></div>
+    </div>
+  </section>
+
+  <section id="directorios">
+    <h2>4. Estructura de directorios</h2>
+    <pre class="tree">app/                       <span class="c"># Next.js App Router — 1 carpeta = 1 ruta</span>
+  auth/                    <span class="c"># register, login, forgot/reset-password</span>
+  onboarding/              <span class="c"># welcome, wizard, processing, proposal, simulating</span>
+  dashboard/               <span class="c"># Portal cliente</span>
+  backoffice/              <span class="c"># Panel del asesor</span>
+  admin/                   <span class="c"># Panel de administración/gerencia</span>
+  api/                     <span class="c"># Route Handlers — ~17 grupos</span>
+components/
+  ui/                      <span class="c"># Design system base</span>
+  admin/, backoffice/, dashboard/, wizard/, onboarding/, vault/, landing/
+  Timeline.tsx             <span class="c"># Timeline única — usada por TODOS los roles</span>
+lib/                       <span class="c"># Motores de negocio puros (sección 6)</span>
+database/
+  schema.sql               <span class="c"># Schema base</span>
+  migrations/               <span class="c"># 37 migraciones incrementales</span>
+  functions/                <span class="c"># Espejo SQL del motor de scoring</span>
+tests/
+  unit/                    <span class="c"># Vitest</span>
+  e2e/                     <span class="c"># Playwright</span>
+scripts/                   <span class="c"># Seed de usuarios staff, utilidades</span>
+docs/                      <span class="c"># Este set de documentación</span></pre>
+    <p><strong>Principio de organización:</strong> cada dominio de negocio (scoring, riesgo, permisos, ingresos, documentos) vive en un único archivo de <code>lib/</code> con responsabilidad clara, consumido tanto por Route Handlers como por componentes de UI que necesitan la misma lógica.</p>
+  </section>
+
+  <section id="auth">
+    <h2>5. Modelo de autenticación y autorización</h2>
+    <ol>
+      <li><strong>Autenticación:</strong> Supabase Auth (JWT), con sesión persistida en cookie httpOnly.</li>
+      <li><strong>Roles fijos:</strong> <code>cliente</code>, <code>asesor</code>, <code>gerencia</code>, <code>admin</code>, más <code>custom</code>.</li>
+      <li><strong>Guards de página:</strong> cada ruta protegida valida sesión y permiso en un Server Component wrapper antes de renderizar — no depende de ocultar un enlace de menú.</li>
+      <li><strong>Permisos granulares:</strong> una vista de menú = un permiso independiente. 4 capas independientes impiden que <code>admin</code> sea restringible: (1) CHECK en base de datos, (2) resolución de permisos que nunca consulta overrides para admin, (3) tipo TypeScript que hace un override de admin error de compilación, (4) filtro defensivo en lectura. Permisos temporales evaluados en query-time, sin depender de cron.</li>
+      <li><strong>Datos sensibles:</strong> el RUT del cliente se almacena cifrado, nunca en texto plano; se enmascara en toda vista de UI.</li>
+    </ol>
+  </section>
+
+  <section id="motores">
+    <h2>6. Motores de negocio (<code>lib/</code>)</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Archivo</th><th>Motor</th><th>Determinístico</th></tr></thead>
+        <tbody>
+          <tr><td>lib/scoring.ts</td><td>Scoring crediticio (4 factores → categoría)</td><td><span class="status done">✓ Sí</span></td></tr>
+          <tr><td>lib/income-types.ts</td><td>Consolidación de ingresos mixtos</td><td><span class="status done">✓ Sí</span></td></tr>
+          <tr><td>lib/uf-preevaluation.ts</td><td>Pre-evaluación en UF</td><td><span class="status done">✓ Sí</span></td></tr>
+          <tr><td>lib/proposal-risk.ts</td><td>% aprobación por banda de riesgo</td><td><span class="status done">✓ Sí</span></td></tr>
+          <tr><td>lib/loan-term.ts</td><td>Plazo de crédito por edad/nivel profesional</td><td><span class="status done">✓ Sí</span></td></tr>
+          <tr><td>lib/document-requirements.ts</td><td>Checklist de documentos por situación laboral</td><td><span class="status done">✓ Sí</span></td></tr>
+          <tr><td>lib/stage-machine.ts</td><td>Transiciones automáticas de etapa</td><td><span class="status done">✓ Sí</span></td></tr>
+          <tr><td>lib/permissions.ts</td><td>Resolución de permisos efectivos</td><td><span class="status done">✓ Sí</span></td></tr>
+          <tr><td>lib/temporary-grants.ts</td><td>Combinación de permisos temporales</td><td><span class="status done">✓ Sí</span></td></tr>
+          <tr><td>lib/wizard-variables.ts</td><td>Parámetros financieros versionados</td><td><span class="status done">✓ Sí</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><strong>Ningún cálculo financiero, de scoring, o de riesgo usa un modelo de IA generativa</strong> — son reglas de negocio explícitas, con la misma entrada produciendo siempre la misma salida, auditables línea por línea y con tests unitarios dedicados.</p>
+  </section>
+
+  <section id="calidad">
+    <h2>7. Calidad y pruebas</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Tipo</th><th>Herramienta</th><th>Cobertura</th></tr></thead>
+        <tbody>
+          <tr><td>Unitarias</td><td>Vitest</td><td>13 archivos / 123 tests</td></tr>
+          <tr><td>End-to-end</td><td>Playwright</td><td>14 escenarios, flujo lead → cierre</td></tr>
+          <tr><td>Type-checking</td><td>TypeScript</td><td><code>tsc --noEmit</code> en cada cambio</td></tr>
+          <tr><td>Build</td><td><code>next build</code></td><td>Verificado antes de desplegar</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="despliegue">
+    <h2>8. Despliegue</h2>
+    <ul>
+      <li><strong>Repositorio:</strong> GitHub, rama <code>master</code> como fuente de verdad.</li>
+      <li><strong>CI/CD actual:</strong> integración GitHub↔Vercel — cada push a <code>master</code> dispara build y deploy automático. <span class="status pending">● Sin pipeline de tests pre-deploy todavía</span></li>
+      <li><strong>Entorno de datos:</strong> Supabase (Postgres gestionado). En desarrollo local se usa Supabase local vía Docker Compose, con el mismo schema y migraciones que producción.</li>
+    </ul>
+  </section>
+
+  <section id="seguridad">
+    <h2>9. Seguridad — postura actual</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Control</th><th>Estado</th></tr></thead>
+        <tbody>
+          <tr><td>Autenticación con JWT (Supabase Auth)</td><td><span class="status done">✓ Implementado</span></td></tr>
+          <tr><td>RUT cifrado en base de datos</td><td><span class="status done">✓ Implementado</span></td></tr>
+          <tr><td>Guards de sesión y rol en servidor</td><td><span class="status done">✓ Implementado</span></td></tr>
+          <tr><td>Guards de permiso por página</td><td><span class="status done">✓ Implementado</span></td></tr>
+          <tr><td>Candado anti-lockout de superusuario (4 capas)</td><td><span class="status done">✓ Implementado</span></td></tr>
+          <tr><td>Row Level Security por organización</td><td><span class="status pending">● Preparado, deshabilitado</span></td></tr>
+          <tr><td>Rate limiting en endpoints públicos</td><td><span class="status pending">● Pendiente</span></td></tr>
+          <tr><td>Auditoría de seguridad formal (PII, datos financieros)</td><td><span class="status pending">● Pendiente</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>Nodrix — Plataforma Inmobiliaria Inteligente · Arquitectura y Tecnología v1.0 · 06 de agosto de 2026</footer>
+</div>

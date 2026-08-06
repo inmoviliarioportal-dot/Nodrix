@@ -1,0 +1,360 @@
+<title>Nodrix — Esquema de Datos</title>
+<style>
+  :root{
+    --bg:#F6F7FB; --surface:#FFFFFF; --surface-2:#EEF0FA;
+    --ink:#14172B; --ink-soft:#4B4F6B; --ink-faint:#8286A6;
+    --border:#DFE2F0; --accent:#4F46E5; --accent-soft:#EEECFC;
+    --gold:#9A7B12; --gold-fill:#D4AF37;
+    --good:#0E8F6B; --warn:#B4790A; --crit:#C23B3B;
+    --shadow:0 1px 2px rgba(20,23,43,.05), 0 10px 28px -14px rgba(20,23,43,.18);
+    --radius:12px;
+  }
+  :root[data-theme="dark"]{
+    --bg:#0F0F1E; --surface:#171826; --surface-2:#1D1F33;
+    --ink:#F3F4F6; --ink-soft:#B7BAD1; --ink-faint:#7C7FA0;
+    --border:#2C2F4A; --accent:#8B85F2; --accent-soft:#232244;
+    --gold:#E8C567; --gold-fill:#D4AF37;
+    --good:#3FCB9E; --warn:#E0A63C; --crit:#F0716C;
+    --shadow:0 1px 2px rgba(0,0,0,.35), 0 14px 34px -14px rgba(0,0,0,.55);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0F0F1E; --surface:#171826; --surface-2:#1D1F33;
+      --ink:#F3F4F6; --ink-soft:#B7BAD1; --ink-faint:#7C7FA0;
+      --border:#2C2F4A; --accent:#8B85F2; --accent-soft:#232244;
+      --gold:#E8C567; --gold-fill:#D4AF37;
+      --good:#3FCB9E; --warn:#E0A63C; --crit:#F0716C;
+      --shadow:0 1px 2px rgba(0,0,0,.35), 0 14px 34px -14px rgba(0,0,0,.55);
+    }
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;}
+  h1,h2,h3{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif; text-wrap:balance; color:var(--ink); font-weight:600; margin:0;}
+  a{color:var(--accent);}
+  .page{max-width:900px; margin:0 auto; padding:56px 24px 96px;}
+  .cover{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:40px 44px; margin-bottom:28px;}
+  .eyebrow{font-size:11.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--gold); margin-bottom:14px; display:block;}
+  .cover h1{font-size:34px; line-height:1.15; margin-bottom:8px;}
+  .cover .subtitle{color:var(--ink-soft); font-size:16.5px; max-width:60ch; margin-bottom:24px;}
+  .meta{display:grid; grid-template-columns:repeat(4,1fr); gap:0; border-top:1px solid var(--border); padding-top:18px;}
+  .meta div{padding:0 16px; border-left:1px solid var(--border);}
+  .meta div:first-child{padding-left:0; border-left:none;}
+  .meta dt{font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-faint); margin-bottom:4px;}
+  .meta dd{margin:0; font-size:14px; font-weight:600; font-variant-numeric:tabular-nums;}
+  nav.toc{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:24px 28px; margin-bottom:40px;}
+  nav.toc h2{font-size:13px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-faint); margin-bottom:14px;}
+  nav.toc ol{margin:0; padding:0; list-style:none; columns:2; column-gap:32px;}
+  nav.toc li{margin-bottom:8px; break-inside:avoid;}
+  nav.toc a{color:var(--ink); text-decoration:none; font-size:14.5px;}
+  nav.toc a:hover{color:var(--accent);}
+  nav.toc .num{color:var(--gold); font-weight:700; margin-right:6px; font-variant-numeric:tabular-nums;}
+  section{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:36px 44px; margin-bottom:24px; scroll-margin-top:24px;}
+  section h2{font-size:23px; padding-bottom:14px; border-bottom:1px solid var(--border); margin-bottom:20px;}
+  section h3{font-size:17px; margin:28px 0 10px;}
+  section h3:first-of-type{margin-top:0;}
+  p{margin:0 0 14px; max-width:70ch; color:var(--ink);}
+  ul,ol{margin:0 0 14px; padding-left:22px;}
+  li{margin-bottom:6px;}
+  strong{color:var(--ink); font-weight:650;}
+  code{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace; font-size:.9em; background:var(--surface-2); border:1px solid var(--border); border-radius:5px; padding:1px 6px;}
+  table{width:100%; border-collapse:collapse; margin:8px 0 20px; font-size:14px;}
+  th{text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); font-weight:700; padding:8px 12px; border-bottom:2px solid var(--border);}
+  td{padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:top; color:var(--ink-soft);}
+  td:first-child{color:var(--ink); font-weight:600;}
+  tr:last-child td{border-bottom:none;}
+  .table-wrap{overflow-x:auto; margin-bottom:20px;}
+  .diagram{background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:20px; margin:8px 0 24px; overflow-x:auto;}
+  .principle{display:flex; gap:14px; padding:14px 0; border-bottom:1px solid var(--border);}
+  .principle:last-child{border-bottom:none;}
+  .principle .n{font-family:"Iowan Old Style",Georgia,serif; font-size:22px; color:var(--gold); font-weight:700; width:28px; flex-shrink:0; font-variant-numeric:tabular-nums;}
+  .principle p{margin:0;}
+  .status{display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600; padding:2px 10px; border-radius:999px;}
+  .status.done{color:var(--good); background:color-mix(in srgb, var(--good) 12%, transparent);}
+  .status.pending{color:var(--warn); background:color-mix(in srgb, var(--warn) 12%, transparent);}
+  footer{text-align:center; color:var(--ink-faint); font-size:13px; padding-top:20px;}
+  @media (max-width:640px){.page{padding:32px 14px 64px;} .cover{padding:28px 24px;} .cover h1{font-size:26px;} .meta{grid-template-columns:1fr 1fr; row-gap:16px;} nav.toc ol{columns:1;} section{padding:24px 22px;}}
+  @media print{body{background:#fff;} .cover,section,nav.toc{box-shadow:none; break-inside:avoid;}}
+</style>
+
+<div class="page">
+
+  <div class="cover">
+    <span class="eyebrow">NODRIX-DOC-ESQ-01 · Documento de Esquema de Datos</span>
+    <h1>Esquema de Datos</h1>
+    <p class="subtitle">Modelo relacional completo: principios de diseño, diagrama entidad-relación, catálogo de tablas y reglas de integridad.</p>
+    <dl class="meta">
+      <div><dt>Versión</dt><dd>1.0</dd></div>
+      <div><dt>Fecha</dt><dd>06 ago 2026</dd></div>
+      <div><dt>Motor</dt><dd>PostgreSQL 15</dd></div>
+      <div><dt>Migraciones</dt><dd>37</dd></div>
+    </dl>
+  </div>
+
+  <nav class="toc">
+    <h2>Contenido</h2>
+    <ol>
+      <li><a href="#principios"><span class="num">1</span>Principios de diseño</a></li>
+      <li><a href="#er"><span class="num">2</span>Diagrama entidad-relación</a></li>
+      <li><a href="#tablas"><span class="num">3</span>Catálogo de tablas</a></li>
+      <li><a href="#integridad"><span class="num">4</span>Reglas de integridad</a></li>
+      <li><a href="#agregaciones"><span class="num">5</span>Agregaciones en aplicación</a></li>
+      <li><a href="#sql"><span class="num">6</span>Función espejo en SQL</a></li>
+    </ol>
+  </nav>
+
+  <section id="principios">
+    <h2>1. Principios de diseño</h2>
+    <div class="principle">
+      <span class="n">1</span>
+      <p><strong>Multi-tenant ready desde el día 1.</strong> Toda tabla de negocio incluye <code>org_id UUID NOT NULL REFERENCES organizations(id)</code>. En el MVP se opera con un único tenant fijo; Row Level Security está preparado en el schema pero deshabilitado operativamente hasta que se necesite aislar más de una organización.</p>
+    </div>
+    <div class="principle">
+      <span class="n">2</span>
+      <p><strong>Auditoría por diseño.</strong> Cambios de estado (<code>application_stage_history</code>) y acciones administrativas sensibles (<code>audit_events</code>) se registran como filas inmutables — nunca se sobreescribe historial, solo se agrega.</p>
+    </div>
+    <div class="principle">
+      <span class="n">3</span>
+      <p><strong>Versionado en vez de mutación</strong> para configuración de negocio: <code>scoring_rule_sets</code> y <code>wizard_variable_sets</code> nunca se actualizan in-place; cada cambio crea una fila nueva con <code>is_active = true</code> y desactiva la anterior, para que un cálculo ya hecho sea reproducible/auditable exactamente como se hizo.</p>
+    </div>
+    <div class="principle">
+      <span class="n">4</span>
+      <p><strong>UUIDs como llave primaria</strong> en todas las tablas, generados en base de datos.</p>
+    </div>
+    <div class="principle">
+      <span class="n">5</span>
+      <p>Todas las magnitudes monetarias de propiedad están en <strong>UF</strong> (<code>price_uf NUMERIC</code>), no en CLP — la conversión ocurre solo en capa de presentación con el valor UF vigente.</p>
+    </div>
+  </section>
+
+  <section id="er">
+    <h2>2. Diagrama entidad-relación (dominio core)</h2>
+    <pre class="mermaid diagram">
+erDiagram
+    organizations ||--o{ users : "org_id"
+    organizations ||--o{ customers : "org_id"
+    organizations ||--o{ applications : "org_id"
+    organizations ||--o{ properties : "org_id"
+
+    customers ||--o{ applications : "customer_id"
+    users ||--o{ applications : "assigned_advisor_id"
+
+    applications ||--o{ application_stage_history : "application_id"
+    applications ||--o{ documents : "application_id"
+    applications ||--o{ visits : "application_id"
+    applications ||--o{ proposal_options : "application_id"
+    applications ||--o| mortgage_operations : "application_id"
+    applications }o--o{ properties : "selected_property_ids"
+
+    properties ||--o{ visits : "property_id"
+    properties ||--o{ proposal_options : "property_id"
+
+    mortgage_operations ||--o{ deed_appointments : "mortgage_operation_id"
+    mortgage_operations ||--o| closures : "mortgage_operation_id"
+
+    users ||--o{ audit_events : "actor_user_id"
+    users ||--o{ user_permission_grants : "user_id"
+    users }o--o{ role_permissions : "role"
+    users }o--o| custom_roles : "custom_role_id"
+
+    organizations {
+        uuid id PK
+        text name
+    }
+    users {
+        uuid id PK
+        uuid org_id FK
+        text email
+        text role
+        uuid custom_role_id FK
+    }
+    customers {
+        uuid id PK
+        uuid org_id FK
+        text name
+        bytea rut_ciphertext
+    }
+    applications {
+        uuid id PK
+        uuid org_id FK
+        uuid customer_id FK
+        uuid assigned_advisor_id FK
+        text stage
+        text scoring_category
+        numeric scoring_score
+        numeric pre_evaluation_min_uf
+        numeric pre_evaluation_max_uf
+        jsonb income_sources
+        uuid wizard_variable_set_id FK
+    }
+    application_stage_history {
+        uuid id PK
+        uuid application_id FK
+        text from_stage
+        text to_stage
+        uuid actor_user_id FK
+        text note
+        timestamptz created_at
+    }
+    documents {
+        uuid id PK
+        uuid org_id FK
+        uuid application_id FK
+        text type
+        text status
+        text url
+        jsonb extracted_data
+    }
+    properties {
+        uuid id PK
+        uuid org_id FK
+        numeric price_uf
+        text comuna
+        boolean available
+    }
+    visits {
+        uuid id PK
+        uuid application_id FK
+        uuid property_id FK
+        text status
+    }
+    mortgage_operations {
+        uuid id PK
+        uuid org_id FK
+        uuid application_id FK
+    }
+    deed_appointments {
+        uuid id PK
+        uuid mortgage_operation_id FK
+    }
+    closures {
+        uuid id PK
+        uuid mortgage_operation_id FK
+    }
+    scoring_rule_sets {
+        uuid id PK
+        uuid org_id FK
+        boolean is_active
+        jsonb weights
+        jsonb thresholds
+    }
+    wizard_variable_sets {
+        uuid id PK
+        uuid org_id FK
+        boolean is_active
+        int version
+        jsonb qualification
+        jsonb banking_params
+        jsonb loan_terms
+    }
+    role_permissions {
+        uuid id PK
+        uuid org_id FK
+        text role
+        jsonb permissions
+    }
+    custom_roles {
+        uuid id PK
+        uuid org_id FK
+        text name
+        jsonb permissions
+    }
+    user_permission_grants {
+        uuid id PK
+        uuid org_id FK
+        uuid user_id FK
+        text permission_key
+        text level
+        timestamptz expires_at
+        timestamptz revoked_at
+    }
+    audit_events {
+        uuid id PK
+        uuid org_id FK
+        uuid actor_user_id FK
+        text entity_type
+        text action
+    }
+    </pre>
+  </section>
+
+  <section id="tablas">
+    <h2>3. Catálogo de tablas</h2>
+
+    <h3>3.1 Dominio core</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Tabla</th><th>Propósito</th><th>Notas clave</th></tr></thead>
+        <tbody>
+          <tr><td>organizations</td><td>Tenant. Una fila fija en el MVP.</td><td>Ancla de multi-tenancy</td></tr>
+          <tr><td>users</td><td>Cuentas del equipo interno + clientes con acceso.</td><td><code>role</code> incluye <code>custom</code>, resuelto vía <code>custom_role_id</code></td></tr>
+          <tr><td>customers</td><td>Datos personales del cliente final.</td><td>RUT cifrado (<code>rut_ciphertext</code>), nunca texto plano</td></tr>
+          <tr><td>applications</td><td>El expediente — entidad central del sistema.</td><td><code>stage</code> con CHECK de 9 valores; <code>income_sources</code> jsonb</td></tr>
+          <tr><td>application_stage_history</td><td>Auditoría inmutable de cada cambio de etapa.</td><td>Fuente de verdad para duración real por etapa</td></tr>
+          <tr><td>documents</td><td>Documentos subidos por el cliente.</td><td><code>extracted_data</code> guarda el resultado OCR</td></tr>
+          <tr><td>properties</td><td>Catálogo de propiedades ofertables.</td><td><code>price_uf</code>, comuna, propósito, destino, plano</td></tr>
+          <tr><td>visits</td><td>Visitas agendadas a una propiedad.</td><td>Vinculada a <code>application_id</code> + <code>property_id</code></td></tr>
+          <tr><td>mortgage_operations</td><td>Operación hipotecaria derivada de una solicitud aprobada.</td><td>Puente hacia escrituración y cierre</td></tr>
+          <tr><td>deed_appointments</td><td>Citas de escrituración en notaría.</td><td>1:N con <code>mortgage_operations</code></td></tr>
+          <tr><td>closures</td><td>Registro de cierre de la operación.</td><td>1:1 con <code>mortgage_operations</code></td></tr>
+          <tr><td>audit_events</td><td>Bitácora de acciones administrativas sensibles.</td><td>Usada por el sistema de permisos y config</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>3.2 Motor financiero y de negocio</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Tabla</th><th>Migración</th><th>Propósito</th></tr></thead>
+        <tbody>
+          <tr><td>scoring_rule_sets</td><td>003</td><td>Pesos y umbrales del motor de scoring, versionados</td></tr>
+          <tr><td>regions</td><td>019</td><td>Regiones geográficas habilitadas para operar</td></tr>
+          <tr><td>proposal_options</td><td>058-059</td><td>Hasta 6 opciones de propiedad por solicitud, cargadas por el asesor</td></tr>
+          <tr><td>wizard_variable_sets</td><td>031</td><td>Parámetros financieros del motor de pre-evaluación, versionados y publicables</td></tr>
+          <tr><td>guarantors</td><td>—</td><td>Avales/garantes asociados a una solicitud</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>3.3 Sistema de permisos</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Tabla</th><th>Migración</th><th>Propósito</th></tr></thead>
+        <tbody>
+          <tr><td>role_permissions</td><td>030, 035, 036</td><td>Overrides por perfil configurable (asesor, gerencia) — <code>admin</code> excluido por CHECK</td></tr>
+          <tr><td>custom_roles</td><td>—</td><td>Roles ad-hoc con matriz de permisos propia</td></tr>
+          <tr><td>user_permission_grants</td><td>037</td><td>Permisos temporales por usuario, expiración evaluada en cada consulta</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="integridad">
+    <h2>4. Reglas de integridad relevantes</h2>
+    <ul>
+      <li><code>applications.stage</code> tiene un CHECK constraint con los 9 valores válidos exactos — un valor fuera de esa lista es rechazado a nivel de base de datos, no solo de aplicación.</li>
+      <li><code>role_permissions.role</code> tiene un CHECK constraint que <strong>excluye explícitamente <code>admin</code></strong> — candado de seguridad a nivel de esquema, no solo de código de aplicación.</li>
+      <li><code>user_permission_grants.level</code> solo admite <code>view</code> / <code>edit</code> (nunca <code>none</code>) — un grant siempre otorga algo; revocar es poner <code>revoked_at</code>, no bajar el nivel.</li>
+      <li><code>user_permission_grants</code> tiene <code>CHECK (expires_at &gt; starts_at)</code> — un grant no puede expirar antes de empezar.</li>
+      <li>Todas las claves foráneas hacia <code>applications</code> usan <code>ON DELETE CASCADE</code> desde sus tablas dependientes.</li>
+    </ul>
+  </section>
+
+  <section id="agregaciones">
+    <h2>5. Vistas/agregaciones calculadas en aplicación</h2>
+    <p>No son tablas — son cálculos que la capa de aplicación deriva en tiempo real desde las tablas anteriores:</p>
+    <ul>
+      <li><strong>Funnel de Estados</strong> (7 buckets) — cuántas solicitudes alcanzaron cada paso, usando <code>application_stage_history</code> como fuente acumulativa.</li>
+      <li><strong>Desviaciones de proceso</strong> — comparación contra el promedio histórico real de duración por etapa.</li>
+      <li><strong>Proyección de cierres</strong> — suma de duraciones promedio de etapas restantes por solicitud activa.</li>
+      <li><strong>Desempeño por asesor</strong> — agregación de <code>applications</code> por <code>assigned_advisor_id</code>.</li>
+    </ul>
+    <p>Se decidió no materializar estas vistas en SQL porque el volumen de datos del MVP no lo justifica; si el volumen crece, son candidatas naturales a vistas materializadas o funciones SQL agregadas. <span class="status pending">● Optimización futura</span></p>
+  </section>
+
+  <section id="sql">
+    <h2>6. Función espejo en SQL</h2>
+    <p><code>database/functions/scoring_fn.sql</code> reimplementa el motor de scoring de <code>lib/scoring.ts</code> directamente en PL/pgSQL, con la misma lógica y los mismos pesos por defecto (parametrizable), para poder ejecutar el cálculo dentro de la base de datos si en el futuro se necesita scoring sin pasar por la capa de aplicación Next.js. <span class="status done">● Implementado</span></p>
+  </section>
+
+  <footer>Nodrix — Plataforma Inmobiliaria Inteligente · Esquema de Datos v1.0 · 06 de agosto de 2026</footer>
+</div>
