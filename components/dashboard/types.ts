@@ -89,6 +89,44 @@ export function mapStageForClientTimeline(stage: ApplicationStage): ApplicationS
   return stage === "VISITA_COMPLETADA" ? "DOCUMENTOS_PENDIENTES" : stage;
 }
 
+/**
+ * Mapea cada uno de los 9 stages reales de backend al índice (0-6) del paso
+ * visual que le corresponde en `CLIENT_TIMELINE_STAGES` -- fuente única para
+ * CUALQUIER vista que agrupe/cuente por "el mismo paso que ve el cliente"
+ * (funnel de KPIs, "Solicitudes en curso por estado" del admin, etc.), así
+ * el sistema entero usa 7 pasos consistentes en vez de 9.
+ *
+ * VISITA_COMPLETADA cae en el mismo bucket que DOCUMENTOS_PENDIENTES (mismo
+ * criterio que `mapStageForClientTimeline`). PRE_EVALUACION_COMPLETADA no
+ * tiene paso visual propio (oculto, "Aprobado previo") -- cae en el mismo
+ * bucket que DOCUMENTOS_APROBADOS porque ya lo superó, hasta que la
+ * solicitud avance a ENVIADO_A_BANCO.
+ */
+export const BACKEND_STAGE_TO_CLIENT_BUCKET: Record<ApplicationStage, number> = {
+  RECEPCIONADA: 0,
+  SCORING_COMPLETADO: 1,
+  DOCUMENTOS_PENDIENTES: 2,
+  VISITA_COMPLETADA: 2,
+  DOCUMENTOS_APROBADOS: 3,
+  PRE_EVALUACION_COMPLETADA: 3,
+  ENVIADO_A_BANCO: 4,
+  ESCRITURACION_AGENDADA: 5,
+  CIERRE: 6,
+};
+
+/** Inverso de `BACKEND_STAGE_TO_CLIENT_BUCKET`: para cada paso visual (clave
+ * = valor en `CLIENT_TIMELINE_STAGES`), la lista de stages reales de backend
+ * que agrupa -- usado para el drilldown hacia /backoffice/queue, que debe
+ * filtrar por TODOS los stages reales del bucket, no solo uno. */
+export const CLIENT_BUCKET_BACKEND_STAGES: Record<string, ApplicationStage[]> = CLIENT_TIMELINE_STAGES.reduce(
+  (acc, bucketStage) => {
+    const bucketIndex = BACKEND_STAGE_TO_CLIENT_BUCKET[bucketStage];
+    acc[bucketStage] = APPLICATION_STAGES.filter((s) => BACKEND_STAGE_TO_CLIENT_BUCKET[s] === bucketIndex);
+    return acc;
+  },
+  {} as Record<string, ApplicationStage[]>
+);
+
 export const DOCUMENT_STATUSES = [
   "pendiente",
   "en_revision",

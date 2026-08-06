@@ -4,6 +4,7 @@ import { apiError, requireRole, withErrorHandling, HTTP_STATUS } from "@/app/api
 import { MVP_ORG_ID } from "@/app/api/auth/_constants";
 import { APPLICATION_STAGES } from "@/lib/leads";
 import { UF_VALUE_CLP } from "@/lib/uf-preevaluation";
+import { CLIENT_TIMELINE_STAGES, BACKEND_STAGE_TO_CLIENT_BUCKET } from "@/components/dashboard/types";
 
 /**
  * GET /api/admin/kpis
@@ -165,16 +166,23 @@ export const GET = withErrorHandling(async (request: Request) => {
     reachedStageByApp.get(app.id)!.add(app.stage);
   }
 
-  const funnel = APPLICATION_STAGES.map((stage) => {
-    const stageIndex = APPLICATION_STAGES.indexOf(stage);
+  // El funnel se muestra en 7 pasos visuales -- los mismos que ve el cliente
+  // en /dashboard y el asesor en /backoffice/[id] (ver
+  // BACKEND_STAGE_TO_CLIENT_BUCKET, components/dashboard/types.ts), no los 9
+  // stages reales de backend. Para cada solicitud, su "bucket máximo
+  // alcanzado" es el mayor índice de bucket entre todos los stages reales
+  // que alguna vez tocó (según `reachedStageByApp`, ya calculado arriba).
+  const funnel = CLIENT_TIMELINE_STAGES.map((bucketStage, bucketIndex) => {
     const count = applications.filter((app) => {
-      const reached = reachedStageByApp.get(app.id);
-      if (reached?.has(stage)) return true;
-      // Si el stage actual está más avanzado que este, asumimos que lo
-      // atravesó aunque falte la fila de historial correspondiente.
-      return APPLICATION_STAGES.indexOf(app.stage as (typeof APPLICATION_STAGES)[number]) >= stageIndex;
+      const reached = reachedStageByApp.get(app.id) ?? new Set([app.stage]);
+      let maxBucketReached = -1;
+      for (const s of reached) {
+        const b = BACKEND_STAGE_TO_CLIENT_BUCKET[s as (typeof APPLICATION_STAGES)[number]] ?? -1;
+        if (b > maxBucketReached) maxBucketReached = b;
+      }
+      return maxBucketReached >= bucketIndex;
     }).length;
-    return { stage, count };
+    return { stage: bucketStage, count };
   });
 
   // ---------------------------------------------------------------------

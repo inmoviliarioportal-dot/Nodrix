@@ -3,20 +3,13 @@
 import * as React from "react"
 import Link from "next/link"
 
-import { STAGE_LABELS } from "@/components/dashboard/types"
+import { STAGE_LABELS, CLIENT_TIMELINE_STAGES, CLIENT_BUCKET_BACKEND_STAGES } from "@/components/dashboard/types"
 import { InfoTooltip } from "@/components/admin/InfoTooltip"
 
-const STAGE_ORDER = [
-  "RECEPCIONADA",
-  "SCORING_COMPLETADO",
-  "DOCUMENTOS_PENDIENTES",
-  "DOCUMENTOS_APROBADOS",
-  "PRE_EVALUACION_COMPLETADA",
-  "VISITA_COMPLETADA",
-  "ENVIADO_A_BANCO",
-  "ESCRITURACION_AGENDADA",
-  "CIERRE",
-]
+// Mismos 7 pasos visuales que ve el cliente/asesor (ver
+// BACKEND_STAGE_TO_CLIENT_BUCKET, components/dashboard/types.ts), no los 9
+// stages reales de backend.
+const STAGE_ORDER = CLIENT_TIMELINE_STAGES
 
 const CATEGORY_ORDER = ["BRONCE", "PLATA", "ORO", "PLATINO", "BLACK"]
 
@@ -83,7 +76,7 @@ function ApplicationsSummary() {
               >
                 <span className="text-[12.5px] text-text-secondary">{STAGE_LABELS[stage] ?? stage}</span>
                 <Link
-                  href={`/backoffice/queue?stage=${stage}`}
+                  href={`/backoffice/queue?stage=${(CLIENT_BUCKET_BACKEND_STAGES[stage] ?? [stage]).join(",")}`}
                   className="text-[12.5px] font-bold text-neon-cyan hover:underline"
                 >
                   {data.byStage[stage] ?? 0}

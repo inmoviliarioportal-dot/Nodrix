@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase";
 import { apiError, requireRole, withErrorHandling, HTTP_STATUS } from "@/app/api/_shared";
 import { MVP_ORG_ID } from "@/app/api/auth/_constants";
-import { APPLICATION_STAGES } from "@/lib/leads";
+import { APPLICATION_STAGES, type ApplicationStage } from "@/lib/leads";
+import { CLIENT_TIMELINE_STAGES, BACKEND_STAGE_TO_CLIENT_BUCKET } from "@/components/dashboard/types";
 
 /**
  * GET /api/admin/applications-summary
@@ -29,13 +30,21 @@ export const GET = withErrorHandling(async () => {
 
   const rows: { stage: string; scoring_category: string | null }[] = data ?? [];
 
+  // Agrupado en los mismos 7 pasos visuales que ve el cliente/asesor (ver
+  // BACKEND_STAGE_TO_CLIENT_BUCKET, components/dashboard/types.ts), no los 9
+  // stages reales de backend -- VISITA_COMPLETADA y PRE_EVALUACION_COMPLETADA
+  // se cuentan dentro del bucket que les corresponde.
   const byStage: Record<string, number> = {};
-  for (const stage of APPLICATION_STAGES) byStage[stage] = 0;
+  for (const stage of CLIENT_TIMELINE_STAGES) byStage[stage] = 0;
 
   const byCategory: Record<string, number> = { BRONCE: 0, PLATA: 0, ORO: 0, PLATINO: 0, BLACK: 0 };
 
   for (const row of rows) {
-    if (row.stage in byStage) byStage[row.stage] += 1;
+    if (APPLICATION_STAGES.includes(row.stage as ApplicationStage)) {
+      const bucketIndex = BACKEND_STAGE_TO_CLIENT_BUCKET[row.stage as ApplicationStage];
+      const bucketStage = CLIENT_TIMELINE_STAGES[bucketIndex];
+      if (bucketStage) byStage[bucketStage] += 1;
+    }
     if (row.scoring_category && row.scoring_category in byCategory) {
       byCategory[row.scoring_category] += 1;
     }

@@ -61,7 +61,11 @@ export function QueueClient() {
     if (stageParam || categoryParam) {
       setFilters({
         ...EMPTY_FILTERS,
-        stages: stageParam ? [stageParam as never] : [],
+        // `stage` acepta uno o varios valores separados por coma (ej.
+        // ?stage=DOCUMENTOS_PENDIENTES,VISITA_COMPLETADA) -- necesario para
+        // el drilldown desde buckets colapsados del panel admin, donde un
+        // solo paso visual puede agrupar más de un stage real de backend.
+        stages: stageParam ? (stageParam.split(",").filter(Boolean) as never[]) : [],
         categories: categoryParam ? [categoryParam as never] : [],
       })
     } else {
