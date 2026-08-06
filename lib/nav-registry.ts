@@ -163,3 +163,50 @@ export function flattenNavRegistry(registry: readonly NavGroupDef[]): NavItemDef
 /** Todos los items del registro real, en orden de menú. Conserva el tipo
  * literal de `key` para que `PERMISSION_MODULES` sea una unión, no `string[]`. */
 export const NAV_ITEMS = NAV_REGISTRY.flatMap((group) => [...group.items]);
+
+/**
+ * Pantalla de inicio de cada rol -- a dónde lleva el logo de Nodrix y a
+ * dónde cae el usuario recién iniciada la sesión.
+ *
+ * Fuente ÚNICA para ambos: antes la regla vivía solo en el formulario de
+ * login, y el logo (components/Layout.tsx) mandaba a `/dashboard` a
+ * cualquier usuario autenticado -- o sea que asesor/admin/gerencia
+ * terminaban en el panel del CLIENTE al hacer clic en el logo.
+ *
+ * Es consciente de permisos a propósito: `requirePermissionPage` redirige a
+ * `/dashboard` cuando al usuario le falta el permiso de la página, así que
+ * elegir el destino solo por rol podría rebotarlo justo al panel de cliente
+ * que queremos evitar (ej. un perfil de gerencia al que el admin le quitó
+ * "KPIs", o un rol personalizado). Por eso se recorre un orden de
+ * preferencia y se devuelve la primera vista que el usuario SÍ puede ver.
+ *
+ * `permissions` es un mapa `clave de vista -> nivel`; se tipa estructural-
+ * mente (y no importando `PermissionMap`) porque este módulo lo consumen
+ * componentes de cliente, y `lib/permissions.ts` arrastra dependencias de
+ * servidor (`next/headers`) que romperían el build.
+ */
+export type NavRole = "cliente" | "asesor" | "admin" | "gerencia" | "custom";
+
+export function landingHrefForRole(
+  role: NavRole | string | null | undefined,
+  permissions?: Record<string, "none" | "view" | "edit"> | null
+): string {
+  if (!role || role === "cliente") return "/dashboard";
+
+  // El asesor trabaja en la bandeja; el resto del staff parte por KPIs.
+  const preferredKeys = role === "asesor" ? ["bandeja", "kpis"] : ["kpis", "bandeja"];
+  const orderedKeys = [...preferredKeys, ...NAV_ITEMS.map((item) => item.key)];
+
+  for (const key of orderedKeys) {
+    const item = NAV_ITEMS.find((navItem) => navItem.key === key);
+    if (!item) continue;
+    // Sin mapa de permisos (llamador que no lo tiene a mano) se confía en el
+    // orden de preferencia; el guard del servidor sigue siendo la autoridad.
+    if (!permissions) return item.href;
+    const level = permissions[item.key];
+    if (level === "view" || level === "edit") return item.href;
+  }
+
+  // Staff sin ninguna vista habilitada: no hay panel que mostrarle.
+  return "/dashboard";
+}

@@ -4,6 +4,7 @@ import {
   NAV_REGISTRY,
   NAV_ITEMS,
   flattenNavRegistry,
+  landingHrefForRole,
   type NavItemDef,
 } from "@/lib/nav-registry";
 import {
@@ -196,5 +197,48 @@ describe("NAV_REGISTRY reproduce el menú admin actual", () => {
       "/admin/users",
       "/admin/variables",
     ]);
+  });
+});
+
+describe("landingHrefForRole: el logo lleva a cada rol a SU panel", () => {
+  it("el cliente sigue yendo a su portal", () => {
+    expect(landingHrefForRole("cliente", BUILTIN_ROLE_PERMISSIONS.cliente)).toBe("/dashboard");
+  });
+
+  it("sin sesión (rol nulo) cae al portal cliente", () => {
+    expect(landingHrefForRole(null)).toBe("/dashboard");
+    expect(landingHrefForRole(undefined)).toBe("/dashboard");
+  });
+
+  it("el asesor va a su bandeja, NO al panel del cliente", () => {
+    expect(landingHrefForRole("asesor", BUILTIN_ROLE_PERMISSIONS.asesor)).toBe("/backoffice/queue");
+  });
+
+  it("admin y gerencia van al dashboard ejecutivo", () => {
+    expect(landingHrefForRole("admin", BUILTIN_ROLE_PERMISSIONS.admin)).toBe("/admin/dashboard");
+    expect(landingHrefForRole("gerencia", BUILTIN_ROLE_PERMISSIONS.gerencia)).toBe("/admin/dashboard");
+  });
+
+  // El motivo de que la función sea consciente de permisos:
+  // `requirePermissionPage` redirige a /dashboard cuando falta el permiso,
+  // así que mandar a un perfil sin "kpis" al dashboard ejecutivo lo dejaría
+  // rebotando justo al panel de cliente que este cambio busca evitar.
+  it("un perfil sin KPIs no es enviado a una vista que lo rebotaría", () => {
+    const sinKpis = { ...BUILTIN_ROLE_PERMISSIONS.gerencia, kpis: "none" as const };
+    expect(landingHrefForRole("gerencia", sinKpis)).toBe("/backoffice/queue");
+  });
+
+  it("un rol personalizado aterriza en la primera vista que sí puede ver", () => {
+    const soloPropiedades = { ...BUILTIN_ROLE_PERMISSIONS.cliente, propiedades: "view" as const };
+    expect(landingHrefForRole("custom", soloPropiedades)).toBe("/admin/properties");
+  });
+
+  it("staff sin ninguna vista habilitada no queda en una ruta prohibida", () => {
+    expect(landingHrefForRole("gerencia", BUILTIN_ROLE_PERMISSIONS.cliente)).toBe("/dashboard");
+  });
+
+  it("sin mapa de permisos conserva el destino histórico del login", () => {
+    expect(landingHrefForRole("asesor")).toBe("/backoffice/queue");
+    expect(landingHrefForRole("admin")).toBe("/admin/dashboard");
   });
 });

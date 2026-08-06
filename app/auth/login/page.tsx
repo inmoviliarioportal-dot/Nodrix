@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldLabel, FieldError } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Toaster } from "@/components/ui/sonner"
+import { landingHrefForRole } from "@/lib/nav-registry"
 
 type FormState = LoginFormData
 type FormErrors = Partial<Record<keyof FormState, string>>
@@ -75,14 +76,9 @@ export default function LoginPage() {
 
       toast.success("Sesión iniciada correctamente")
 
-      const role = data?.role as "cliente" | "asesor" | "admin" | "gerencia" | undefined
-      const destination =
-        role === "asesor"
-          ? "/backoffice/queue"
-          : role === "admin" || role === "gerencia"
-            ? "/admin/dashboard"
-            : "/dashboard"
-      router.push(destination)
+      // Misma regla que usa el logo de Nodrix en el header (ver
+      // `landingHrefForRole`), para que ambos no se desincronicen.
+      router.push(landingHrefForRole(data?.role, data?.permissions))
     } catch {
       toast.error("Error de conexión. Intenta nuevamente.")
     } finally {

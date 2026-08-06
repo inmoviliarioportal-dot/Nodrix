@@ -22,6 +22,7 @@ import {
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { landingHrefForRole } from "@/lib/nav-registry"
 import { AccountMenu } from "@/components/AccountMenu"
 import {
   DropdownMenu,
@@ -99,12 +100,17 @@ function Layout({
   const pathname = usePathname()
   const [logoHref, setLogoHref] = React.useState("/")
 
+  // El logo lleva al panel del usuario SEGÚN SU ROL, no siempre al del
+  // cliente: antes cualquier sesión autenticada apuntaba a "/dashboard", así
+  // que un asesor/admin/gerencia que hacía clic en el logo terminaba en el
+  // portal del cliente. Ver `landingHrefForRole` (lib/nav-registry.ts), que
+  // comparte la regla con el redirect posterior al login.
   React.useEffect(() => {
     let cancelled = false
     fetch("/api/auth/user")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (!cancelled && data?.user) setLogoHref("/dashboard")
+        if (!cancelled && data?.user) setLogoHref(landingHrefForRole(data.role, data.permissions))
       })
       .catch(() => {})
     return () => {
