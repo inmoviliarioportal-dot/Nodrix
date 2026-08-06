@@ -1,6 +1,7 @@
 import { createSupabaseServiceRoleClient } from "@/lib/supabase";
 import type { UserRole } from "@/app/api/_shared";
 import { NAV_ITEMS, type NavPermissionKey } from "@/lib/nav-registry";
+import { applyGrantsToPermissionMap, getActiveGrantsForUser } from "@/lib/temporary-grants";
 
 /**
  * Módulos configurables para roles personalizados.
@@ -62,10 +63,26 @@ const LEGACY_KEY_INHERITANCE: { from: string; to: PermissionModule }[] = [
   { from: "propiedades", to: "regiones" },
 ];
 
+/**
+ * Perfiles fijos cuyos permisos el admin PUEDE configurar desde /admin/roles
+ * (tabla `role_permissions`, migración 036).
+ *
+ * ⚠️ `admin` NO está y NUNCA debe estar acá: es superusuario y el único rol
+ * capaz de editar esta configuración. Permitir restringirlo habilitaría un
+ * lockout total del sistema sin camino de recuperación por UI. `cliente`
+ * tampoco: no accede a /admin ni /backoffice, no tiene menú que configurar.
+ */
+export const CONFIGURABLE_ROLES = ["asesor", "gerencia"] as const;
+export type ConfigurableRole = (typeof CONFIGURABLE_ROLES)[number];
+
+export function isConfigurableRole(value: unknown): value is ConfigurableRole {
+  return typeof value === "string" && (CONFIGURABLE_ROLES as readonly string[]).includes(value);
+}
+
 /** Permisos por defecto de los roles fijos del sistema. `admin` es
- * superusuario y nunca se restringe. `gerencia` es CONFIGURABLE por admin
- * (ver `role_permissions` / `getGerenciaPermissionOverride` más abajo) --
- * este EDIT_ALL es solo el fallback mientras no exista una fila guardada. */
+ * superusuario y nunca se restringe. `asesor` y `gerencia` son CONFIGURABLES
+ * por admin (ver `role_permissions` / `getRolePermissionOverride` más abajo)
+ * -- estos valores son solo el fallback mientras no exista fila guardada. */
 export const BUILTIN_ROLE_PERMISSIONS: Record<Exclude<UserRole, "custom">, PermissionMap> = {
   cliente: NONE_ALL,
   // Equivalente al histórico `{...EDIT_ALL, usuarios: "none"}`: con el split,
@@ -112,39 +129,88 @@ export function hasPermission(map: PermissionMap, module: PermissionModule, leve
  * crear una dependencia circular entre lib/permissions.ts y app/api/_shared. */
 const MVP_ORG_ID = "00000000-0000-0000-0000-000000000001";
 
-/** Lee la configuración guardada por el admin para el rol `gerencia` (ver
- * app/admin/roles/page.tsx). `null` si nunca se guardó una -- en ese caso
- * el llamador debe caer al default EDIT_ALL para no romper el acceso de
- * gerencia en orgs que todavía no configuraron nada. */
-export async function getGerenciaPermissionOverride(): Promise<PermissionMap | null> {
+/**
+ * Lee la configuración guardada por el admin para un perfil configurable.
+ * `null` si nunca se guardó una -- en ese caso el llamador debe caer al
+ * default de `BUILTIN_ROLE_PERMISSIONS[role]`, para no romper accesos
+ * existentes en orgs que todavía no configuraron nada.
+ *
+ * El parámetro es `ConfigurableRole`, así que `getRolePermissionOverride("admin")`
+ * es un error de COMPILACIÓN: no hay forma de pedir el override de admin.
+ */
+export async function getRolePermissionOverride(role: ConfigurableRole): Promise<PermissionMap | null> {
   const supabase = createSupabaseServiceRoleClient() as any;
   const { data } = await supabase
     .from("role_permissions")
     .select("permissions")
     .eq("org_id", MVP_ORG_ID)
-    .eq("role", "gerencia")
+    .eq("role", role)
     .maybeSingle();
 
   if (!data) return null;
   return normalizePermissionMap(data.permissions);
 }
 
+/** Todos los overrides guardados, en UNA sola consulta (la UI de /admin/roles
+ * los muestra juntos; hacer una query por rol sería N+1 innecesario). Las
+ * claves ausentes significan "sin configuración guardada". */
+export async function getAllRolePermissionOverrides(): Promise<Partial<Record<ConfigurableRole, PermissionMap>>> {
+  const supabase = createSupabaseServiceRoleClient() as any;
+  const { data } = await supabase
+    .from("role_permissions")
+    .select("role, permissions")
+    .eq("org_id", MVP_ORG_ID)
+    .in("role", CONFIGURABLE_ROLES as unknown as string[]);
+
+  const result: Partial<Record<ConfigurableRole, PermissionMap>> = {};
+  for (const row of (data ?? []) as { role: string; permissions: unknown }[]) {
+    // Filtra defensivamente: si alguien insertó a mano una fila con role
+    // 'admin' (saltándose el CHECK), acá NO entra al resultado.
+    if (isConfigurableRole(row.role)) result[row.role] = normalizePermissionMap(row.permissions);
+  }
+  return result;
+}
+
 /**
  * Resuelve el mapa de permisos efectivo para un usuario:
- * - `admin`: siempre EDIT_ALL, nunca restringible (superusuario).
- * - `gerencia`: configurable por admin (ver `role_permissions`); si no hay
- *   configuración guardada, cae al default EDIT_ALL histórico.
- * - `cliente`/`asesor`: defaults hardcodeados.
+ * - `admin`: siempre EDIT_ALL, nunca restringible (superusuario). Se resuelve
+ *   ANTES de tocar la base: aunque exista una fila de `role_permissions` con
+ *   role='admin' insertada a mano, jamás se lee y por lo tanto no puede
+ *   restringir a nadie. Candado anti-lockout, no configurable.
+ * - `asesor`/`gerencia`: configurables por admin (tabla `role_permissions`);
+ *   si no hay fila guardada, caen al default de `BUILTIN_ROLE_PERMISSIONS`.
+ * - `cliente`: default hardcodeado (no accede a /admin ni /backoffice).
  * - `custom`: lee la fila de `custom_roles` referenciada por
  *   `custom_role_id` (sin permisos si no hay una asignada, por seguridad).
+ *
+ * Costo: como máximo UNA consulta (esta función corre en cada request de
+ * página); `admin` y `cliente` no consultan nada.
  */
 export async function getEffectivePermissions(
   role: UserRole,
+  customRoleId: string | null,
+  userId?: string | null
+): Promise<PermissionMap> {
+  const base = await getProfilePermissions(role, customRoleId);
+  // Permisos temporales por usuario (migración 037): SOLO ELEVAN el mapa del
+  // perfil, nunca lo bajan. Se salta cuando el llamador no tiene el userId a
+  // mano (sigue funcionando, solo sin grants) y cuando el rol es `admin`, que
+  // ya tiene EDIT_ALL y haría una consulta inútil en cada request.
+  if (!userId || role === "admin") return base;
+  return applyGrantsToPermissionMap(base, await getActiveGrantsForUser(userId));
+}
+
+/** Mapa que da el PERFIL del usuario (rol fijo o rol personalizado), sin
+ * permisos temporales. Es el piso mínimo garantizado: los grants de la
+ * migración 037 solo pueden elevarlo. */
+async function getProfilePermissions(
+  role: UserRole,
   customRoleId: string | null
 ): Promise<PermissionMap> {
-  if (role === "gerencia") {
-    const override = await getGerenciaPermissionOverride();
-    return override ?? BUILTIN_ROLE_PERMISSIONS.gerencia;
+  if (role === "admin") return BUILTIN_ROLE_PERMISSIONS.admin;
+  if (isConfigurableRole(role)) {
+    const override = await getRolePermissionOverride(role);
+    return override ?? BUILTIN_ROLE_PERMISSIONS[role];
   }
   if (role !== "custom") return BUILTIN_ROLE_PERMISSIONS[role];
   if (!customRoleId) return NONE_ALL;

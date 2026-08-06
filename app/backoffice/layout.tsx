@@ -36,7 +36,7 @@ export default async function BackofficeLayout({
   }
   if (role === "cliente") redirect("/dashboard")
 
-  const permissions = await getEffectivePermissions(role, customRoleId)
+  const permissions = await getEffectivePermissions(role, customRoleId, user.id)
   const canSeeQueue = hasPermission(permissions, "bandeja", "view")
   const canSeeVisits = hasPermission(permissions, "visitas", "view")
   if (!canSeeQueue && !canSeeVisits) redirect("/dashboard")

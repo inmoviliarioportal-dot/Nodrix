@@ -31,7 +31,7 @@ export async function requireRolePage(allowedRoles: UserRole[]) {
     redirect("/dashboard");
   }
 
-  const permissions = await getEffectivePermissions(role, customRoleId);
+  const permissions = await getEffectivePermissions(role, customRoleId, user.id);
   return { user, role, permissions };
 }
 
@@ -62,7 +62,7 @@ export async function requirePermissionPage(module: PermissionModule, level: Per
     redirect("/dashboard");
   }
 
-  const permissions = await getEffectivePermissions(role, customRoleId);
+  const permissions = await getEffectivePermissions(role, customRoleId, user.id);
   if (!hasPermission(permissions, module, level)) {
     redirect("/dashboard");
   }

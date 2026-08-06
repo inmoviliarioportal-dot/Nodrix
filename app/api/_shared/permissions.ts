@@ -28,7 +28,7 @@ export async function requirePermission(
   if (!auth.authorized) return auth;
 
   const { role, customRoleId } = await getUserRoleAndCustomRoleId(auth.user.id);
-  const permissions = await getEffectivePermissions(role, customRoleId);
+  const permissions = await getEffectivePermissions(role, customRoleId, auth.user.id);
 
   if (!hasPermission(permissions, module, level)) {
     return {

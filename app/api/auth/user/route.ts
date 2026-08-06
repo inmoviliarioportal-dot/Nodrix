@@ -24,7 +24,7 @@ export const GET = withErrorHandling(async () => {
 
   const { user } = auth;
   const { role, customRoleId } = await getUserRoleAndCustomRoleId(user.id);
-  const permissions = await getEffectivePermissions(role, customRoleId);
+  const permissions = await getEffectivePermissions(role, customRoleId, user.id);
 
   const serviceRoleClient = createSupabaseServiceRoleClient() as any;
   const { data: customer, error: customerError } = await serviceRoleClient
