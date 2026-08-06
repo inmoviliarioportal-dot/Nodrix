@@ -12,7 +12,10 @@ import {
   validateTierRows,
   type TiersByLevel,
 } from "@/components/admin/variables/LoanTermTiersEditor"
-import { JsonGroupEditor } from "@/components/admin/variables/JsonGroupEditor"
+import { QualificationEditor, type QualificationValue } from "@/components/admin/variables/QualificationEditor"
+import { BankingParamsEditor, type BankingParamsValue } from "@/components/admin/variables/BankingParamsEditor"
+import { ProbabilitiesEditor, type ProbabilitiesValue } from "@/components/admin/variables/ProbabilitiesEditor"
+import { AssumptionsEditor, type AssumptionsValue } from "@/components/admin/variables/AssumptionsEditor"
 import { VersionHistoryTable, type VersionListItem } from "@/components/admin/variables/VersionHistoryTable"
 import { SimulationResultPanel, type SimulationResult } from "@/components/admin/variables/SimulationResultPanel"
 
@@ -26,13 +29,30 @@ interface VariableSetDetail {
   created_by: string | null
   created_at: string
   loan_terms: { maxAgeAtApplication: number; fallbackYears: number; tiers: Partial<TiersByLevel> }
-  qualification: unknown
-  banking_params: unknown
-  probabilities: unknown
-  assumptions: unknown
+  qualification: Partial<QualificationValue>
+  banking_params: Partial<BankingParamsValue>
+  probabilities: Partial<ProbabilitiesValue>
+  assumptions: Partial<AssumptionsValue>
 }
 
 const EMPTY_TIERS: TiersByLevel = { profesional: [], tecnico: [] }
+
+// Defaults defensivos -- si una versión antigua o corrupta no trae alguno de
+// estos campos, el formulario no debe reventar: rellena con la forma
+// esperada y deja los números en 0 para que sea obvio que hay que revisarlos.
+const DEFAULT_QUALIFICATION: QualificationValue = { minQualifyingUF: 0, minQualifyingTotalIncomeCLP: 0 }
+const DEFAULT_BANKING_PARAMS: BankingParamsValue = {
+  minRentaDividendoRatio: 0,
+  cargaFinancieraTiers: [],
+  leverageTiers: [],
+  shortTermDebtAmortizationMonths: 0,
+}
+const DEFAULT_PROBABILITIES: ProbabilitiesValue = {
+  bandDifficulty: {},
+  professionalLevelProbabilityCap: {},
+  pensionAgeTiers: [],
+}
+const DEFAULT_ASSUMPTIONS: AssumptionsValue = { annualInterestRate: 0 }
 
 export default function VariablesPage() {
   const [role, setRole] = React.useState<string | null>(null)
@@ -50,16 +70,10 @@ export default function VariablesPage() {
   const [tiers, setTiers] = React.useState<TiersByLevel>(EMPTY_TIERS)
   const [fallbackYears, setFallbackYears] = React.useState(25)
   const [maxAgeAtApplication, setMaxAgeAtApplication] = React.useState(65)
-  const [qualification, setQualification] = React.useState<unknown>({})
-  const [bankingParams, setBankingParams] = React.useState<unknown>({})
-  const [probabilities, setProbabilities] = React.useState<unknown>({})
-  const [assumptions, setAssumptions] = React.useState<unknown>({})
-  const [jsonGroupsValid, setJsonGroupsValid] = React.useState({
-    qualification: true,
-    bankingParams: true,
-    probabilities: true,
-    assumptions: true,
-  })
+  const [qualification, setQualification] = React.useState<QualificationValue>(DEFAULT_QUALIFICATION)
+  const [bankingParams, setBankingParams] = React.useState<BankingParamsValue>(DEFAULT_BANKING_PARAMS)
+  const [probabilities, setProbabilities] = React.useState<ProbabilitiesValue>(DEFAULT_PROBABILITIES)
+  const [assumptions, setAssumptions] = React.useState<AssumptionsValue>(DEFAULT_ASSUMPTIONS)
 
   const [savingDraft, setSavingDraft] = React.useState(false)
   const [simulating, setSimulating] = React.useState(false)
@@ -112,11 +126,10 @@ export default function VariablesPage() {
         })
         setFallbackYears(vs.loan_terms?.fallbackYears ?? 25)
         setMaxAgeAtApplication(vs.loan_terms?.maxAgeAtApplication ?? 65)
-        setQualification(vs.qualification ?? {})
-        setBankingParams(vs.banking_params ?? {})
-        setProbabilities(vs.probabilities ?? {})
-        setAssumptions(vs.assumptions ?? {})
-        setJsonGroupsValid({ qualification: true, bankingParams: true, probabilities: true, assumptions: true })
+        setQualification({ ...DEFAULT_QUALIFICATION, ...vs.qualification })
+        setBankingParams({ ...DEFAULT_BANKING_PARAMS, ...vs.banking_params })
+        setProbabilities({ ...DEFAULT_PROBABILITIES, ...vs.probabilities })
+        setAssumptions({ ...DEFAULT_ASSUMPTIONS, ...vs.assumptions })
         setPublishNote("")
       })
       .finally(() => setLoadingDetail(false))
@@ -154,16 +167,10 @@ export default function VariablesPage() {
     ]
   }
 
-  const allJsonValid = Object.values(jsonGroupsValid).every(Boolean)
-
   async function handleSaveDraft() {
     const tierErrors = buildTierValidationErrors()
     if (tierErrors.length > 0) {
       toast.error(tierErrors[0])
-      return
-    }
-    if (!allJsonValid) {
-      toast.error("Hay un grupo con JSON inválido -- corrígelo antes de guardar.")
       return
     }
 
@@ -335,45 +342,21 @@ export default function VariablesPage() {
 
           <div className="glass-card rounded-2xl p-6">
             <h2 className="mb-4 font-heading text-sm font-semibold uppercase tracking-wide text-text-tertiary">
-              Otros parámetros (edición JSON)
+              Calificación y parámetros bancarios
             </h2>
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <JsonGroupEditor
-                label="Calificación (qualification)"
-                description="Umbrales mínimos de UF e ingreso total para optar a evaluación de compra."
-                value={qualification}
-                onChange={(parsed, valid) => {
-                  setJsonGroupsValid((s) => ({ ...s, qualification: valid }))
-                  if (valid) setQualification(parsed)
-                }}
-              />
-              <JsonGroupEditor
-                label="Parámetros bancarios (bankingParams)"
-                description="RRD, tramos de Carga Financiera y Leverage, meses de amortización de deuda corto plazo."
-                value={bankingParams}
-                onChange={(parsed, valid) => {
-                  setJsonGroupsValid((s) => ({ ...s, bankingParams: valid }))
-                  if (valid) setBankingParams(parsed)
-                }}
-              />
-              <JsonGroupEditor
-                label="Probabilidades (probabilities)"
-                description="Dificultad por banda, tope por nivel profesional, tramos de edad de pensión."
-                value={probabilities}
-                onChange={(parsed, valid) => {
-                  setJsonGroupsValid((s) => ({ ...s, probabilities: valid }))
-                  if (valid) setProbabilities(parsed)
-                }}
-              />
-              <JsonGroupEditor
-                label="Supuestos (assumptions)"
-                description="Tasa de interés anual referencial."
-                value={assumptions}
-                onChange={(parsed, valid) => {
-                  setJsonGroupsValid((s) => ({ ...s, assumptions: valid }))
-                  if (valid) setAssumptions(parsed)
-                }}
-              />
+            <div className="flex flex-col gap-8">
+              <QualificationEditor value={qualification} onChange={setQualification} />
+              <BankingParamsEditor value={bankingParams} onChange={setBankingParams} />
+            </div>
+          </div>
+
+          <div className="glass-card rounded-2xl p-6">
+            <h2 className="mb-4 font-heading text-sm font-semibold uppercase tracking-wide text-text-tertiary">
+              Probabilidades y supuestos
+            </h2>
+            <div className="flex flex-col gap-8">
+              <ProbabilitiesEditor value={probabilities} onChange={setProbabilities} />
+              <AssumptionsEditor value={assumptions} onChange={setAssumptions} />
             </div>
           </div>
 
