@@ -57,20 +57,24 @@ function AmenityBadge({ value }: { value: string }) {
  * Carrusel de hasta 6 propiedades de inversión, las más adecuadas según la
  * pre-evaluación en UF del cliente (ordenadas por cercanía de precio en el
  * backend, ver app/api/properties/recommendations/route.ts). El cliente
- * elige libremente cuántas propiedades quiere (1, 2, 4, 6...) con una
- * selección múltiple tipo checklist sobre cada tarjeta.
+ * elige libremente cuántas propiedades quiere (1, 2, 4, 6...) haciendo clic
+ * sobre la tarjeta.
  *
- * Componente CONTROLADO: la selección vive en el padre (`selectedIds`/
- * `onToggle`) para que varios carruseles (uno por destino elegido, ver
- * PropertyPreferencesCard.tsx) puedan compartir un único set de propiedades
- * elegidas y un solo botón de "Confirmar selección" al final.
+ * Componente CONTROLADO: la selección vive en el padre (ver
+ * PropertyPreferencesCard.tsx) como un mapa `propertyId -> destino`, NO como
+ * un set de ids. Una misma propiedad puede aparecer en varios carruseles
+ * (destinos distintos), y el negocio necesita saber PARA QUÉ destino la
+ * eligió el cliente: por eso queda marcada solo en el carrusel del destino
+ * elegido, y elegirla en otro la MUEVE en vez de duplicarla.
  */
 function PropertyCarousel({
   title = "Propiedades para ti",
-  description = "Selecciona una o más propiedades de la lista. Puedes revisar la galería de cada una antes de decidir.",
+  description = "Toca una propiedad para elegirla. Puedes revisar la galería con «Ver detalles» antes de decidir.",
   icon: SectionIcon = Home,
+  destination,
+  destinationLabels,
   properties,
-  selectedIds,
+  selection,
   onToggle,
 }: {
   title?: string
@@ -78,9 +82,16 @@ function PropertyCarousel({
   /** Ícono circular decorativo a la izquierda del título de sección (uno por
    * destino: Airbnb, alquiler tradicional, venta a corto plazo, etc.). */
   icon?: React.ComponentType<{ className?: string }>
+  /** Destino al que corresponde ESTE carrusel -- una propiedad se marca acá
+   * solo si el cliente la eligió para este destino. */
+  destination: string
+  /** Etiqueta legible por destino, para avisar "Ya la elegiste para X"
+   * cuando la propiedad está tomada por otro carrusel. */
+  destinationLabels: Record<string, string>
   properties: PropertyRecommendation[]
-  selectedIds: Set<string>
-  onToggle: (id: string) => void
+  /** propertyId -> destino elegido por el cliente. */
+  selection: Map<string, string>
+  onToggle: (id: string, destination: string) => void
 }) {
   const [galleryProperty, setGalleryProperty] = React.useState<PropertyRecommendation | null>(null)
   const scrollerRef = React.useRef<HTMLDivElement>(null)
@@ -127,54 +138,63 @@ function PropertyCarousel({
           className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [scrollbar-width:thin]"
         >
           {properties.map((property) => {
-            const isSelected = selectedIds.has(property.id)
+            const selectedFor = selection.get(property.id)
+            const isSelected = selectedFor === destination
+            // Elegida por el cliente, pero para OTRO destino -- se avisa en
+            // vez de marcarla acá, para que quede claro que una propiedad
+            // pertenece a una sola categoría.
+            const takenByOtherDestination = selectedFor !== undefined && selectedFor !== destination
             const visibleAmenities = property.amenities.slice(0, MAX_VISIBLE_AMENITIES)
             const extraAmenityCount = property.amenities.length - visibleAmenities.length
             return (
               <div
                 key={property.id}
+                role="button"
+                tabIndex={0}
+                aria-pressed={isSelected}
+                aria-label={
+                  isSelected
+                    ? `Quitar ${property.name} de tu selección`
+                    : `Elegir ${property.name} para ${destinationLabels[destination]?.toLowerCase() ?? "este objetivo"}`
+                }
+                onClick={() => onToggle(property.id, destination)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault()
+                    onToggle(property.id, destination)
+                  }
+                }}
                 className={cn(
-                  "interactive-lift flex w-64 shrink-0 snap-start flex-col overflow-hidden rounded-2xl border bg-surface text-left transition-colors duration-200",
-                  isSelected ? "border-neon-cyan shadow-[0_10px_24px_-14px_rgba(37,71,229,0.5)]" : "border-glass-border"
+                  "interactive-lift flex w-64 shrink-0 cursor-pointer snap-start flex-col overflow-hidden rounded-2xl border bg-surface text-left transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon-cyan",
+                  isSelected ? "border-neon-cyan shadow-[0_10px_24px_-14px_rgba(37,71,229,0.5)]" : "border-glass-border",
+                  takenByOtherDestination && "opacity-70"
                 )}
               >
                 <div className="relative">
                   {property.image ? (
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => setGalleryProperty(property)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") setGalleryProperty(property)
-                      }}
-                      className="group relative block cursor-pointer"
-                      aria-label={`Ver galería de ${property.name}`}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={property.image}
-                        alt={`Imagen de ${property.name}`}
-                        className="h-36 w-full object-cover"
-                      />
-                      <span className="absolute inset-0 flex items-center justify-center gap-1 bg-black/0 text-[11px] font-medium text-white opacity-0 transition-all duration-200 group-hover:bg-black/40 group-hover:opacity-100">
-                        <Images className="size-3.5" /> Ver galería
-                      </span>
-                    </span>
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={property.image}
+                      alt={`Imagen de ${property.name}`}
+                      className="h-36 w-full object-cover"
+                    />
                   ) : (
                     <div className="h-36 w-full bg-surface-elevated" />
                   )}
-                  <button
-                    type="button"
-                    onClick={() => onToggle(property.id)}
-                    aria-pressed={isSelected}
-                    aria-label={isSelected ? `Quitar ${property.name} de tu selección` : `Marcar ${property.name} como favorita`}
+                  <span
+                    aria-hidden="true"
                     className={cn(
                       "absolute top-2 left-2 flex size-8 items-center justify-center rounded-full shadow-sm transition-colors duration-200",
-                      isSelected ? "bg-neon-cyan text-white" : "bg-white/95 text-text-tertiary hover:text-neon-cyan"
+                      isSelected ? "bg-neon-cyan text-white" : "bg-white/95 text-text-tertiary"
                     )}
                   >
-                    <Heart className={cn("size-4", isSelected && "fill-current")} aria-hidden="true" />
-                  </button>
+                    <Heart className={cn("size-4", isSelected && "fill-current")} />
+                  </span>
+                  {takenByOtherDestination && (
+                    <span className="absolute right-2 bottom-2 rounded-full bg-black/70 px-2 py-0.5 text-[10.5px] font-medium text-white">
+                      Ya la elegiste para {destinationLabels[selectedFor]?.toLowerCase() ?? "otro objetivo"}
+                    </span>
+                  )}
                 </div>
                 <div className="flex flex-1 flex-col gap-1.5 p-3.5">
                   <p className="text-[13.5px] font-bold text-text-primary">{property.name}</p>
@@ -215,13 +235,22 @@ function PropertyCarousel({
                       )}
                     </div>
                   )}
-                  <div className="mt-auto flex justify-end pt-1.5">
+                  <div className="mt-auto flex items-center justify-between gap-2 pt-1.5">
+                    <span className="text-[11.5px] font-semibold text-neon-cyan">
+                      {isSelected ? "Seleccionada" : "Toca para elegir"}
+                    </span>
                     <Button
                       type="button"
                       variant="outline"
-                      className="h-8 rounded-full px-3.5 text-[12px]"
-                      onClick={() => setGalleryProperty(property)}
+                      className="h-8 gap-1.5 rounded-full px-3.5 text-[12px]"
+                      /* La galería NO debe alterar la selección: se detiene la
+                       * propagación para que el click no llegue a la tarjeta. */
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setGalleryProperty(property)
+                      }}
                     >
+                      <Images className="size-3.5" aria-hidden="true" />
                       Ver detalles
                     </Button>
                   </div>

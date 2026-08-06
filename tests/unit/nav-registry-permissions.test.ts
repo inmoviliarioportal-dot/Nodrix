@@ -183,7 +183,7 @@ describe("NAV_REGISTRY reproduce el menú admin actual", () => {
       "Asesor",
       "Propiedades",
       "Usuarios",
-      "Wizard",
+      "Flujo",
     ]);
     expect(NAV_ITEMS.map((i) => i.href)).toEqual([
       "/admin/dashboard",

@@ -11,6 +11,7 @@ import { DetailHeader } from "@/components/backoffice/DetailHeader"
 import { DocumentsSection } from "@/components/backoffice/DocumentsSection"
 import { FinalProposalSection } from "@/components/backoffice/FinalProposalSection"
 import { PreEvaluationSection } from "@/components/backoffice/PreEvaluationSection"
+import { SelectedPropertiesSection, type SelectedPropertyRow } from "@/components/backoffice/SelectedPropertiesSection"
 import { NotesSection } from "@/components/backoffice/NotesSection"
 import { StateTransition } from "@/components/backoffice/StateTransition"
 import type { ApplicationRow, CustomerRow } from "@/lib/leads"
@@ -35,6 +36,7 @@ export default function BackofficeApplicationDetailPage() {
   const [customer, setCustomer] = useState<CustomerRow | null>(null)
   const [stageHistory, setStageHistory] = useState<StageHistoryRow[]>([])
   const [documents, setDocuments] = useState<DocumentRow[]>([])
+  const [selectedProperties, setSelectedProperties] = useState<SelectedPropertyRow[]>([])
   const [actorUserId, setActorUserId] = useState<string | null>(null)
 
   const loadData = useCallback(async () => {
@@ -52,6 +54,7 @@ export default function BackofficeApplicationDetailPage() {
       setApplication(detail.application ?? null)
       setCustomer(detail.customer ?? null)
       setStageHistory(detail.stageHistory ?? [])
+      setSelectedProperties(detail.selectedProperties ?? [])
 
       if (userRes.ok) {
         const userData = await userRes.json()
@@ -157,6 +160,8 @@ export default function BackofficeApplicationDetailPage() {
           </div>
 
           <div className="flex flex-col gap-6">
+            <SelectedPropertiesSection properties={selectedProperties} />
+
             <FinalProposalSection applicationId={application.id} stage={application.stage} />
 
             <NotesSection

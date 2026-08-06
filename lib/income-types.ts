@@ -28,8 +28,16 @@ export interface IncomeSource {
   /** pension: edad del titular, determina el haircut por tramo etario. */
   ageYears?: number;
 
-  /** alquiler: duración declarada del contrato de arriendo, en meses (mínimo exigible: 6). */
+  /** alquiler: vigencia declarada del contrato de arriendo, en meses (mínimo exigible: 6). */
   rentalContractMonths?: number;
+
+  /**
+   * alquiler: cuántos departamentos tiene el cliente actualmente en arriendo.
+   * Dato declarativo para que el ASESOR dimensione el patrimonio en renta;
+   * NO participa del cálculo (el haircut de `alquiler` depende solo de la
+   * vigencia del contrato), por eso no aparece en `haircutFor`.
+   */
+  rentedUnitsCount?: number;
 
   /**
    * sociedad: la empresa debe mostrar liquidez / cierres positivos (SII

@@ -49,6 +49,9 @@ export default function DashboardPage() {
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [application, setApplication] = React.useState<ApplicationRecord | null>(null)
+  // Se guarda para pasárselo a las tarjetas hijas y evitar que cada una
+  // vuelva a pedir los mismos datos (ver PreEvaluationCard).
+  const [customer, setCustomer] = React.useState<Record<string, any> | null>(null)
   // Solo relevante en stage SCORING_COMPLETADO: si el cliente no califica
   // (UF estimadas < MIN_QUALIFYING_UF), ocultamos el timeline y demás
   // secciones de progreso, dejando únicamente la tarjeta ámbar de
@@ -64,13 +67,17 @@ export default function DashboardPage() {
         throw new Error("No se pudo obtener el usuario autenticado.")
       }
       const authData: AuthUserResponse = await userRes.json()
+      setCustomer((authData.customer as Record<string, any> | undefined) ?? null)
       let app = pickApplication(authData)
 
-      // GET /api/auth/user solo retorna { user, customer } (no incluye la
-      // application embebida) — la fuente real de verdad es
-      // GET /api/applications?customer_id=... construido por el agente
-      // Leads+Applications. Se toma la más reciente (el endpoint ya ordena
-      // por created_at desc).
+      // Camino rápido: GET /api/auth/user ya devuelve la solicitud más
+      // reciente CON su detalle completo (documentos, asesor asignado...),
+      // así que normalmente el panel se resuelve con este único request. Los
+      // dos fetches de abajo son solo un respaldo para respuestas antiguas o
+      // parciales -- antes se ejecutaban SIEMPRE y encadenaban tres
+      // round-trips antes de poder pintar nada.
+      const alreadyDetailed = Boolean(app?.id && "documents" in (app as unknown as Record<string, unknown>))
+
       if (!app && authData.customer?.id) {
         const appsRes = await fetch(`/api/applications?customer_id=${authData.customer.id}&limit=1`)
         if (appsRes.ok) {
@@ -79,9 +86,7 @@ export default function DashboardPage() {
         }
       }
 
-      if (app?.id) {
-        // Refrescar el detalle completo (documentos, scoring) por si el
-        // endpoint de auth solo trae un resumen.
+      if (app?.id && !alreadyDetailed) {
         const appRes = await fetch(`/api/applications/${app.id}`)
         if (appRes.ok) {
           const detail = await appRes.json()
@@ -298,7 +303,11 @@ export default function DashboardPage() {
               // el CTA "Subir documentos" ya destacado arriba.
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <div className="animate-fade-in-up" style={{ "--animate-delay": "0ms" } as React.CSSProperties}>
-                  <PreEvaluationCard applicationId={application.id} />
+                  <PreEvaluationCard
+                    applicationId={application.id}
+                    application={application}
+                    customer={customer}
+                  />
                 </div>
                 {/* Agendar visita en paralelo a la subida de documentos --
                     no hay que esperar a "Aprobado previo" para conocer

@@ -131,7 +131,7 @@ export const NAV_REGISTRY = [
     ],
   },
   {
-    label: "Wizard",
+    label: "Flujo",
     iconKey: "sliders",
     items: [
       {
@@ -139,7 +139,7 @@ export const NAV_REGISTRY = [
         href: "/admin/variables",
         label: "Variables",
         iconKey: "sliders",
-        permissionLabel: "Variables del wizard",
+        permissionLabel: "Variables del flujo",
       },
     ],
   },

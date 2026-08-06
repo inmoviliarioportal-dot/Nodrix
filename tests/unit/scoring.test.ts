@@ -138,9 +138,9 @@ describe("scoring engine — un caso por categoría", () => {
 });
 
 describe("scoring engine — edge cases", () => {
-  it("salario 0 aporta 0 puntos en el factor Salario y no rompe el cálculo", () => {
+  it("salario 0 aporta 0 puntos en el factor Renta y no rompe el cálculo", () => {
     const result = calculateScoring(profile({ monthlySalary: 0 }));
-    const salarioFactor = result.factorsApplied.find((f) => f.factor === "Salario")!;
+    const salarioFactor = result.factorsApplied.find((f) => f.factor === "Renta")!;
     expect(salarioFactor.points).toBe(0);
     expect(Number.isFinite(result.score)).toBe(true);
     expect(result.score).toBeGreaterThanOrEqual(0);

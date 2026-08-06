@@ -36,7 +36,7 @@ export function VersionHistoryTable({
   onSelect: (version: number) => void
 }) {
   if (versions.length === 0) {
-    return <p className="text-sm text-text-tertiary">Todavía no hay versiones de variables del wizard.</p>
+    return <p className="text-sm text-text-tertiary">Todavía no hay versiones de variables del flujo.</p>
   }
 
   return (

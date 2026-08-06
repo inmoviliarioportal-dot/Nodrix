@@ -84,6 +84,17 @@ const RENTAL_CONTRACT_OPTIONS: { label: string; value: number }[] = [
   { label: "12 meses o más", value: 12 },
 ];
 
+/** Cuántos departamentos tiene el cliente en arriendo hoy. Dato declarativo
+ * para la evaluación del asesor -- no altera el cálculo del ingreso por
+ * alquiler (ver `rentedUnitsCount` en lib/income-types.ts). */
+const RENTED_UNITS_OPTIONS: { label: string; value: number }[] = [
+  { label: "1", value: 1 },
+  { label: "2", value: 2 },
+  { label: "3", value: 3 },
+  { label: "4", value: 4 },
+  { label: "5 o más", value: 5 },
+];
+
 /** Parentescos que los bancos chilenos típicamente aceptan como aval/codeudor
  * válido para un crédito hipotecario -- se limita a estos 5, sin "otro"
  * genérico, tal como pidió el negocio. */
@@ -160,6 +171,7 @@ function prefillIncomeSources(
       entry.hasSignificantBonusIncome = (r.hasSignificantBonusIncome as boolean) ?? null;
       entry.isVariableBoleta = (r.isVariableBoleta as boolean) ?? null;
       entry.rentalContractMonths = (r.rentalContractMonths as number) ?? null;
+      entry.rentedUnitsCount = (r.rentedUnitsCount as number) ?? null;
       entry.companyHasLiquidity = (r.companyHasLiquidity as boolean) ?? null;
       return entry;
     });
@@ -330,7 +342,7 @@ function WizardPageInner() {
           if (entry.antiguedadYears === null) return false;
           if (entry.type === "sueldo_fijo") return entry.contractType !== null && entry.hasSignificantBonusIncome !== null;
           if (entry.type === "boleta") return entry.isVariableBoleta !== null;
-          if (entry.type === "alquiler") return entry.rentalContractMonths !== null;
+          if (entry.type === "alquiler") return entry.rentalContractMonths !== null && entry.rentedUnitsCount !== null;
           if (entry.type === "sociedad") return entry.companyHasLiquidity !== null;
           return true; // pension: solo antigüedad
         });
@@ -374,7 +386,10 @@ function WizardPageInner() {
       if (entry.type === "sueldo_fijo") source.hasSignificantBonusIncome = entry.hasSignificantBonusIncome ?? false;
       if (entry.type === "boleta") source.isVariableBoleta = entry.isVariableBoleta ?? false;
       if (entry.type === "pension") source.ageYears = profile?.age ?? undefined;
-      if (entry.type === "alquiler") source.rentalContractMonths = entry.rentalContractMonths ?? 0;
+      if (entry.type === "alquiler") {
+        source.rentalContractMonths = entry.rentalContractMonths ?? 0;
+        source.rentedUnitsCount = entry.rentedUnitsCount ?? 0;
+      }
       if (entry.type === "sociedad") source.companyHasLiquidity = entry.companyHasLiquidity ?? false;
       return source;
     });
@@ -750,7 +765,7 @@ function StepProfile({
             {entry.type === "alquiler" && (
               <>
                 <p className="mb-2 text-xs" style={{ color: "var(--text-tertiary)" }}>
-                  ¿Cuál es la duración de tu contrato de arriendo vigente?
+                  Vigencia del contrato de arriendo
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {RENTAL_CONTRACT_OPTIONS.map((opt) => (
@@ -759,6 +774,20 @@ function StepProfile({
                       label={opt.label}
                       selected={entry.rentalContractMonths === opt.value}
                       onClick={() => updateEntry(entry.type, { rentalContractMonths: opt.value })}
+                    />
+                  ))}
+                </div>
+
+                <p className="mt-3 mb-2 text-xs" style={{ color: "var(--text-tertiary)" }}>
+                  Cantidad de Dpto en arriendo
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {RENTED_UNITS_OPTIONS.map((opt) => (
+                    <SelectableChip
+                      key={opt.value}
+                      label={opt.label}
+                      selected={entry.rentedUnitsCount === opt.value}
+                      onClick={() => updateEntry(entry.type, { rentedUnitsCount: opt.value })}
                     />
                   ))}
                 </div>

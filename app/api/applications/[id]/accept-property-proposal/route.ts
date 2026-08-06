@@ -7,7 +7,16 @@ import { normalizeEmail, type AnySupabaseClient } from "@/lib/leads";
 type Body = {
   departmentCount?: number;
   propertyIds?: string[];
+  /** Mapa `propertyId -> destino` con la categoría bajo la que el cliente
+   * eligió cada propiedad (ver migración 038). Opcional por compatibilidad
+   * con clientes antiguos que solo mandaban `propertyIds`. */
+  propertyDestinations?: Record<string, string>;
 };
+
+/** Destinos válidos del flujo de perfilamiento -- espejo de
+ * `PropertyDestination` en components/dashboard/PropertyPreferencesCard.tsx.
+ * Se valida acá para no persistir basura en el jsonb. */
+const VALID_DESTINATIONS = new Set(["vivir", "airbnb", "alquiler_tradicional", "venta_corto_plazo"]);
 
 /** Máximo de propiedades seleccionables -- coincide con CAROUSEL_SIZE en
  * app/api/properties/recommendations/route.ts. */
@@ -77,10 +86,20 @@ export const POST = withErrorHandling(async (request: Request, context: { params
     return apiError("Solicitud no encontrada.", HTTP_STATUS.NOT_FOUND, "APPLICATION_NOT_FOUND");
   }
 
+  // Solo se guardan destinos válidos y de propiedades realmente elegidas --
+  // así el jsonb nunca queda con ids huérfanos ni destinos inventados.
+  const selectedIdSet = new Set(body.propertyIds);
+  const propertyDestinations = Object.fromEntries(
+    Object.entries(body.propertyDestinations ?? {}).filter(
+      ([propertyId, destination]) => selectedIdSet.has(propertyId) && VALID_DESTINATIONS.has(destination)
+    )
+  );
+
   const { data: updatedApplication, error: updateError } = await (supabase.from("applications") as any)
     .update({
       selected_property_ids: body.propertyIds,
       accepted_department_count: body.departmentCount,
+      selected_property_destinations: Object.keys(propertyDestinations).length > 0 ? propertyDestinations : null,
     })
     .eq("id", id)
     .select("*")

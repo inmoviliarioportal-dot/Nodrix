@@ -255,7 +255,7 @@ export default function InitialProposalPage() {
     return (
       <AvatarPresenter
         heading="¡Felicitaciones!"
-        script="¡Excelente! Lograste completar nuestro Wizard Inteligente. Ahora necesitamos que cargues tus documentos para poder agendar tu visita con el asesor asignado, y así puedas ver los proyectos que te presentamos."
+        script="¡Excelente! Lograste completar nuestro Flujo Inteligente. Ahora necesitamos que cargues tus documentos para poder agendar tu visita con el asesor asignado, y así puedas ver los proyectos que te presentamos."
         continueLabel="Ir a mi panel"
         onDone={() => router.push("/dashboard")}
       />

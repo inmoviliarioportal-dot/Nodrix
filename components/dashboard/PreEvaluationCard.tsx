@@ -5,6 +5,12 @@ import { TrendingUp } from "lucide-react"
 
 export interface PreEvaluationCardProps {
   applicationId: string
+  /** Solicitud y cliente YA cargados por el panel. Si vienen, esta tarjeta
+   * no vuelve a pedir `/api/applications/[id]` -- ese request duplicaba uno
+   * que el dashboard ya había hecho y sumaba latencia sin aportar datos
+   * nuevos. Se dejan opcionales para no romper otros usos del componente. */
+  application?: Record<string, any> | null
+  customer?: Record<string, any> | null
 }
 
 /** Mismos 4 valores EXACTOS que WizardPropertyDestination (lib/wizard-storage.ts). */
@@ -22,16 +28,24 @@ const DESTINATION_LABELS: Record<string, string> = {
  * de cuántas y de qué tipo (destino declarado en el wizard para las de
  * inversión, "vivienda" para la de vivienda propia).
  */
-function PreEvaluationCard({ applicationId }: PreEvaluationCardProps) {
+function PreEvaluationCard({
+  applicationId,
+  application: applicationProp,
+  customer: customerProp,
+}: PreEvaluationCardProps) {
   const [approvedUf, setApprovedUf] = React.useState<number | null>(null)
   const [breakdown, setBreakdown] = React.useState<string[]>([])
   const [loading, setLoading] = React.useState(true)
 
   React.useEffect(() => {
     let cancelled = false
+    // El detalle solo se pide si el padre no lo pasó (ver props).
+    const hasDetailFromProps = Boolean(applicationProp)
     Promise.all([
       fetch(`/api/applications/${applicationId}/proposal-bands`).then((res) => (res.ok ? res.json() : null)),
-      fetch(`/api/applications/${applicationId}`).then((res) => (res.ok ? res.json() : null)),
+      hasDetailFromProps
+        ? Promise.resolve({ application: applicationProp, customer: customerProp ?? null })
+        : fetch(`/api/applications/${applicationId}`).then((res) => (res.ok ? res.json() : null)),
     ])
       .then(([bands, detail]) => {
         if (cancelled) return
@@ -70,7 +84,7 @@ function PreEvaluationCard({ applicationId }: PreEvaluationCardProps) {
     return () => {
       cancelled = true
     }
-  }, [applicationId])
+  }, [applicationId, applicationProp, customerProp])
 
   return (
     <div className="glass-card relative flex h-full min-h-[168px] items-start gap-3 overflow-hidden rounded-2xl p-5">

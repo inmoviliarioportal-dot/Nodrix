@@ -77,9 +77,13 @@ function PropertyPreferencesCard({
   const [isAccepting, setIsAccepting] = React.useState(false)
   const [carouselGroups, setCarouselGroups] = React.useState<PropertyCarouselGroup[] | null>(null)
   // Selección COMPARTIDA entre todos los carruseles (uno por destino
-  // elegido) -- el cliente puede elegir propiedades de más de un carrusel
-  // antes de confirmar todo junto con un solo botón.
-  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set())
+  // elegido), guardada como `propertyId -> destino` y NO como un set de ids:
+  // una misma propiedad puede aparecer en varios carruseles, y el negocio
+  // necesita saber para QUÉ destino la eligió el cliente (queda registrado
+  // para la evaluación del asesor). Como el mapa admite un solo destino por
+  // propiedad, elegirla en otro carrusel la mueve en vez de marcarla dos
+  // veces.
+  const [selection, setSelection] = React.useState<Map<string, string>>(new Map())
   const [housingProperties, setHousingProperties] = React.useState<PropertyRecommendation[] | null>(null)
 
   // Airbnb/venta a corto plazo piden el perfilamiento de proximidad ANTES
@@ -90,11 +94,14 @@ function PropertyPreferencesCard({
 
   const requestedCarousel = React.useRef(false)
 
-  function toggleSelected(id: string) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
+  /** Alterna una propiedad para un destino concreto. Si ya estaba elegida
+   * para ESE destino, la quita; si estaba elegida para otro, la mueve (nunca
+   * queda marcada en dos categorías a la vez). */
+  function toggleSelected(id: string, destination: string) {
+    setSelection((prev) => {
+      const next = new Map(prev)
+      if (next.get(id) === destination) next.delete(id)
+      else next.set(id, destination)
       return next
     })
   }
@@ -188,15 +195,18 @@ function PropertyPreferencesCard({
   }
 
   async function handleAcceptInvestmentSelection() {
-    if (selectedIds.size === 0) return
+    if (selection.size === 0) return
     setIsAccepting(true)
     try {
       const res = await fetch(`/api/applications/${applicationId}/accept-property-proposal`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          departmentCount: selectedIds.size,
-          propertyIds: Array.from(selectedIds),
+          departmentCount: selection.size,
+          propertyIds: Array.from(selection.keys()),
+          // Destino elegido por el cliente para cada propiedad -- queda
+          // guardado para que el asesor evalúe con ese contexto.
+          propertyDestinations: Object.fromEntries(selection),
         }),
       })
       if (!res.ok) {
@@ -253,16 +263,22 @@ function PropertyPreferencesCard({
     // botón de confirmación al final, para que el cliente vea claramente
     // qué opciones calzan con cada objetivo antes de decidir. Footer sticky
     // inferior con el resumen de selección + CTA, igual a la referencia.
+    // Etiqueta legible por destino, para que cada carrusel pueda avisar
+    // "Ya la elegiste para X" cuando la propiedad está tomada por otro.
+    const destinationLabels = Object.fromEntries(carouselGroups.map((g) => [g.destination, g.label]))
+
     return (
       <div className="flex flex-col gap-8 pb-28">
         {carouselGroups.map((group) => (
           <PropertyCarousel
             key={group.destination}
             title={`Para ${group.label.toLowerCase()}`}
-            description="Selecciona al menos una propiedad. Puedes revisar la galería de cada una antes de decidir."
+            description="Toca una propiedad para elegirla. Puedes revisar la galería con «Ver detalles» antes de decidir."
             icon={DESTINATION_ICONS[group.destination] ?? Home}
+            destination={group.destination}
+            destinationLabels={destinationLabels}
             properties={group.properties}
-            selectedIds={selectedIds}
+            selection={selection}
             onToggle={toggleSelected}
           />
         ))}
@@ -271,11 +287,11 @@ function PropertyPreferencesCard({
           <div className="mx-auto flex w-full max-w-5xl flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <div className="flex items-center gap-3">
               <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-neon-cyan/10 text-neon-cyan">
-                <Heart className={selectedIds.size > 0 ? "size-4.5 fill-current" : "size-4.5"} aria-hidden="true" />
+                <Heart className={selection.size > 0 ? "size-4.5 fill-current" : "size-4.5"} aria-hidden="true" />
               </span>
               <div>
                 <p className="text-sm font-bold text-text-primary">
-                  {selectedIds.size} {selectedIds.size === 1 ? "propiedad seleccionada" : "propiedades seleccionadas"}
+                  {selection.size} {selection.size === 1 ? "propiedad seleccionada" : "propiedades seleccionadas"}
                 </p>
                 <p className="text-xs text-text-tertiary">Puedes elegir más si lo deseas.</p>
               </div>
@@ -283,7 +299,7 @@ function PropertyPreferencesCard({
             <div className="flex flex-col items-center gap-1.5 sm:items-end">
               <Button
                 className="glow-cyan w-full gap-2 rounded-full bg-neon-cyan px-6 text-white hover:bg-neon-cyan/90 sm:w-fit"
-                disabled={selectedIds.size === 0 || isAccepting}
+                disabled={selection.size === 0 || isAccepting}
                 onClick={handleAcceptInvestmentSelection}
               >
                 {isAccepting ? "Guardando..." : "Continuar con estas propiedades"}

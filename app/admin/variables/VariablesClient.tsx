@@ -272,7 +272,7 @@ export default function VariablesPage() {
     <div className="flex flex-col gap-6">
       <Toaster />
       <div className="flex flex-col gap-1">
-        <h1 className="font-heading text-2xl font-semibold text-text-primary">Variables del wizard</h1>
+        <h1 className="font-heading text-2xl font-semibold text-text-primary">Variables del flujo</h1>
         <p className="text-sm text-text-secondary">
           Ajusta los parámetros financieros que usa el motor de pre-evaluación (plazo del crédito, calificación,
           gates bancarios, probabilidades y supuestos). Cada cambio se guarda como borrador, se simula contra las

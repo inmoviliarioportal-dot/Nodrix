@@ -94,8 +94,12 @@ export interface WizardIncomeSourceEntry {
   hasSignificantBonusIncome: boolean | null;
   /** Paso 1, boleta: ingreso que varía durante el año (vs. monto fijo mensual). */
   isVariableBoleta: boolean | null;
-  /** Paso 1, alquiler: duración declarada del contrato de arriendo, en meses. */
+  /** Paso 1, alquiler: vigencia declarada del contrato de arriendo, en meses. */
   rentalContractMonths: number | null;
+  /** Paso 1, alquiler: cuántos departamentos tiene actualmente en arriendo.
+   * Dato informativo para la evaluación del asesor -- NO altera el haircut
+   * del ingreso por alquiler (ver lib/income-types.ts). */
+  rentedUnitsCount: number | null;
   /** Paso 1, sociedad: la empresa acredita liquidez / cierres positivos (SII 104/105). */
   companyHasLiquidity: boolean | null;
 }
@@ -109,6 +113,7 @@ export function emptyIncomeSourceEntry(type: WizardIncomeType): WizardIncomeSour
     hasSignificantBonusIncome: null,
     isVariableBoleta: null,
     rentalContractMonths: null,
+    rentedUnitsCount: null,
     companyHasLiquidity: null,
   };
 }

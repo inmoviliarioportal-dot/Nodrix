@@ -235,7 +235,7 @@ function buildExplanation(
 
   const categoryText: Record<ScoringCategory, string> = {
     BRONCE:
-      "Tu perfil califica en categoría BRONCE. Hay oportunidades de mejora en salario, ahorro, estabilidad laboral o carga financiera para acceder a mejores condiciones.",
+      "Tu perfil califica en categoría BRONCE. Hay oportunidades de mejora en renta, ahorro, estabilidad laboral o carga financiera para acceder a mejores condiciones.",
     PLATA:
       "Tu perfil califica en categoría PLATA. Tienes una base financiera aceptable, con espacio para mejorar en algunos factores.",
     ORO: "Tu perfil califica en categoría ORO. Tienes un perfil financiero sólido con buenas condiciones de acceso.",
@@ -280,7 +280,9 @@ export function calculateScoring(
   );
 
   const factorsApplied: ScoringFactor[] = [
-    { factor: "Salario", points: salarioPoints, weight: weights.SALARIO },
+    // Etiqueta visible al usuario: el negocio usa "Renta", no "Salario"
+    // (la clave interna del peso sigue siendo SALARIO, ver FACTOR_WEIGHTS).
+    { factor: "Renta", points: salarioPoints, weight: weights.SALARIO },
     { factor: "Ahorro/Pie disponible", points: ahorroPoints, weight: weights.AHORRO },
     {
       factor: "Estabilidad laboral",

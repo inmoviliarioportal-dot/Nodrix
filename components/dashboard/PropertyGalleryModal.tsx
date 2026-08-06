@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { createPortal } from "react-dom"
 import { X, ChevronLeft, ChevronRight, PlayCircle } from "lucide-react"
 
 export interface PropertyGalleryModalProps {
@@ -12,10 +13,19 @@ export interface PropertyGalleryModalProps {
 }
 
 /**
- * Galería flotante (lightbox) que se abre al hacer clic en la imagen de una
- * propiedad dentro de una propuesta -- deja ver todas las fotos del
- * proyecto/inmueble y el video, si existe, ANTES de aceptar la propuesta.
- * Sin librerías externas: solo un overlay con navegación prev/next.
+ * Galería flotante (lightbox) que se abre desde el botón "Ver detalles" de
+ * una propiedad -- deja ver todas las fotos del proyecto/inmueble y el
+ * video, si existe, antes de decidir. Sin librerías externas: solo un
+ * overlay con navegación prev/next.
+ *
+ * Se renderiza vía PORTAL a document.body, no en el árbol del carrusel: sus
+ * ancestros usan `animate-fade-in-up`, que es `animation: ... both` y por lo
+ * tanto deja `transform: translateY(0)` aplicado de forma permanente al
+ * terminar. Un ancestro con transform crea un containing block, así que el
+ * `position: fixed` de este overlay se anclaba a ESE div en vez del
+ * viewport: el overlay no cubría la pantalla completa y el botón de cerrar
+ * quedaba fuera de alcance (dentro de un `overflow-hidden`), dejando la
+ * galería imposible de cerrar con el mouse.
  */
 function PropertyGalleryModal({ open, onOpenChange, propertyName, images, videoUrl }: PropertyGalleryModalProps) {
   // El video (si existe) se muestra como el último "slide" de la galería.
@@ -24,9 +34,25 @@ function PropertyGalleryModal({ open, onOpenChange, propertyName, images, videoU
     [images, videoUrl]
   )
   const [index, setIndex] = React.useState(0)
+  // El portal necesita `document`, que no existe durante el render de
+  // servidor -- se monta solo en cliente.
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => setMounted(true), [])
 
   React.useEffect(() => {
     if (open) setIndex(0)
+  }, [open])
+
+  // Bloquea el scroll de fondo mientras la galería está abierta (si no, la
+  // página sigue desplazándose detrás del overlay).
+  React.useEffect(() => {
+    if (!open) return
+    const previous = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = previous
+    }
   }, [open])
 
   React.useEffect(() => {
@@ -40,11 +66,11 @@ function PropertyGalleryModal({ open, onOpenChange, propertyName, images, videoU
     return () => window.removeEventListener("keydown", onKeyDown)
   }, [open, slides.length, onOpenChange])
 
-  if (!open || slides.length === 0) return null
+  if (!mounted || !open || slides.length === 0) return null
 
   const current = slides[index]
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4"
       role="dialog"
@@ -124,7 +150,8 @@ function PropertyGalleryModal({ open, onOpenChange, propertyName, images, videoU
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
