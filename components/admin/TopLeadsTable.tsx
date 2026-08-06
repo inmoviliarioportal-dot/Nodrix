@@ -4,6 +4,7 @@ import Link from "next/link"
 import { EyeIcon } from "lucide-react"
 
 import { STAGE_LABELS } from "@/components/dashboard/types"
+import { InfoTooltip } from "@/components/admin/InfoTooltip"
 
 const CATEGORY_CLASS: Record<string, string> = {
   BRONCE: "bg-bronce/15 text-bronce border-bronce/30",
@@ -27,7 +28,13 @@ export interface TopLeadData {
 export function TopLeadsTable({ leads }: { leads: TopLeadData[] }) {
   return (
     <div className="glass-card animate-fade-in rounded-2xl p-5">
-      <h3 className="text-sm font-semibold text-text-primary">Top 10 leads que requieren seguimiento</h3>
+      <h3 className="flex items-center gap-1.5 text-sm font-semibold text-text-primary">
+        Top 10 leads que requieren seguimiento
+        <InfoTooltip
+          what="Las 10 solicitudes ACTIVAS (no cerradas) que llevan más tiempo sin avanzar de etapa -- las que más urgen contacto del asesor."
+          how="Para cada solicitud activa, calcula los días desde su última actualización hasta hoy y ordena de mayor a menor, tomando el top 10."
+        />
+      </h3>
       <p className="text-xs text-text-tertiary">Solicitudes activas con más días sin avanzar de etapa</p>
 
       {leads.length === 0 ? (

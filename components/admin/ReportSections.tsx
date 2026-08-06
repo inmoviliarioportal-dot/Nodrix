@@ -1,14 +1,21 @@
 import { formatCLP } from "@/components/admin/types"
 import { STAGE_LABELS } from "@/components/dashboard/types"
 import type { KpiSummaryData } from "@/components/admin/KpiCards"
-import type { FunnelStageData } from "@/components/admin/ConversionFunnel"
+import { ConversionFunnel, type FunnelStageData } from "@/components/admin/ConversionFunnel"
+import { ScoringDistribution, type ScoringDistributionData } from "@/components/admin/ScoringDistribution"
+import { ConversionTimeline, type TimelinePointData } from "@/components/admin/ConversionTimeline"
+import { ClosingProjections, type ClosingProjectionData } from "@/components/admin/ClosingProjections"
 import type { AdvisorPerformanceData } from "@/components/admin/AdvisorPerformanceTable"
 import type { PropertiesInventoryData } from "@/components/admin/PropertiesInventoryCard"
 import type { ClosureDetailData } from "@/components/admin/ClosuresDetailTable"
+import { InfoTooltip } from "@/components/admin/InfoTooltip"
 
 export interface ReportData {
   summary: KpiSummaryData & { totalApplications: number; activeApplications: number; closedThisMonthCount: number }
   funnel: FunnelStageData[]
+  scoringDistribution: ScoringDistributionData[]
+  timeline: TimelinePointData[]
+  closingProjections: ClosingProjectionData[]
   advisorPerformance: AdvisorPerformanceData[]
   propertiesInventory: PropertiesInventoryData
   closuresDetail: ClosureDetailData[]
@@ -24,14 +31,20 @@ function formatDate(iso: string): string {
  * 100%, sin sidebars, se apoya en `print:` utilities.
  */
 export function ReportSections({ data }: { data: ReportData }) {
-  const { summary, funnel, advisorPerformance, propertiesInventory, closuresDetail } = data
+  const { summary, funnel, scoringDistribution, timeline, closingProjections, advisorPerformance, propertiesInventory, closuresDetail } = data
   const totalInFunnel = funnel[0]?.count ?? 0
 
   return (
     <div className="flex flex-col gap-4">
       {/* Lead summary */}
       <section className="glass-surface rounded-2xl p-5 print:border-0 print:bg-transparent">
-        <h3 className="text-sm font-semibold text-text-primary">Resumen de leads</h3>
+        <h3 className="flex items-center gap-1.5 text-sm font-semibold text-text-primary">
+          Resumen de leads
+          <InfoTooltip
+            what="Vista rápida de volumen, actividad, conversión y velocidad del pipeline, sobre el filtro aplicado arriba."
+            how="Total/Activas: conteo de solicitudes. Conversión: % que llegó a Cierre. Días prom.: promedio de (actualización − creación) para las ya cerradas."
+          />
+        </h3>
         <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div>
             <p className="text-xs text-text-tertiary">Total en el filtro</p>
@@ -60,9 +73,29 @@ export function ReportSections({ data }: { data: ReportData }) {
         </div>
       </section>
 
+      {/* Charts: funnel de estados, scoring, timeline + proyección */}
+      <div className="print:hidden">
+        <ConversionFunnel funnel={funnel} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 print:hidden">
+        <ScoringDistribution distribution={scoringDistribution} />
+        <ClosingProjections projections={closingProjections} />
+      </div>
+
+      <div className="print:hidden">
+        <ConversionTimeline timeline={timeline} />
+      </div>
+
       {/* Conversion funnel */}
       <section className="glass-surface rounded-2xl p-5 print:border-0 print:bg-transparent">
-        <h3 className="text-sm font-semibold text-text-primary">Funnel de conversión</h3>
+        <h3 className="flex items-center gap-1.5 text-sm font-semibold text-text-primary">
+          Funnel de Estados
+          <InfoTooltip
+            what="Cuántas solicitudes alguna vez alcanzaron cada etapa del pipeline, del total filtrado."
+            how="Cuenta acumulativa por etapa a partir del historial de transiciones (ver gráfico arriba para el detalle visual)."
+          />
+        </h3>
         <table className="mt-3 w-full min-w-[420px] border-collapse text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs text-text-tertiary">
@@ -89,7 +122,13 @@ export function ReportSections({ data }: { data: ReportData }) {
 
       {/* Performance by advisor */}
       <section className="glass-surface rounded-2xl p-5 print:border-0 print:bg-transparent">
-        <h3 className="text-sm font-semibold text-text-primary">Rendimiento por asesor</h3>
+        <h3 className="flex items-center gap-1.5 text-sm font-semibold text-text-primary">
+          Rendimiento por asesor
+          <InfoTooltip
+            what="Leads asignados, cierres y tasa de conversión por asesor, sobre el filtro aplicado."
+            how="Conversión = (cierres del asesor ÷ leads asignados al asesor) × 100."
+          />
+        </h3>
         {advisorPerformance.length === 0 ? (
           <p className="mt-3 text-sm text-text-tertiary">No hay leads asignados a asesores en este filtro.</p>
         ) : (
@@ -130,7 +169,13 @@ export function ReportSections({ data }: { data: ReportData }) {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Revenue projection */}
         <section className="glass-surface rounded-2xl p-5 print:border-0 print:bg-transparent">
-          <h3 className="text-sm font-semibold text-text-primary">UF gestionadas (proyección)</h3>
+          <h3 className="flex items-center gap-1.5 text-sm font-semibold text-text-primary">
+            UF gestionadas (proyección)
+            <InfoTooltip
+              what="Valor en UF de las propiedades ligadas a solicitudes cerradas este mes (o en el rango filtrado)."
+              how="Suma price_uf de las propiedades seleccionadas/aceptadas en cada solicitud cerrada, convertida a CLP con la UF vigente. No es comisión real."
+            />
+          </h3>
           <p className="mt-3 font-heading text-2xl font-semibold text-gold" style={{ fontVariantNumeric: "tabular-nums" }}>
             {formatCLP(summary.revenueThisMonth)}
           </p>
@@ -142,7 +187,13 @@ export function ReportSections({ data }: { data: ReportData }) {
 
         {/* Properties inventory */}
         <section className="glass-surface rounded-2xl p-5 print:border-0 print:bg-transparent">
-          <h3 className="text-sm font-semibold text-text-primary">Inventario de propiedades</h3>
+          <h3 className="flex items-center gap-1.5 text-sm font-semibold text-text-primary">
+            Inventario de propiedades
+            <InfoTooltip
+              what="Disponibles, reservadas (ligadas a solicitud activa) y vendidas (ligadas a solicitud en Cierre), sobre el catálogo completo."
+              how="Reservadas/vendidas se derivan de las propiedades ligadas a solicitudes activas/cerradas; el resto marcado available cuenta como disponible."
+            />
+          </h3>
           <div className="mt-3 grid grid-cols-3 gap-3 text-center">
             <div>
               <p className="font-heading text-lg font-semibold text-text-primary">{propertiesInventory.available}</p>
@@ -162,7 +213,13 @@ export function ReportSections({ data }: { data: ReportData }) {
 
       {/* Closures detail */}
       <section className="glass-surface rounded-2xl p-5 print:border-0 print:bg-transparent">
-        <h3 className="text-sm font-semibold text-text-primary">Detalle de cierres</h3>
+        <h3 className="flex items-center gap-1.5 text-sm font-semibold text-text-primary">
+          Detalle de cierres
+          <InfoTooltip
+            what="Cada solicitud que llegó a Cierre en el filtro aplicado, con fecha y valor UF de la propiedad ligada."
+            how="Filtra solicitudes con stage = 'CIERRE' dentro del rango de fechas filtrado (o el mes en curso si no hay filtro de fecha)."
+          />
+        </h3>
         {closuresDetail.length === 0 ? (
           <p className="mt-3 text-sm text-text-tertiary">No hay cierres en este filtro.</p>
         ) : (

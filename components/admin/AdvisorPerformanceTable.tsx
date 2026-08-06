@@ -1,3 +1,5 @@
+import { InfoTooltip } from "@/components/admin/InfoTooltip"
+
 export interface AdvisorPerformanceData {
   advisor: string
   leadsAssigned: number
@@ -10,7 +12,13 @@ export interface AdvisorPerformanceData {
 export function AdvisorPerformanceTable({ data }: { data: AdvisorPerformanceData[] }) {
   return (
     <div className="glass-card animate-fade-in rounded-2xl p-5">
-      <h3 className="text-sm font-semibold text-text-primary">Desempeño por asesor</h3>
+      <h3 className="flex items-center gap-1.5 text-sm font-semibold text-text-primary">
+        Desempeño por asesor
+        <InfoTooltip
+          what="Cuántos leads tiene asignados cada asesor, cuántos cerró, y qué porcentaje de sus leads asignados terminó en Cierre."
+          how="Agrupa solicitudes por assigned_advisor_id. Conversión = (cierres del asesor ÷ leads asignados al asesor) × 100. Solo incluye asesores con al menos 1 lead asignado."
+        />
+      </h3>
       <p className="text-xs text-text-tertiary">Leads asignados, cierres y tasa de conversión</p>
 
       {data.length === 0 ? (

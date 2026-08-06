@@ -4,6 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 
 import { STAGE_LABELS } from "@/components/dashboard/types"
+import { InfoTooltip } from "@/components/admin/InfoTooltip"
 
 const STAGE_ORDER = [
   "RECEPCIONADA",
@@ -53,8 +54,12 @@ function ApplicationsSummary() {
   return (
     <div className="glass-surface animate-fade-in rounded-2xl p-5">
       <div className="mb-3.5 flex items-center justify-between">
-        <h2 className="text-xs font-bold uppercase tracking-wide text-text-tertiary">
+        <h2 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-text-tertiary">
           Solicitudes en curso, por estado
+          <InfoTooltip
+            what="Todas las solicitudes en el sistema, agrupadas por su etapa actual y por su categoría de scoring. Cada número lleva al listado filtrado correspondiente."
+            how="Cuenta el stage y scoring_category actuales de cada solicitud (no histórico acumulativo, a diferencia del Funnel de Estados)."
+          />
         </h2>
         {data && (
           <span className="text-xs text-text-tertiary">

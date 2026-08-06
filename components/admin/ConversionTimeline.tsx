@@ -3,6 +3,8 @@
 import { TrendingUpIcon } from "lucide-react"
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 
+import { InfoTooltip } from "@/components/admin/InfoTooltip"
+
 export interface TimelinePointData {
   day: number
   closures: number
@@ -37,7 +39,13 @@ export function ConversionTimeline({ timeline }: { timeline: TimelinePointData[]
     <div className="glass-card animate-fade-in rounded-2xl p-5">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-text-primary">Timeline de cierres</h3>
+          <h3 className="flex items-center gap-1.5 text-sm font-semibold text-text-primary">
+            Timeline de cierres
+            <InfoTooltip
+              what="Cuántas solicitudes llegaron a Cierre cada día del mes en curso, y si la última semana fue mejor o peor que la anterior."
+              how="Cuenta filas de application_stage_history donde to_stage = 'CIERRE', agrupadas por día. La tendencia compara la suma de los últimos 7 días contra los 7 días previos."
+            />
+          </h3>
           <p className="text-xs text-text-tertiary">{totalClosures} cierres — mes en curso</p>
         </div>
         <div

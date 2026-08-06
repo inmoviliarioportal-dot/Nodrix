@@ -266,6 +266,46 @@ export const GET = withErrorHandling(async (request: Request) => {
     .slice(0, 10);
 
   // ---------------------------------------------------------------------
+  // Proyección de cierres: para cada solicitud ACTIVA, estima cuántos días
+  // le faltan sumando el promedio histórico real de duración (calculado
+  // arriba en `avgDurationByStage`) de cada etapa restante entre su etapa
+  // actual y CIERRE -- no un promedio global aplicado a todas por igual,
+  // así una solicitud en ENVIADO_A_BANCO proyecta mucho antes que una recién
+  // RECEPCIONADA. Se agrupan en 4 buckets (horizonte de planificación
+  // comercial) con la UF estimada que representan (misma lógica que
+  // `estimatedUfForApplication`, sin comisión, ver nota más arriba).
+  // ---------------------------------------------------------------------
+  const PROJECTION_BUCKETS = [
+    { key: "0-30", label: "0–30 días", maxDays: 30 },
+    { key: "31-60", label: "31–60 días", maxDays: 60 },
+    { key: "61-90", label: "61–90 días", maxDays: 90 },
+    { key: "90+", label: "Más de 90 días", maxDays: Infinity },
+  ] as const;
+  const closingProjectionBuckets = PROJECTION_BUCKETS.map((b) => ({ bucket: b.key, label: b.label, count: 0, projectedUf: 0 }));
+  for (const app of activeApps) {
+    const currentIndex = APPLICATION_STAGES.indexOf(app.stage as (typeof APPLICATION_STAGES)[number]);
+    let remainingDays = 0;
+    for (let i = currentIndex; i < APPLICATION_STAGES.length - 1; i++) {
+      remainingDays += avgDurationByStage[APPLICATION_STAGES[i]] ?? FALLBACK_EXPECTED_DAYS;
+    }
+    // Ya lleva `daysInStage` corriendo dentro de la etapa actual -- se
+    // descuenta para no duplicar tiempo ya transcurrido.
+    const daysInCurrentStage = daysBetween(app.updated_at, now);
+    remainingDays = Math.max(0, remainingDays - daysInCurrentStage);
+
+    const bucketIndex = PROJECTION_BUCKETS.findIndex((b) => remainingDays <= b.maxDays);
+    const target = closingProjectionBuckets[bucketIndex === -1 ? closingProjectionBuckets.length - 1 : bucketIndex];
+    target.count += 1;
+    target.projectedUf += estimatedUfForApplication(app);
+  }
+  const closingProjections = closingProjectionBuckets.map((b) => ({
+    ...b,
+    projectedUf: Math.round(b.projectedUf * 10) / 10,
+  }));
+  const projectedNext30DaysCount = closingProjectionBuckets[0].count;
+  const projectedNext30DaysUf = closingProjectionBuckets[0].projectedUf;
+
+  // ---------------------------------------------------------------------
   // Desempeño por asesor
   // ---------------------------------------------------------------------
   const advisorPerformance = advisors
@@ -331,10 +371,13 @@ export const GET = withErrorHandling(async (request: Request) => {
       totalApplications: applications.length,
       activeApplications: activeApps.length,
       closedThisMonthCount: closedThisMonth.length,
+      projectedNext30DaysCount,
+      projectedNext30DaysUf,
     },
     funnel,
     scoringDistribution,
     timeline,
+    closingProjections,
     topLeads,
     deviations,
     advisorPerformance,

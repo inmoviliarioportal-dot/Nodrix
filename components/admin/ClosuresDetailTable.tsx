@@ -1,5 +1,6 @@
 import { formatCLP } from "@/components/admin/types"
 import { UF_VALUE_CLP } from "@/lib/uf-preevaluation"
+import { InfoTooltip } from "@/components/admin/InfoTooltip"
 
 export interface ClosureDetailData {
   id: string
@@ -17,7 +18,13 @@ function formatDate(iso: string): string {
 export function ClosuresDetailTable({ closures }: { closures: ClosureDetailData[] }) {
   return (
     <div className="glass-card animate-fade-in rounded-2xl p-5">
-      <h3 className="text-sm font-semibold text-text-primary">Cierres del mes</h3>
+      <h3 className="flex items-center gap-1.5 text-sm font-semibold text-text-primary">
+        Cierres del mes
+        <InfoTooltip
+          what="Listado detallado de cada solicitud que llegó a Cierre en el periodo, con la fecha y el valor UF de la propiedad ligada."
+          how="Filtra solicitudes con stage = 'CIERRE' y updated_at dentro del mes en curso (o del rango filtrado en Reportes). El valor UF se convierte a CLP con la UF vigente."
+        />
+      </h3>
       <p className="text-xs text-text-tertiary">Solicitudes que llegaron a Cierre en el periodo actual</p>
 
       {closures.length === 0 ? (

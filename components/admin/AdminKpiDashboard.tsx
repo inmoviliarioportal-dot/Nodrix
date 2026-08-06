@@ -7,6 +7,7 @@ import { KpiCards, type KpiSummaryData } from "@/components/admin/KpiCards"
 import { ConversionFunnel, type FunnelStageData } from "@/components/admin/ConversionFunnel"
 import { ScoringDistribution, type ScoringDistributionData } from "@/components/admin/ScoringDistribution"
 import { ConversionTimeline, type TimelinePointData } from "@/components/admin/ConversionTimeline"
+import { ClosingProjections, type ClosingProjectionData } from "@/components/admin/ClosingProjections"
 import { TopLeadsTable, type TopLeadData } from "@/components/admin/TopLeadsTable"
 import { DeviationsPanel, type DeviationData } from "@/components/admin/DeviationsPanel"
 import { AdvisorPerformanceTable, type AdvisorPerformanceData } from "@/components/admin/AdvisorPerformanceTable"
@@ -19,6 +20,7 @@ interface KpiResponse {
   funnel: FunnelStageData[]
   scoringDistribution: ScoringDistributionData[]
   timeline: TimelinePointData[]
+  closingProjections: ClosingProjectionData[]
   topLeads: TopLeadData[]
   deviations: DeviationData[]
   advisorPerformance: AdvisorPerformanceData[]
@@ -106,7 +108,10 @@ export function AdminKpiDashboard() {
 
       <ApplicationsSummary />
 
-      <ConversionTimeline timeline={data.timeline} />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <ConversionTimeline timeline={data.timeline} />
+        <ClosingProjections projections={data.closingProjections} />
+      </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <TopLeadsTable leads={data.topLeads} />

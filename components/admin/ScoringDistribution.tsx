@@ -2,6 +2,8 @@
 
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts"
 
+import { InfoTooltip } from "@/components/admin/InfoTooltip"
+
 const CATEGORY_LABELS: Record<string, string> = {
   BRONCE: "Bronce",
   PLATA: "Plata",
@@ -47,7 +49,13 @@ export function ScoringDistribution({ distribution }: { distribution: ScoringDis
 
   return (
     <div className="glass-surface animate-fade-in rounded-2xl p-5">
-      <h2 className="text-xs font-bold uppercase tracking-wide text-text-tertiary">Por categoría de scoring</h2>
+      <h2 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-text-tertiary">
+        Por categoría de scoring
+        <InfoTooltip
+          what="Cómo se reparten las solicitudes según su categoría de riesgo/capacidad financiera (Bronce a Black)."
+          how="% y conteo de solicitudes por scoring_category, sobre el total de solicitudes que YA tienen un scoring calculado (excluye las que aún no pasaron por el motor de scoring)."
+        />
+      </h2>
 
       <div className="mt-3 flex items-center gap-4">
         <div className="h-[140px] w-[140px] shrink-0">

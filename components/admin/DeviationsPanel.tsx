@@ -4,6 +4,7 @@ import Link from "next/link"
 import { AlertTriangleIcon } from "lucide-react"
 
 import { STAGE_LABELS } from "@/components/dashboard/types"
+import { InfoTooltip } from "@/components/admin/InfoTooltip"
 
 export interface DeviationData {
   id: string
@@ -27,6 +28,10 @@ export function DeviationsPanel({ deviations }: { deviations: DeviationData[] })
       <div className="flex items-center gap-2">
         <AlertTriangleIcon className="size-4 text-gold" aria-hidden="true" />
         <h3 className="text-sm font-semibold text-text-primary">Desviaciones de proceso</h3>
+        <InfoTooltip
+          what="Solicitudes activas cuyo tiempo en la etapa actual supera 1.5x el promedio histórico real para esa etapa -- probablemente necesitan intervención."
+          how="Compara los días que lleva cada solicitud en su etapa actual contra el promedio histórico de duración de esa etapa (calculado del historial real de transiciones, no un umbral fijo inventado). Solo entran las que superan 1.5x y llevan 3+ días."
+        />
       </div>
       <p className="text-xs text-text-tertiary">
         Solicitudes que llevan significativamente más tiempo del habitual en su etapa actual

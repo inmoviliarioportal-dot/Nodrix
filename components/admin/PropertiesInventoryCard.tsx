@@ -1,5 +1,7 @@
 import { Building2Icon } from "lucide-react"
 
+import { InfoTooltip } from "@/components/admin/InfoTooltip"
+
 export interface PropertiesInventoryData {
   total: number
   available: number
@@ -22,6 +24,10 @@ export function PropertiesInventoryCard({ inventory }: { inventory: PropertiesIn
       <div className="flex items-center gap-2">
         <Building2Icon className="size-4 text-neon-cyan" aria-hidden="true" />
         <h2 className="text-xs font-bold uppercase tracking-wide text-text-tertiary">Inventario de propiedades</h2>
+        <InfoTooltip
+          what="Cuántas propiedades del catálogo están disponibles, cuántas reservadas (ligadas a una solicitud activa) y cuántas vendidas (ligadas a una solicitud en Cierre)."
+          how="Reservadas = propiedades ligadas a solicitudes activas que aún no llegaron a Cierre. Vendidas = ligadas a solicitudes en Cierre. Disponibles = el resto del catálogo marcado como available."
+        />
       </div>
       <p
         className="mt-3 font-heading text-[27px] font-semibold leading-none tracking-tight text-text-primary"

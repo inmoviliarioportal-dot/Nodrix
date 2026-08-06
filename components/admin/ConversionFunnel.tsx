@@ -3,6 +3,7 @@
 import { Bar, BarChart, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 
 import { STAGE_LABELS } from "@/components/dashboard/types"
+import { InfoTooltip } from "@/components/admin/InfoTooltip"
 
 export interface FunnelStageData {
   stage: string
@@ -39,7 +40,13 @@ export function ConversionFunnel({ funnel }: { funnel: FunnelStageData[] }) {
 
   return (
     <div className="glass-surface animate-fade-in rounded-2xl p-5">
-      <h2 className="text-xs font-bold uppercase tracking-wide text-text-tertiary">Funnel de conversión</h2>
+      <h2 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-text-tertiary">
+        Funnel de Estados
+        <InfoTooltip
+          what="Cuántas solicitudes alguna vez alcanzaron cada etapa del pipeline, del total filtrado. Muestra dónde se concentra la caída del proceso."
+          how="Para cada etapa, cuenta solicitudes que aparecen en el historial de transiciones con esa etapa como destino, o cuya etapa actual está igual o más avanzada. Es acumulativo: no solo la foto de hoy."
+        />
+      </h2>
 
       <div className="mt-2" style={{ height: Math.max(220, data.length * 34) }}>
         <ResponsiveContainer width="100%" height="100%">
