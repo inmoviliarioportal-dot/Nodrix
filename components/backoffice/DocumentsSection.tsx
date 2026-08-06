@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Eye, FileText, Check, X, CheckCircle2, AlertTriangle } from "lucide-react"
+import { Eye, FileText, Check, X, CheckCircle2, AlertTriangle, CircleDashed } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -16,6 +16,13 @@ import {
 } from "@/components/ui/dialog"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
+import type { ApplicationRow } from "@/lib/leads"
+import {
+  LEGACY_DOCUMENT_TYPES,
+  situationsFromIncomeSources,
+  situationGroupsFor,
+  requiredDocumentValuesFor,
+} from "@/lib/document-requirements"
 import { DOCUMENT_STATUS_LABELS, DOCUMENT_TYPE_LABELS, type DocumentRow } from "./types"
 
 const STATUS_STYLES: Record<DocumentRow["status"], string> = {
@@ -26,13 +33,17 @@ const STATUS_STYLES: Record<DocumentRow["status"], string> = {
 }
 
 interface DocumentsSectionProps {
+  application: ApplicationRow
   documents: DocumentRow[]
   onDocumentsChange: (documents: DocumentRow[]) => void
 }
 
-/** Sección de gestión documental del asesor: ver, aprobar y rechazar
- * documentos subidos por el cliente. */
-function DocumentsSection({ documents, onDocumentsChange }: DocumentsSectionProps) {
+/** Sección de gestión documental del asesor: checklist de lo que el cliente
+ * DEBE subir (según su situación laboral declarada en el wizard, misma
+ * fuente que la Bóveda documental del cliente -- ver
+ * lib/document-requirements.ts) marcando qué está cargado y qué no, más ver,
+ * aprobar y rechazar cada documento ya subido. */
+function DocumentsSection({ application, documents, onDocumentsChange }: DocumentsSectionProps) {
   const [viewing, setViewing] = useState<DocumentRow | null>(null)
   const [viewUrl, setViewUrl] = useState<string | null>(null)
   const [approving, setApproving] = useState<DocumentRow | null>(null)
@@ -92,91 +103,143 @@ function DocumentsSection({ documents, onDocumentsChange }: DocumentsSectionProp
     }
   }
 
+  // Documentos requeridos según la(s) situación(es) laboral(es) que el
+  // cliente declaró en el wizard (income_sources) -- misma fuente que la
+  // Bóveda documental del cliente, así el asesor ve exactamente el mismo
+  // checklist. Fallback al checklist genérico si la solicitud es anterior a
+  // este sistema (sin income_sources guardado).
+  const situations = situationsFromIncomeSources((application as { income_sources?: unknown }).income_sources)
+  const hasSituationGroups = situationGroupsFor(situations).length > 0
+  const requiredValues = hasSituationGroups
+    ? requiredDocumentValuesFor(situations)
+    : LEGACY_DOCUMENT_TYPES.map((d) => d.value)
+
+  function latestDocumentForType(typeValue: string): DocumentRow | undefined {
+    const matches = documents.filter((d) => d.type === typeValue)
+    if (matches.length === 0) return undefined
+    return matches.reduce((latest, current) =>
+      new Date(current.created_at).getTime() >= new Date(latest.created_at).getTime() ? current : latest
+    )
+  }
+
+  const requiredTypesSet = new Set(requiredValues)
+  const extraDocuments = documents.filter((d) => !requiredTypesSet.has(d.type))
+  const loadedCount = requiredValues.filter((v) => latestDocumentForType(v)).length
+
+  function renderDocumentCard(doc: DocumentRow) {
+    return (
+      <div
+        key={doc.id}
+        className="flex flex-col gap-2 rounded-lg border border-glass-border bg-glass p-3 sm:flex-row sm:items-center sm:justify-between"
+      >
+        <div className="flex min-w-0 items-center gap-2">
+          <FileText className="size-4 shrink-0 text-text-tertiary" />
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate text-sm text-text-primary">
+              {DOCUMENT_TYPE_LABELS[doc.type] ?? doc.type}
+            </span>
+            <span className="text-xs text-text-tertiary">
+              {new Date(doc.created_at).toLocaleDateString("es-CL")}
+            </span>
+            {(() => {
+              const validation = (doc.extracted_data as { validation?: { valid: boolean; reasons: string[] } } | null)
+                ?.validation
+              if (!validation) return null
+              if (validation.valid) {
+                return (
+                  <span className="flex items-center gap-1 text-xs text-neon-green">
+                    <CheckCircle2 className="size-3" />
+                    Pre-validado por OCR
+                  </span>
+                )
+              }
+              return (
+                <span className="flex items-center gap-1 text-xs text-error" title={validation.reasons.join(" — ")}>
+                  <AlertTriangle className="size-3" />
+                  OCR: {validation.reasons[0]}
+                </span>
+              )
+            })()}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={cn("rounded-full border px-2 py-0.5 text-xs font-medium", STATUS_STYLES[doc.status])}>
+            {DOCUMENT_STATUS_LABELS[doc.status]}
+          </span>
+          <Button size="sm" variant="outline" onClick={() => handleView(doc)}>
+            <Eye />
+            Ver
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busyId === doc.id || doc.status === "aprobado"}
+            onClick={() => setApproving(doc)}
+            className="text-neon-green hover:text-neon-green"
+          >
+            <Check />
+            Aprobar
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busyId === doc.id || doc.status === "rechazado"}
+            onClick={() => setRejecting(doc)}
+            className="text-error hover:text-error"
+          >
+            <X />
+            Rechazar
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <Card className="glass-card border-glass-border">
       <CardHeader>
-        <CardTitle>Documentos</CardTitle>
+        <CardTitle className="flex items-center justify-between gap-2">
+          Documentos
+          <span className="text-xs font-normal text-text-tertiary" style={{ fontVariantNumeric: "tabular-nums" }}>
+            {loadedCount}/{requiredValues.length} cargados
+          </span>
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        {documents.length === 0 && (
-          <p className="text-sm text-text-tertiary">El cliente aún no ha subido documentos.</p>
+        {requiredValues.length === 0 && (
+          <p className="text-sm text-text-tertiary">
+            El cliente aún no declaró su situación laboral -- no hay checklist de documentos que mostrar.
+          </p>
         )}
 
-        {documents.map((doc) => (
-          <div
-            key={doc.id}
-            className="flex flex-col gap-2 rounded-lg border border-glass-border bg-glass p-3 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              <FileText className="size-4 shrink-0 text-text-tertiary" />
-              <div className="flex min-w-0 flex-col">
-                <span className="truncate text-sm text-text-primary">
-                  {DOCUMENT_TYPE_LABELS[doc.type] ?? doc.type}
-                </span>
-                <span className="text-xs text-text-tertiary">
-                  {new Date(doc.created_at).toLocaleDateString("es-CL")}
-                </span>
-                {(() => {
-                  const validation = (doc.extracted_data as { validation?: { valid: boolean; reasons: string[] } } | null)
-                    ?.validation
-                  if (!validation) return null
-                  if (validation.valid) {
-                    return (
-                      <span className="flex items-center gap-1 text-xs text-neon-green">
-                        <CheckCircle2 className="size-3" />
-                        Pre-validado por OCR
-                      </span>
-                    )
-                  }
-                  return (
-                    <span
-                      className="flex items-center gap-1 text-xs text-error"
-                      title={validation.reasons.join(" — ")}
-                    >
-                      <AlertTriangle className="size-3" />
-                      OCR: {validation.reasons[0]}
-                    </span>
-                  )
-                })()}
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <span
-                className={cn(
-                  "rounded-full border px-2 py-0.5 text-xs font-medium",
-                  STATUS_STYLES[doc.status]
-                )}
-              >
-                {DOCUMENT_STATUS_LABELS[doc.status]}
+        {requiredValues.map((typeValue) => {
+          const doc = latestDocumentForType(typeValue)
+          if (doc) return renderDocumentCard(doc)
+          return (
+            <div
+              key={typeValue}
+              className="flex items-center gap-2 rounded-lg border border-dashed border-glass-border bg-glass/40 p-3"
+            >
+              <CircleDashed className="size-4 shrink-0 text-text-tertiary" />
+              <span className="min-w-0 flex-1 truncate text-sm text-text-tertiary">
+                {DOCUMENT_TYPE_LABELS[typeValue] ?? typeValue}
               </span>
-              <Button size="sm" variant="outline" onClick={() => handleView(doc)}>
-                <Eye />
-                Ver
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={busyId === doc.id || doc.status === "aprobado"}
-                onClick={() => setApproving(doc)}
-                className="text-neon-green hover:text-neon-green"
-              >
-                <Check />
-                Aprobar
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={busyId === doc.id || doc.status === "rechazado"}
-                onClick={() => setRejecting(doc)}
-                className="text-error hover:text-error"
-              >
-                <X />
-                Rechazar
-              </Button>
+              <span className="shrink-0 rounded-full border border-glass-border px-2 py-0.5 text-xs font-medium text-text-tertiary">
+                No cargado
+              </span>
             </div>
-          </div>
-        ))}
+          )
+        })}
+
+        {extraDocuments.length > 0 && (
+          <>
+            <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
+              Otros documentos subidos
+            </p>
+            {extraDocuments.map(renderDocumentCard)}
+          </>
+        )}
       </CardContent>
 
       {/* Modal: ver documento */}

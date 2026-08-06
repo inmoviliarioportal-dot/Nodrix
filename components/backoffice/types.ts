@@ -153,6 +153,22 @@ export function isNoteOnlyEntry(entry: StageHistoryRow): boolean {
   return entry.from_stage === entry.to_stage
 }
 
+/** Fecha de llegada (ISO) más temprana a cada etapa, a partir del historial
+ * real de transiciones -- para el `timestamps` de <Timeline>. Excluye notas
+ * puras (from_stage === to_stage) y, si el asesor revirtió/reintentó una
+ * etapa, usa la primera vez que se alcanzó, no la más reciente. */
+export function timestampsByStage(stageHistory: StageHistoryRow[]): Record<string, string> {
+  const transitions = stageHistory.filter((entry) => !isNoteOnlyEntry(entry))
+  const ascending = [...transitions].sort(
+    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  )
+  const result: Record<string, string> = {}
+  for (const entry of ascending) {
+    if (!(entry.to_stage in result)) result[entry.to_stage] = entry.created_at
+  }
+  return result
+}
+
 export interface PreEvaluation {
   minUF: number
   maxUF: number

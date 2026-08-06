@@ -6,8 +6,8 @@ import { ArrowLeft } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Toaster } from "@/components/ui/sonner"
+import { Timeline } from "@/components/Timeline"
 import { DetailHeader } from "@/components/backoffice/DetailHeader"
-import { StageTimeline } from "@/components/backoffice/StageTimeline"
 import { DocumentsSection } from "@/components/backoffice/DocumentsSection"
 import { FinalProposalSection } from "@/components/backoffice/FinalProposalSection"
 import { PreEvaluationSection } from "@/components/backoffice/PreEvaluationSection"
@@ -15,7 +15,13 @@ import { NotesSection } from "@/components/backoffice/NotesSection"
 import { StateTransition } from "@/components/backoffice/StateTransition"
 import type { ApplicationRow, CustomerRow } from "@/lib/leads"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
-import type { DocumentRow, StageHistoryRow } from "@/components/backoffice/types"
+import {
+  APPLICATION_STAGES_ORDER,
+  STAGE_LABELS,
+  timestampsByStage,
+  type DocumentRow,
+  type StageHistoryRow,
+} from "@/components/backoffice/types"
 
 export default function BackofficeApplicationDetailPage() {
   const params = useParams<{ id: string }>()
@@ -108,32 +114,43 @@ export default function BackofficeApplicationDetailPage() {
 
         <DetailHeader application={application} customer={customer} />
 
+        {/* Línea de tiempo horizontal -- mismo componente y estilo que ve el
+            cliente en /dashboard (<Timeline orientation="horizontal">), con
+            fechas reales de llegada a cada etapa (el cliente solo ve el
+            avance, sin fechas). Ocupa menos espacio vertical que la lista
+            vertical anterior y unifica la experiencia visual entre roles. */}
+        <div
+          className="glass-card animate-fade-in-up rounded-2xl p-3.5"
+          style={{ "--animate-delay": "40ms" } as React.CSSProperties}
+        >
+          <h2 className="mb-2.5 text-[11px] font-bold uppercase tracking-wide text-text-tertiary">
+            Línea de tiempo
+          </h2>
+          <Timeline
+            orientation="horizontal"
+            currentStage={application.stage}
+            stages={APPLICATION_STAGES_ORDER}
+            labels={STAGE_LABELS}
+            timestamps={timestampsByStage(stageHistory)}
+          />
+        </div>
+
+        <StateTransition
+          application={application}
+          onUpdated={(updatedApp, updatedHistory) => {
+            setApplication(updatedApp)
+            if (updatedHistory.length) setStageHistory(updatedHistory)
+          }}
+        />
+
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="flex flex-col gap-6">
-            <div
-              className="glass-surface animate-fade-in-up rounded-xl p-5"
-              style={{ "--animate-delay": "40ms" } as React.CSSProperties}
-            >
-              <h2 className="mb-4 font-heading text-sm font-semibold text-text-primary">
-                Línea de tiempo
-              </h2>
-              <StageTimeline currentStage={application.stage} stageHistory={stageHistory} />
-            </div>
+            <PreEvaluationSection application={application} onUpdated={setApplication} />
 
-            <StateTransition
-              application={application}
-              onUpdated={(updatedApp, updatedHistory) => {
-                setApplication(updatedApp)
-                if (updatedHistory.length) setStageHistory(updatedHistory)
-              }}
-            />
+            <DocumentsSection application={application} documents={documents} onDocumentsChange={setDocuments} />
           </div>
 
           <div className="flex flex-col gap-6">
-            <DocumentsSection documents={documents} onDocumentsChange={setDocuments} />
-
-            <PreEvaluationSection application={application} onUpdated={setApplication} />
-
             <FinalProposalSection applicationId={application.id} stage={application.stage} />
 
             <NotesSection

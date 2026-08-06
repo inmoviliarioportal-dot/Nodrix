@@ -40,6 +40,20 @@ export interface TimelineProps extends React.ComponentProps<"ol"> {
    * completa quepa sin scroll.
    */
   density?: "comfortable" | "compact"
+  /**
+   * Fecha real (ISO) de llegada a cada etapa, ej. `{ SCORING: "2026-01-03T..." }`
+   * -- si se provee, reemplaza el "En progreso" genérico del paso actual y
+   * los pasos completados muestran su fecha real en vez de quedar en blanco
+   * (usado en Backoffice/Admin, donde el asesor necesita saber CUÁNDO pasó
+   * cada cosa, no solo que ya pasó).
+   */
+  timestamps?: Record<string, string>
+}
+
+function formatStageTimestamp(iso: string): string {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return "—"
+  return date.toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "numeric" })
 }
 
 function formatStageLabel(stage: string) {
@@ -123,6 +137,7 @@ function Timeline({
   labels,
   orientation = "vertical",
   density = "comfortable",
+  timestamps,
   className,
   ...props
 }: TimelineProps) {
@@ -189,7 +204,12 @@ function Timeline({
                   >
                     {label}
                   </span>
-                  {isCurrent && <span className="text-[10px] text-text-tertiary">En progreso</span>}
+                  {(() => {
+                    const stamp = timestamps?.[stage]
+                    if (stamp) return <span className="text-[10px] text-text-tertiary">{formatStageTimestamp(stamp)}</span>
+                    if (isCurrent) return <span className="text-[10px] text-text-tertiary">En progreso</span>
+                    return null
+                  })()}
                 </div>
               </li>
             )
@@ -243,9 +263,13 @@ function Timeline({
               >
                 {label}
               </span>
-              {isCurrent && (
-                <span className={cn("text-text-tertiary", compact ? "text-[11px]" : "text-xs")}>En progreso</span>
-              )}
+              {(() => {
+                const stamp = timestamps?.[stage]
+                const sizeClass = cn("text-text-tertiary", compact ? "text-[11px]" : "text-xs")
+                if (stamp) return <span className={sizeClass}>{formatStageTimestamp(stamp)}</span>
+                if (isCurrent) return <span className={sizeClass}>En progreso</span>
+                return null
+              })()}
             </div>
           </li>
         )
