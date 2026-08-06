@@ -2,6 +2,7 @@ import Link from "next/link"
 import { FileBarChart2Icon } from "lucide-react"
 
 import { AdminKpiDashboard } from "@/components/admin/AdminKpiDashboard"
+import { requirePermissionPage } from "@/lib/auth-guards"
 
 export const metadata = {
   title: "Dashboard Ejecutivo — Nodrix",
@@ -12,7 +13,8 @@ export const metadata = {
  * desempeño por asesor e inventario, todo calculado en vivo desde la base
  * de datos (ver GET /api/admin/kpis y AdminKpiDashboard).
  */
-export default function AdminDashboardPage() {
+export default async function AdminDashboardPage() {
+  await requirePermissionPage("kpis", "view")
   return (
     <>
       <div className="bg-deep-ambient -mx-6 -my-8 min-h-[calc(100vh-4rem)] px-6 py-8">
