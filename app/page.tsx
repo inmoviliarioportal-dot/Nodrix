@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { AboutCard } from "@/components/landing/AboutCard"
 import { PropertyCard } from "@/components/landing/PropertyCard"
 import { Sparkle } from "@/components/landing/Sparkle"
 import { StatTile } from "@/components/landing/StatTile"
@@ -53,6 +54,12 @@ export default function Home() {
             </span>
           </div>
           <nav className="flex shrink-0 flex-wrap items-center gap-7 text-sm font-semibold text-text-secondary">
+            <Link
+              href="#nodrix"
+              className="hidden transition-colors duration-200 hover:text-text-primary md:inline"
+            >
+              Nodrix
+            </Link>
             <Link
               href="#como-funciona"
               className="hidden transition-colors duration-200 hover:text-text-primary md:inline"
@@ -256,6 +263,61 @@ export default function Home() {
               label="con altos estándares de seguridad"
             />
           </div>
+        </section>
+
+        {/* Qué es Nodrix -- sección de presentación de la marca, para que quien
+            llega por primera vez entienda qué hace la plataforma antes de
+            registrarse. Se mantiene deliberadamente honesta: la evaluación es
+            una orientación, no una aprobación bancaria (ver disclaimers del
+            motor de pre-evaluación). */}
+        <section id="nodrix" className="mx-auto w-full max-w-6xl px-6 pt-16 sm:pt-20">
+          <div className="mb-10 flex flex-col items-center gap-2.5 text-center">
+            <span className="text-xs font-bold tracking-wide text-neon-cyan uppercase">
+              Qué es Nodrix
+            </span>
+            <h2 className="font-heading text-3xl font-semibold text-text-primary">
+              Claridad sobre tu capacidad de inversión, antes de dar el paso
+            </h2>
+            <p className="max-w-2xl text-sm leading-relaxed text-text-secondary">
+              Nodrix es una plataforma de inversión inmobiliaria que analiza tu perfil financiero
+              y te dice, con reglas claras y explicables, en qué rango de propiedades podrías
+              moverte. En vez de recorrer proyectos sin saber si calificas, parte por entender tu
+              punto de partida y avanza acompañado por un asesor real.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <AboutCard
+              icon={<Sparkles className="size-5" aria-hidden="true" />}
+              title="Evaluación en minutos"
+              description="Respondes una evaluación breve sobre ingresos, ahorro y objetivos, y obtienes al instante tu categoría y un rango estimado en UF."
+              delay={0}
+            />
+            <AboutCard
+              icon={<CircleCheckBig className="size-5" aria-hidden="true" />}
+              title="Reglas claras, no cajas negras"
+              description="El resultado se calcula con criterios financieros explícitos y siempre te mostramos en qué se basó, para que entiendas el porqué."
+              delay={80}
+            />
+            <AboutCard
+              icon={<UserRound className="size-5" aria-hidden="true" />}
+              title="Un asesor humano contigo"
+              description="Desde la primera etapa tienes un asesor asignado que revisa tus documentos, agenda visitas y te acompaña hasta el cierre."
+              delay={160}
+            />
+            <AboutCard
+              icon={<ShieldCheck className="size-5" aria-hidden="true" />}
+              title="Seguimiento transparente"
+              description="Ves el estado real de tu solicitud en todo momento, paso a paso, sin tener que llamar para preguntar en qué va."
+              delay={240}
+            />
+          </div>
+
+          <p className="mx-auto mt-6 max-w-2xl text-center text-xs leading-relaxed text-text-tertiary">
+            La evaluación de Nodrix es una orientación referencial para ayudarte a decidir: no
+            constituye una aprobación bancaria. La confirmación final siempre depende de la
+            evaluación que haga el banco con tus documentos.
+          </p>
         </section>
 
         {/* Cómo funciona */}

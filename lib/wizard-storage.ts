@@ -56,7 +56,12 @@ export const WIZARD_STORAGE_KEY = "wizard-progress";
 // `POST /api/applications/[id]/select-destinations` a partir de los
 // destinos elegidos. Progreso v10 se descarta igual que en los bumps
 // anteriores.
-const WIZARD_STORAGE_VERSION = 11;
+// v12: `propertyStatus` (un solo estado del inmueble) pasa a
+// `propertyStatuses` (varios): el cliente puede aceptar una unidad de entrega
+// inmediata Y ADEMÁS una en verde/blanco, y forzarlo a elegir uno angostaba
+// de más las propiedades ofrecibles. Ver migración 039. Progreso v11 se
+// descarta igual que en los bumps anteriores.
+const WIZARD_STORAGE_VERSION = 12;
 
 /** Mismos 2 valores EXACTOS que `ProfessionalLevel` en lib/proposal-risk.ts */
 export type WizardProfessionalLevel = "profesional" | "tecnico";
@@ -135,7 +140,9 @@ export interface WizardData {
   professionalLevel: WizardProfessionalLevel | null;
   // Paso 2: SOLO montos (ver `incomeSources[].monthlyAmountCLP`). El destino
   // del inmueble ya no se pregunta acá -- ver v11 arriba.
-  propertyStatus: WizardPropertyStatus | null;
+  /** Estados de inmueble que el cliente acepta. MULTI-selección (ver v12):
+   * puede querer entrega inmediata y además en verde/blanco. */
+  propertyStatuses: WizardPropertyStatus[];
   // Paso 3
   savingsAmount: number | null;
   hasExistingDebt: boolean | null;
@@ -159,7 +166,7 @@ export interface WizardProgress {
 export const WIZARD_INITIAL_DATA: WizardData = {
   professionalLevel: null,
   incomeSources: [],
-  propertyStatus: null,
+  propertyStatuses: [],
   savingsAmount: null,
   hasExistingDebt: null,
   totalDebtBalance: null,

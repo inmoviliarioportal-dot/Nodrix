@@ -30,6 +30,8 @@ interface CustomerProfile {
   monthly_income?: number | null
   investment_type?: string | null
   property_status?: string | null
+  /** Multi-selección (migración 039); ausente en perfiles anteriores. */
+  property_statuses?: string[] | null
 }
 
 interface EditProfileDialogProps {
@@ -59,8 +61,10 @@ function EditProfileDialog({ open, onOpenChange, onUpdated }: EditProfileDialogP
     age: "",
     monthlyIncome: "",
     investmentType: "",
-    propertyStatus: "",
   })
+  // Multi-selección (migración 039): el cliente puede aceptar más de un
+  // estado de inmueble, así que vive fuera del `form` de campos de texto.
+  const [propertyStatuses, setPropertyStatuses] = React.useState<string[]>([])
 
   React.useEffect(() => {
     if (!open) return
@@ -78,8 +82,12 @@ function EditProfileDialog({ open, onOpenChange, onUpdated }: EditProfileDialogP
           age: customer.age != null ? String(customer.age) : "",
           monthlyIncome: customer.monthly_income != null ? String(customer.monthly_income) : "",
           investmentType: customer.investment_type ?? "",
-          propertyStatus: customer.property_status ?? "",
         })
+        // Perfiles anteriores a la migración 039 solo tienen el valor único:
+        // se envuelve en un arreglo para no perder lo que ya había elegido.
+        setPropertyStatuses(
+          customer.property_statuses ?? (customer.property_status ? [customer.property_status] : [])
+        )
       })
       .catch(() => toast.error("No se pudo cargar tu perfil."))
       .finally(() => setLoading(false))
@@ -105,7 +113,12 @@ function EditProfileDialog({ open, onOpenChange, onUpdated }: EditProfileDialogP
           age: form.age ? Number(form.age) : undefined,
           monthlyIncome: form.monthlyIncome ? Number(form.monthlyIncome) : undefined,
           investmentType: form.investmentType,
-          propertyStatus: form.propertyStatus,
+          // El singular queda como snapshot del primero, igual que en el flujo
+          // de perfilamiento, para no romper lecturas previas a la 039. Se
+          // omite (undefined) si no hay ninguno: la API rechaza "" porque no
+          // es un estado válido.
+          propertyStatus: propertyStatuses[0],
+          propertyStatuses,
         }),
       })
       const data = await response.json().catch(() => null)
@@ -240,20 +253,36 @@ function EditProfileDialog({ open, onOpenChange, onUpdated }: EditProfileDialogP
                 </select>
               </Field>
               <Field>
-                <FieldLabel htmlFor="edit-propertyStatus">Estado del inmueble</FieldLabel>
-                <select
-                  id="edit-propertyStatus"
-                  className={selectClassName}
-                  value={form.propertyStatus}
-                  onChange={(e) => handleChange("propertyStatus", e.target.value)}
-                >
-                  <option value="">Selecciona</option>
-                  {PROPERTY_STATUS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                <FieldLabel>Estado del inmueble</FieldLabel>
+                <p className="text-xs text-text-tertiary">
+                  Puedes elegir más de uno.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {PROPERTY_STATUS_OPTIONS.map((option) => {
+                    const selected = propertyStatuses.includes(option.value)
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() =>
+                          setPropertyStatuses((prev) =>
+                            prev.includes(option.value)
+                              ? prev.filter((value) => value !== option.value)
+                              : [...prev, option.value]
+                          )
+                        }
+                        className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors duration-200 ${
+                          selected
+                            ? "border-neon-cyan bg-neon-cyan/10 text-neon-cyan"
+                            : "border-glass-border text-text-secondary hover:text-text-primary"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    )
+                  })}
+                </div>
               </Field>
             </div>
 

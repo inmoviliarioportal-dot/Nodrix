@@ -35,6 +35,7 @@ import {
   type WizardIncomeType,
   type WizardIncomeSourceEntry,
   type WizardProfessionalLevel,
+  type WizardPropertyStatus,
 } from "@/lib/wizard-storage";
 import type { IncomeSource } from "@/lib/income-types";
 import { ProgressCircle } from "@/components/processing/progress-circle";
@@ -300,7 +301,12 @@ function WizardPageInner() {
                   ...prev,
                   incomeSources: prefillIncomeSources(app.income_sources, customer.monthly_income) ?? prev.incomeSources,
                   professionalLevel: customer.professional_level ?? prev.professionalLevel,
-                  propertyStatus: customer.property_status ?? prev.propertyStatus,
+                  // Precarga en modo edición: se prefiere el arreglo nuevo y,
+                  // si la solicitud es anterior a la migración 039, se cae al
+                  // valor único antiguo envuelto en un arreglo.
+                  propertyStatuses:
+                    (customer.property_statuses as WizardPropertyStatus[] | null) ??
+                    (customer.property_status ? [customer.property_status as WizardPropertyStatus] : prev.propertyStatuses),
                   savingsAmount: typeof app.savings_amount === "number" ? app.savings_amount : prev.savingsAmount,
                 }));
               }
@@ -348,7 +354,7 @@ function WizardPageInner() {
         });
       }
       case 2: {
-        if (data.propertyStatus === null) return false;
+        if (data.propertyStatuses.length === 0) return false;
         return data.incomeSources.every((entry) => entry.monthlyAmountCLP !== null);
       }
       case 3:
@@ -428,7 +434,11 @@ function WizardPageInner() {
             savingsAmount: savingsRepresentative,
             hasExistingDebt: data.hasExistingDebt,
             totalDebtBalance: debtRepresentative,
-            propertyStatus: data.propertyStatus,
+            // Se envían ambos: el arreglo es la fuente de verdad nueva y el
+            // singular queda como snapshot del primero, para no romper
+            // lecturas previas a la migración 039.
+            propertyStatus: data.propertyStatuses[0] ?? null,
+            propertyStatuses: data.propertyStatuses,
             hasAval: data.hasAval,
             avalRelationship: data.hasAval ? data.avalRelationship : undefined,
             avalMonthlySalary: data.hasAval ? avalSalaryRepresentative : undefined,
@@ -481,7 +491,8 @@ function WizardPageInner() {
       professionalLevel: data.professionalLevel,
       hasExistingDebt: data.hasExistingDebt,
       totalDebtBalance: debtRepresentative,
-      propertyStatus: data.propertyStatus,
+      propertyStatus: data.propertyStatuses[0] ?? null,
+      propertyStatuses: data.propertyStatuses,
       hasAval: data.hasAval,
       avalRelationship: data.hasAval ? data.avalRelationship : undefined,
       avalMonthlySalary: data.hasAval ? avalSalaryRepresentative : undefined,
@@ -911,8 +922,17 @@ function StepFinancialProfile({
                 <SelectableChip
                   key={opt.value}
                   label={opt.label}
-                  selected={data.propertyStatus === opt.value}
-                  onClick={() => onChange("propertyStatus", opt.value)}
+                  selected={data.propertyStatuses.includes(opt.value)}
+                  // Multi-selección: el cliente puede aceptar entrega inmediata
+                  // Y ADEMÁS en verde/blanco (ver v12 en lib/wizard-storage.ts).
+                  onClick={() =>
+                    onChange(
+                      "propertyStatuses",
+                      data.propertyStatuses.includes(opt.value)
+                        ? data.propertyStatuses.filter((value) => value !== opt.value)
+                        : [...data.propertyStatuses, opt.value]
+                    )
+                  }
                 />
               ))}
             </div>

@@ -21,6 +21,7 @@ type UpdateBody = {
   monthlyIncome?: number;
   investmentType?: string;
   propertyStatus?: string;
+  propertyStatuses?: string[];
 };
 
 /**
@@ -78,6 +79,18 @@ export const PATCH = withErrorHandling(async (request: Request) => {
       "INVALID_PROPERTY_STATUS"
     );
   }
+  // Multi-selección de estados (migración 039).
+  if (
+    body.propertyStatuses !== undefined &&
+    (!Array.isArray(body.propertyStatuses) ||
+      body.propertyStatuses.some((value) => !VALID_PROPERTY_STATUSES.includes(value)))
+  ) {
+    return apiError(
+      `propertyStatuses inválido. Valores permitidos: ${VALID_PROPERTY_STATUSES.join(", ")}`,
+      HTTP_STATUS.BAD_REQUEST,
+      "INVALID_PROPERTY_STATUSES"
+    );
+  }
   if (body.age !== undefined && (typeof body.age !== "number" || body.age < 18 || body.age > 120)) {
     return apiError("age debe ser un número entre 18 y 120", HTTP_STATUS.BAD_REQUEST, "INVALID_AGE");
   }
@@ -111,6 +124,7 @@ export const PATCH = withErrorHandling(async (request: Request) => {
   if (body.monthlyIncome !== undefined) updates.monthly_income = body.monthlyIncome;
   if (body.investmentType !== undefined) updates.investment_type = body.investmentType;
   if (body.propertyStatus !== undefined) updates.property_status = body.propertyStatus;
+  if (body.propertyStatuses !== undefined) updates.property_statuses = body.propertyStatuses;
 
   // `customers.name` sigue siendo el campo consumido por el resto del flujo
   // de leads (ver app/api/auth/register/route.ts) — recomputarlo si cambia

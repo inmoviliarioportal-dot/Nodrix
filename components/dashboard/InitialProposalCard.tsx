@@ -263,7 +263,7 @@ function InitialProposalCard({
           <span className="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-gold/10 text-gold">
             <Target className="size-4.5" aria-hidden="true" />
           </span>
-          <h3 className="font-heading text-base font-semibold text-text-primary">¿Para qué quieres tu inmueble?</h3>
+          <h3 className="font-heading text-base font-semibold text-text-primary">¿Cuál es el destino de tu inversión?</h3>
         </div>
         <p className="mt-1.5 text-xs text-text-tertiary">
           Selecciona una o más opciones para recomendarte oportunidades más alineadas a tu objetivo.

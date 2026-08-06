@@ -452,6 +452,15 @@ export async function updateCustomerProfileFields(
   ) {
     update.property_status = financial.propertyStatus;
   }
+  // Multi-selección de estados (migración 039): el cliente puede aceptar
+  // entrega inmediata y además en verde/blanco. `property_status` (singular)
+  // se sigue guardando arriba como snapshot del primero.
+  if (Array.isArray(financial.propertyStatuses)) {
+    const statuses = financial.propertyStatuses.filter(
+      (value): value is string => typeof value === "string" && VALID_PROPERTY_STATUSES.includes(value)
+    );
+    if (statuses.length > 0) update.property_statuses = statuses;
+  }
   if (
     typeof financial.professionalLevel === "string" &&
     VALID_PROFESSIONAL_LEVELS.includes(financial.professionalLevel)

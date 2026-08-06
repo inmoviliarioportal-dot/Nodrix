@@ -25,6 +25,8 @@ type Body = {
   investmentType?: string;
   propertyDestination?: string;
   propertyStatus?: string;
+  /** Multi-selección de estados de inmueble (migración 039). */
+  propertyStatuses?: string[];
   hasAval?: boolean;
   avalRelationship?: string;
   avalMonthlySalary?: number;
@@ -173,6 +175,7 @@ export const POST = withErrorHandling(async (request: Request, context: { params
     investmentType: body.investmentType,
     propertyDestination: body.propertyDestination,
     propertyStatus: body.propertyStatus,
+    propertyStatuses: body.propertyStatuses,
     professionalLevel: body.professionalLevel,
     monthlySalary: body.monthlySalary,
     incomeSources: body.incomeSources,
