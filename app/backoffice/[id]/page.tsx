@@ -16,12 +16,13 @@ import { StateTransition } from "@/components/backoffice/StateTransition"
 import type { ApplicationRow, CustomerRow } from "@/lib/leads"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 import {
-  APPLICATION_STAGES_ORDER,
   STAGE_LABELS,
   timestampsByStage,
+  collapseTimestampsForClientTimeline,
   type DocumentRow,
   type StageHistoryRow,
 } from "@/components/backoffice/types"
+import { CLIENT_TIMELINE_STAGES, mapStageForClientTimeline, type ApplicationStage } from "@/components/dashboard/types"
 
 export default function BackofficeApplicationDetailPage() {
   const params = useParams<{ id: string }>()
@@ -114,11 +115,16 @@ export default function BackofficeApplicationDetailPage() {
 
         <DetailHeader application={application} customer={customer} />
 
-        {/* Línea de tiempo horizontal -- mismo componente y estilo que ve el
-            cliente en /dashboard (<Timeline orientation="horizontal">), con
-            fechas reales de llegada a cada etapa (el cliente solo ve el
-            avance, sin fechas). Ocupa menos espacio vertical que la lista
-            vertical anterior y unifica la experiencia visual entre roles. */}
+        {/* Línea de tiempo horizontal -- mismo componente, estilo Y AGRUPAMIENTO
+            de 7 pasos que ve el cliente en /dashboard (CLIENT_TIMELINE_STAGES:
+            oculta PRE_EVALUACION_COMPLETADA y fusiona VISITA_COMPLETADA con
+            DOCUMENTOS_PENDIENTES en un solo paso visual). Antes mostraba los
+            9 stages reales de backend, lo que la hacía ver distinta a la del
+            cliente -- la máquina de estados real (StateTransition, gating de
+            documentos) sigue usando los 9 stages completos, esto es solo
+            presentación. Etiquetas técnicas (STAGE_LABELS), no las de
+            marketing del cliente, ya que el asesor necesita el nombre exacto
+            del stage. */}
         <div
           className="glass-card animate-fade-in-up rounded-2xl p-3.5"
           style={{ "--animate-delay": "40ms" } as React.CSSProperties}
@@ -128,10 +134,10 @@ export default function BackofficeApplicationDetailPage() {
           </h2>
           <Timeline
             orientation="horizontal"
-            currentStage={application.stage}
-            stages={APPLICATION_STAGES_ORDER}
+            currentStage={mapStageForClientTimeline(application.stage as ApplicationStage)}
+            stages={CLIENT_TIMELINE_STAGES}
             labels={STAGE_LABELS}
-            timestamps={timestampsByStage(stageHistory)}
+            timestamps={collapseTimestampsForClientTimeline(timestampsByStage(stageHistory))}
           />
         </div>
 

@@ -169,6 +169,25 @@ export function timestampsByStage(stageHistory: StageHistoryRow[]): Record<strin
   return result
 }
 
+/** Colapsa el timestamp de VISITA_COMPLETADA sobre DOCUMENTOS_PENDIENTES,
+ * espejo de `mapStageForClientTimeline` (components/dashboard/types.ts) --
+ * la timeline del asesor debe mostrar los mismos 7 pasos que ve el cliente
+ * (CLIENT_TIMELINE_STAGES oculta PRE_EVALUACION_COMPLETADA y fusiona
+ * VISITA_COMPLETADA con DOCUMENTOS_PENDIENTES en un solo paso), así que la
+ * fecha mostrada para ese paso debe ser la más temprana entre ambos. */
+export function collapseTimestampsForClientTimeline(
+  timestamps: Record<string, string>
+): Record<string, string> {
+  const result = { ...timestamps }
+  const docs = result.DOCUMENTOS_PENDIENTES
+  const visita = result.VISITA_COMPLETADA
+  if (visita && (!docs || new Date(visita).getTime() < new Date(docs).getTime())) {
+    result.DOCUMENTOS_PENDIENTES = visita
+  }
+  delete result.VISITA_COMPLETADA
+  return result
+}
+
 export interface PreEvaluation {
   minUF: number
   maxUF: number
