@@ -1,5 +1,6 @@
 import { requireRolePage } from "@/lib/auth-guards"
 import { hasPermission } from "@/lib/permissions"
+import { NAV_REGISTRY } from "@/lib/nav-registry"
 import { Layout, type LayoutNavLink, type LayoutNavGroup } from "@/components/Layout"
 
 /**
@@ -27,57 +28,24 @@ export default async function AdminLayout({
   const { role, permissions } = await requireRolePage(["admin", "gerencia"])
   const isAdmin = role === "admin"
 
-  /** Cada item se filtra por su `module` de permiso, igual que antes -- lo
-   * único que cambia es que ahora se agrupan bajo un único desplegable por
-   * área en vez de aparecer todos como entradas planas en el header. Un
-   * grupo entero desaparece si ninguno de sus items quedó visible. */
-  type Item = LayoutNavLink & { module: Parameters<typeof hasPermission>[1] }
-
-  function visible(items: Item[]): LayoutNavLink[] {
-    return items.filter((item) => isAdmin || hasPermission(permissions, item.module, "view"))
-  }
-
-  const groupDefs: { label: string; iconKey: LayoutNavGroup["iconKey"]; items: Item[] }[] = [
-    {
-      label: "Dashboard",
-      iconKey: "chart",
-      items: [
-        { href: "/admin/dashboard", label: "KPIs", iconKey: "chart", module: "reportes" },
-        { href: "/admin/reports", label: "Reportes", iconKey: "report", module: "reportes" },
-      ],
-    },
-    {
-      label: "Asesor",
-      iconKey: "dashboard",
-      items: [
-        { href: "/backoffice/queue", label: "Backoffice", iconKey: "dashboard", module: "bandeja" },
-        { href: "/admin/assignments", label: "Asignar asesor", iconKey: "userPlus", module: "usuarios" },
-        { href: "/backoffice/visits", label: "Visitas", iconKey: "calendar", module: "visitas" },
-      ],
-    },
-    {
-      label: "Propiedades",
-      iconKey: "building",
-      items: [
-        { href: "/admin/properties", label: "Crear", iconKey: "building", module: "propiedades" },
-        { href: "/admin/regions", label: "Regiones", iconKey: "mapPin", module: "propiedades" },
-      ],
-    },
-    {
-      label: "Usuarios",
-      iconKey: "users",
-      items: [{ href: "/admin/users", label: "Mantenedor", iconKey: "users", module: "usuarios" }],
-    },
-    {
-      label: "Wizard",
-      iconKey: "sliders",
-      items: [{ href: "/admin/variables", label: "Variables", iconKey: "sliders", module: "variables" }],
-    },
-  ]
-
-  const navLinks: (LayoutNavLink | LayoutNavGroup)[] = groupDefs
-    .map((group) => ({ label: group.label, iconKey: group.iconKey, items: visible(group.items) }))
-    .filter((group) => group.items.length > 0)
+  /** El menú se DERIVA de NAV_REGISTRY (lib/nav-registry.ts), la misma fuente
+   * de la que sale la matriz de permisos -- así una vista nueva aparece en
+   * ambos lugares con un solo cambio. Cada item se filtra por su propia clave
+   * de permiso (`item.key`), una por vista. Un grupo entero desaparece si
+   * ninguno de sus items quedó visible. */
+  const navLinks: (LayoutNavLink | LayoutNavGroup)[] = NAV_REGISTRY.map((group) => ({
+    label: group.label,
+    iconKey: group.iconKey as LayoutNavGroup["iconKey"],
+    items: group.items
+      .filter((item) => isAdmin || hasPermission(permissions, item.key, "view"))
+      .map(
+        (item): LayoutNavLink => ({
+          href: item.href,
+          label: item.label,
+          iconKey: item.iconKey as LayoutNavLink["iconKey"],
+        })
+      ),
+  })).filter((group) => group.items.length > 0)
 
   // "Roles" se agrega directo al grupo "Usuarios" (sin `module`: siempre
   // admin-only, nunca configurable por permiso -- ver nota histórica abajo).

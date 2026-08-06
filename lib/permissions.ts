@@ -1,55 +1,66 @@
 import { createSupabaseServiceRoleClient } from "@/lib/supabase";
 import type { UserRole } from "@/app/api/_shared";
+import { NAV_ITEMS, type NavPermissionKey } from "@/lib/nav-registry";
 
-/** Módulos configurables para roles personalizados. */
-export const PERMISSION_MODULES = [
-  "bandeja",
-  "visitas",
-  "documentos",
-  "scoring",
-  "usuarios",
-  "reportes",
-  "propiedades",
-  "variables",
-] as const;
+/**
+ * Módulos configurables para roles personalizados.
+ *
+ * DERIVADO de `NAV_REGISTRY` (lib/nav-registry.ts) — una vista del menú = un
+ * permiso. NO agregar claves a mano acá: agregar el item al registro y
+ * aparece solo, tanto en el menú como en la matriz de permisos. Si alguna vez
+ * hace falta un permiso que no corresponde a una vista del menú, concaténalo
+ * acá explícitamente (hoy no hay ninguno).
+ *
+ * Se eliminaron `documentos` y `scoring`: existían en la lista pero cero
+ * guards los consultaban (`requirePermission` / `requirePermissionPage` /
+ * `hasPermission`), o sea que no protegían nada y solo le hacían creer al
+ * admin que restringían algo. Si la revisión documental necesita permiso
+ * propio en el futuro, se agrega al registro.
+ */
+export const PERMISSION_MODULES: readonly NavPermissionKey[] = NAV_ITEMS.map((item) => item.key);
 
-export type PermissionModule = (typeof PERMISSION_MODULES)[number];
+/** Unión de literales derivada del registro, NO `string`: una clave mal
+ * escrita en cualquier guard es un error de compilación, no un permiso que
+ * falla en silencio. Ver `NavPermissionKey` en lib/nav-registry.ts. */
+export type PermissionModule = NavPermissionKey;
 export type PermissionLevel = "none" | "view" | "edit";
 
-export const PERMISSION_MODULE_LABELS: Record<PermissionModule, string> = {
-  bandeja: "Bandeja de leads",
-  visitas: "Visitas",
-  documentos: "Documentos",
-  scoring: "Scoring",
-  usuarios: "Usuarios",
-  reportes: "Reportes",
-  propiedades: "Propiedades y regiones",
-  variables: "Variables del wizard",
-};
+// `Object.fromEntries` siempre devuelve `{[k: string]: V}` — TypeScript no
+// puede saber que las llaves cubren exactamente la unión. El cast es seguro
+// porque ambos se construyen recorriendo el propio `NAV_ITEMS`/
+// `PERMISSION_MODULES`, así que por construcción no falta ninguna clave.
+export const PERMISSION_MODULE_LABELS = Object.fromEntries(
+  NAV_ITEMS.map((item) => [item.key, item.permissionLabel])
+) as Record<PermissionModule, string>;
 
 export type PermissionMap = Record<PermissionModule, PermissionLevel>;
 
-const NONE_ALL: PermissionMap = {
-  bandeja: "none",
-  visitas: "none",
-  documentos: "none",
-  scoring: "none",
-  usuarios: "none",
-  reportes: "none",
-  propiedades: "none",
-  variables: "none",
-};
+/** Construidos programáticamente recorriendo `PERMISSION_MODULES`. Antes eran
+ * objetos literales que había que editar a mano — esa era exactamente la
+ * fuente del desajuste que dejó "variables" fuera de la matriz. */
+function buildPermissionMap(level: PermissionLevel): PermissionMap {
+  return Object.fromEntries(PERMISSION_MODULES.map((module) => [module, level])) as PermissionMap;
+}
 
-const EDIT_ALL: PermissionMap = {
-  bandeja: "edit",
-  visitas: "edit",
-  documentos: "edit",
-  scoring: "edit",
-  usuarios: "edit",
-  reportes: "edit",
-  propiedades: "edit",
-  variables: "edit",
-};
+const NONE_ALL: PermissionMap = buildPermissionMap("none");
+const EDIT_ALL: PermissionMap = buildPermissionMap("edit");
+
+/**
+ * Split de permisos (migración 035): claves viejas que cubrían más de una
+ * vista, y las claves nuevas que heredan su nivel.
+ *
+ *   reportes    -> kpis          (antes un permiso cubría KPIs + Reportes)
+ *   usuarios    -> asignaciones  (antes cubría Mantenedor + Asignar asesor)
+ *   propiedades -> regiones      (antes cubría Crear + Regiones)
+ *
+ * La clave vieja SOBREVIVE con su valor, pero ahora significa solo su propia
+ * vista. Ver `normalizePermissionMap`.
+ */
+const LEGACY_KEY_INHERITANCE: { from: string; to: PermissionModule }[] = [
+  { from: "reportes", to: "kpis" },
+  { from: "usuarios", to: "asignaciones" },
+  { from: "propiedades", to: "regiones" },
+];
 
 /** Permisos por defecto de los roles fijos del sistema. `admin` es
  * superusuario y nunca se restringe. `gerencia` es CONFIGURABLE por admin
@@ -57,7 +68,10 @@ const EDIT_ALL: PermissionMap = {
  * este EDIT_ALL es solo el fallback mientras no exista una fila guardada. */
 export const BUILTIN_ROLE_PERMISSIONS: Record<Exclude<UserRole, "custom">, PermissionMap> = {
   cliente: NONE_ALL,
-  asesor: { ...EDIT_ALL, usuarios: "none" },
+  // Equivalente al histórico `{...EDIT_ALL, usuarios: "none"}`: con el split,
+  // el viejo `usuarios` cubría tanto el Mantenedor como Asignar asesor, así
+  // que hay que negar AMBAS claves nuevas para no ampliarle el acceso.
+  asesor: { ...EDIT_ALL, usuarios: "none", asignaciones: "none" },
   admin: EDIT_ALL,
   gerencia: EDIT_ALL,
 };
@@ -69,6 +83,20 @@ export function normalizePermissionMap(raw: unknown): PermissionMap {
     const value = input[module];
     if (value === "view" || value === "edit") result[module] = value;
   }
+
+  // Migración EN CALIENTE de mapas viejos guardados en la base (respaldo
+  // defensivo por si la migración SQL 035 no alcanzó alguna fila): si el mapa
+  // trae una clave antigua que cubría varias vistas y la clave nueva NO viene
+  // presente, la nueva hereda el nivel de la vieja. Nadie debe perder acceso
+  // por el split. Se aplica solo cuando la clave nueva está ausente del JSON
+  // original, para no pisar una configuración ya migrada y ajustada a mano.
+  for (const { from, to } of LEGACY_KEY_INHERITANCE) {
+    if (!(to in result)) continue;
+    if (to in input) continue;
+    const legacy = input[from];
+    if (legacy === "view" || legacy === "edit") result[to] = legacy;
+  }
+
   return result;
 }
 
